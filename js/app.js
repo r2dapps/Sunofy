@@ -70,7 +70,6 @@ function initServiceWorker() {
         showPwaInstallBanner();
     });
 
-    // Auto show PWA banner after 2 seconds if not installed
     setTimeout(() => {
         if (!window.matchMedia('(display-mode: standalone)').matches) {
             showPwaInstallBanner();
@@ -194,6 +193,61 @@ function unlockApplicationShell() {
     initializeAppCoreArchitecture();
 }
 
+// GLOBAL DESKTOP KEYBOARD SHORTCUTS
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        if (!appAuthenticated) return;
+        // Don't trigger if user is typing in input fields
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        const audioNode = document.getElementById('audio-node');
+        if (!audioNode) return;
+
+        switch (e.code) {
+            case 'Space':
+                e.preventDefault();
+                if (typeof toggleAudioPlayPause === 'function') toggleAudioPlayPause();
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                if (typeof playNextTrack === 'function') playNextTrack();
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                if (typeof playPrevTrack === 'function') playPrevTrack();
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                audioNode.volume = Math.min(1, audioNode.volume + 0.05);
+                AppState.volume = audioNode.volume;
+                if (typeof updateSpeakerIcons === 'function') updateSpeakerIcons(audioNode.volume);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                audioNode.volume = Math.max(0, audioNode.volume - 0.05);
+                AppState.volume = audioNode.volume;
+                if (typeof updateSpeakerIcons === 'function') updateSpeakerIcons(audioNode.volume);
+                break;
+            case 'KeyM':
+                audioNode.muted = !audioNode.muted;
+                if (typeof updateSpeakerIcons === 'function') updateSpeakerIcons(audioNode.muted ? 0 : audioNode.volume);
+                break;
+            case 'KeyF':
+                if (AppState.queueIndex > -1 && AppState.queue[AppState.queueIndex]) {
+                    if (typeof toggleFavoriteTrackState === 'function') toggleFavoriteTrackState(AppState.queue[AppState.queueIndex]);
+                    if (typeof renderFavoritesStackView === 'function') renderFavoritesStackView();
+                }
+                break;
+            case 'KeyL':
+                if (typeof toggleLoopMode === 'function') toggleLoopMode();
+                break;
+            case 'KeyS':
+                if (typeof toggleShuffleMode === 'function') toggleShuffleMode();
+                break;
+        }
+    });
+}
+
 // VIEW ROUTER NAVIGATION HANDLERS
 function setupViewNavigationHandlers() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -246,6 +300,7 @@ function initializeAppCoreArchitecture() {
     updateAppBrandDisplay();
     if (typeof setupProfileDataBindings === 'function') setupProfileDataBindings();
     setupViewNavigationHandlers();
+    setupKeyboardShortcuts();
     if (typeof setupFormHandlers === 'function') setupFormHandlers();
     if (typeof setupAudioHardwareEngineControls === 'function') setupAudioHardwareEngineControls();
     if (typeof setupFullscreenPlayerControls === 'function') setupFullscreenPlayerControls();

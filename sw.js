@@ -1,17 +1,32 @@
-const CACHE_NAME = 'sunofy-pwa-v1';
+const CACHE_NAME = 'sunofy-pwa-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './favicon.ico',
+  './css/style.css',
+  './css/themes.css',
+  './js/app.js',
+  './js/themes.js',
+  './js/player.js',
+  './js/queue.js',
+  './js/search.js',
+  './js/profile.js',
+  './js/equalizer.js',
+  './js/sleeptimer.js',
+  './js/carmode.js',
+  './js/update.js',
+  './images/icon-192.png',
+  './images/icon-512.png',
+  './images/favicon.ico',
   'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap'
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Caching app shell assets');
+      console.log('[ServiceWorker] Caching app shell & modular assets');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -24,7 +39,7 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keyList.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[ServiceWorker] Removing old cache', key);
+            console.log('[ServiceWorker] Purging legacy cache:', key);
             return caches.delete(key);
           }
         })
@@ -36,13 +51,12 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.url.includes('saavn.sumit.co')) {
-    return; // Ignore API streaming requests in SW cache
+    return; // Bypass API stream requests from SW cache
   }
   
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch in background to update cache (stale-while-revalidate)
         fetch(e.request).then((networkResponse) => {
           if (networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
