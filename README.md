@@ -12,6 +12,7 @@
 
 ## 🌟 Key Features
 
+- 🎛️ **JioSaavn & Spotify Style Curation Filters**: Mobile & Desktop top search bar Filter button opening comprehensive filters for **7 Languages**, **Top Singers** (Sid Sriram, Shreya Ghoshal, Arijit Singh), **Composers & Directors** (DSP, Thaman, A.R. Rahman, Anirudh), and **Genre Moods** (Mass Tollywood, Lo-Fi Chill, Gym Beats, Romantic).
 - 📻 **Mini & Fullscreen Deck**: Sleek vinyl disc rotating deck with smooth seek bar, synced **Volume slider**, and lockscreen MediaSession controls.
 - 🔁 **3 Repeat Modes**: Cycle through **Repeat Off**, **Single Track Loop**, and **Full Queue Loop** with active visual badges.
 - 🎛️ **5-Band Equalizer & Bass Boost**: Built-in Web Audio API Equalizer with custom gains & presets (**Bass Boost**, **Vocal Clarity**, **Pop**, **Acoustic**, **Rock**).
@@ -19,12 +20,11 @@
 - 🚗 **Car Play Large Touch Mode**: High-contrast, extra-large touch interface for safe listening while driving or traveling.
 - 📶 **PWA Offline Vault**: Download and cache audio files locally in IndexedDB to play without cellular data.
 - 🎨 **9 Color Themes**: Dark, AMOLED Black, Ocean Blue, Deep Purple, Emerald Green, Warm Amber, Cyberpunk Neon, Sunset Crimson, and Studio Light.
-- 🎶 **Up Next Queue Drawer**: Dynamic queue management with instant drag/tap playback navigation.
-- 🎯 **Telugu & Regional Music Preferences**: Quick curation pills for Telugu, Hindi, Tamil, Sid Sriram, Shreya Ghoshal, Arijit Singh, DSP, and Thaman S.
+- 🔐 **App-Synced Lockscreen & Hardware Biometrics**: Lockscreen matching active app theme, music sub-icons on keypad numbers, and native WebAuthn device fingerprint authentication.
 
 ---
 
-## 📁 Modular Directory Architecture
+## 📁 Directory Architecture
 
 ```text
 Sunofy/
@@ -45,7 +45,7 @@ Sunofy/
     ├── themes.js       # Dynamic theme switcher & localStorage engine
     ├── player.js       # Audio engine, seek bar, volume control, MediaSession
     ├── queue.js        # Single source of truth for Queue, Next, Prev, Repeat Modes, Shuffle
-    ├── search.js       # Saavn API queries, recent history tags, category pills
+    ├── search.js       # Saavn API queries, recent history tags, Category Pills & Music Filters
     ├── profile.js      # User profile editor, custom categories, cache cleaner
     ├── equalizer.js     # 5-band Web Audio API EQ & Bass Boost engine
     ├── sleeptimer.js    # Bedtime sleep countdown timer module
@@ -59,7 +59,8 @@ Sunofy/
 
 1. Open `index.html` in any modern web browser or serve locally using VS Code Live Server.
 2. Enter the PIN access code: `0908`.
-3. Tap **Install App** to add Sunofy as a native Progressive Web Application on mobile or desktop.
+3. Tap **Filters** in the top search bar on mobile or desktop to curate by language, singer, composer, or genre.
+4. Tap **Install App** to add Sunofy as a native Progressive Web Application on mobile or desktop.
 
 ---
 
