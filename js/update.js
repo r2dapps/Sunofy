@@ -26,30 +26,36 @@ async function checkForAppUpdates() {
             }
         }
 
-        // 2. Check GitHub Release API Endpoint
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`, {
-            cache: 'no-store'
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            if (data.tag_name && data.tag_name !== AppState.version) {
-                showUpdateNoticeModal(`🚀 New Release ${data.tag_name} Available!`, `Changelog:\n${data.body || 'New features and bug fixes.'}`, true);
-            } else {
-                showUpdateNoticeModal(`✅ Sunofy ${AppState.version} is up to date!`, `You are running the latest version build.`);
-            }
-        } else {
-            // Check commits API as fallback for latest code build
-            const commitsRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits?per_page=1`, {
+        // 2. Fetch Latest Commit Hash as Build Reference
+        let commitSha = "";
+        try {
+            const commitRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits?per_page=1`, {
                 cache: 'no-store'
             });
-            if (commitsRes.ok) {
-                const commits = await commitsRes.json();
-                const latestSha = commits[0]?.sha?.substring(0, 7) || '';
-                showUpdateNoticeModal(`✅ Sunofy ${AppState.version} is up to date!`, `Latest Build Commit: #${latestSha} • No new updates available.`);
-            } else {
-                showUpdateNoticeModal(`✅ Sunofy ${AppState.version} is up to date!`, `App shell cache is synchronized.`);
+            if (commitRes.ok) {
+                const commits = await commitRes.json();
+                commitSha = commits[0]?.sha?.substring(0, 7) || "";
             }
+        } catch(e) {}
+
+        // 3. Gracefully Check GitHub Release API Endpoint (ignore 404 if no release tagged yet)
+        let latestTag = "";
+        try {
+            const releaseRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`, {
+                cache: 'no-store'
+            });
+            if (releaseRes.ok) {
+                const releaseData = await releaseRes.json();
+                latestTag = releaseData.tag_name || "";
+            }
+        } catch(e) {}
+
+        if (latestTag && latestTag !== AppState.version) {
+            showUpdateNoticeModal(`🚀 New Release ${latestTag} Available!`, `A new official release tag is published on GitHub.`, true);
+        } else if (commitSha) {
+            showUpdateNoticeModal(`✅ Sunofy ${AppState.version} is up to date!`, `Latest GitHub Build Commit: #${commitSha}\nApp shell cache is synchronized.`);
+        } else {
+            showUpdateNoticeModal(`✅ Sunofy ${AppState.version} is up to date!`, `You are running the latest version build.`);
         }
     } catch (e) {
         showUpdateNoticeModal(`✅ Sunofy ${AppState.version} is up to date!`, `App shell cache is synchronized.`);
