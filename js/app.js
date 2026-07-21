@@ -366,6 +366,7 @@ function initializeAppCoreArchitecture() {
     }
 
     if (typeof updateMiniPlayerIdleState === 'function') updateMiniPlayerIdleState();
+    if (typeof initUpdateChecker === 'function') initUpdateChecker();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
