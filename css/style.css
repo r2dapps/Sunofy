@@ -76,3 +76,40 @@ input[type="range"]::-webkit-slider-thumb:hover {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
 }
+
+/* LOCKSCREEN THEMES ARCHITECTURE */
+
+/* 1. Classic Lockscreen (Default) */
+#pin-overlay.lock-classic {
+    background: #060813;
+}
+
+/* 2. Cyberpunk Holographic Lockscreen */
+#pin-overlay.lock-cyberpunk {
+    background: radial-gradient(circle at center, #18092e 0%, #080314 100%);
+}
+#pin-overlay.lock-cyberpunk .key-btn {
+    border-color: rgba(236, 72, 153, 0.4);
+    background: rgba(236, 72, 153, 0.1);
+    color: #f472b6;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.2);
+}
+
+/* 3. iOS Frosted Glass Lockscreen */
+#pin-overlay.lock-ios {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+    backdrop-filter: blur(25px);
+}
+#pin-overlay.lock-ios .key-btn {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* 4. AMOLED Black Lockscreen */
+#pin-overlay.lock-amoled {
+    background: #000000;
+}
+#pin-overlay.lock-amoled .key-btn {
+    border-color: #1a1a1a;
+    background: #0d0d0d;
+}

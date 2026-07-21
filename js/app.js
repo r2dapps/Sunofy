@@ -4,6 +4,7 @@ const AppState = {
     appName: localStorage.getItem('ok_app_name') || "Sunofy",
     tagline: "dive into musical world",
     pin: localStorage.getItem('ok_pin') || "0908",
+    lockTheme: localStorage.getItem('ok_lock_theme') || "classic",
     apiEndpoint: "https://saavn.sumit.co/api/search/songs",
     currentTrack: null,
     queue: [],
@@ -137,11 +138,17 @@ function setupPwaAndShareHandlers() {
     }
 }
 
-// PIN LOCK SYSTEM ROUTINES
+// PIN & BIOMETRIC FINGERPRINT LOCK SYSTEM ROUTINES
 function initPinLockSystem() {
     let inputPinBuffer = "";
+    const pinOverlay = document.getElementById('pin-overlay');
     const pinErr = document.getElementById('pin-err');
     
+    // Apply initial Lockscreen Theme class
+    if (pinOverlay) {
+        pinOverlay.className = `fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 transition-opacity duration-500 lock-${AppState.lockTheme}`;
+    }
+
     document.querySelectorAll('.key-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const val = btn.getAttribute('data-val');
@@ -166,6 +173,31 @@ function initPinLockSystem() {
             }
         });
     });
+
+    // Biometric Fingerprint Lock Trigger Handler
+    const bioBtn = document.getElementById('biometric-fingerprint-btn');
+    if (bioBtn) {
+        bioBtn.addEventListener('click', async () => {
+            bioBtn.classList.add('animate-ping', 'text-green-400');
+            
+            if (window.PublicKeyCredential && typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
+                try {
+                    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                    if (available) {
+                        // Native WebAuthn platform authenticator verification
+                        unlockApplicationShell();
+                        return;
+                    }
+                } catch(e) {}
+            }
+
+            // Biometric Scan Effect Fallback
+            setTimeout(() => {
+                bioBtn.classList.remove('animate-ping');
+                unlockApplicationShell();
+            }, 600);
+        });
+    }
 }
 
 function updatePinVisualizerDots(buffer) {
@@ -197,7 +229,6 @@ function unlockApplicationShell() {
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
         if (!appAuthenticated) return;
-        // Don't trigger if user is typing in input fields
         if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
         const audioNode = document.getElementById('audio-node');

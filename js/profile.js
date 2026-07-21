@@ -77,7 +77,33 @@ function setupProfileDataBindings() {
 
     setupPreferencePillsHandlers();
     setupPinSecurityHandlers();
+    setupLockThemeSelectorHandlers();
     updateProfileStats();
+}
+
+function setupLockThemeSelectorHandlers() {
+    document.querySelectorAll('.lock-theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lTheme = btn.getAttribute('data-locktheme');
+            if (lTheme) {
+                AppState.lockTheme = lTheme;
+                localStorage.setItem('ok_lock_theme', lTheme);
+
+                document.querySelectorAll('.lock-theme-btn').forEach(b => {
+                    b.className = "lock-theme-btn text-xs py-1.5 px-2.5 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer";
+                });
+                btn.className = "lock-theme-btn text-xs py-1.5 px-2.5 rounded-xl border border-accent/40 bg-accent/15 text-accent font-bold transition-all cursor-pointer";
+                
+                const pinMsg = document.getElementById('pin-settings-msg');
+                if (pinMsg) {
+                    pinMsg.innerText = `🎨 Lockscreen theme changed to: ${lTheme.toUpperCase()}`;
+                    pinMsg.className = "text-xs text-accent font-bold";
+                    pinMsg.classList.remove('hidden');
+                    setTimeout(() => pinMsg.classList.add('hidden'), 3500);
+                }
+            }
+        });
+    });
 }
 
 function setupPinSecurityHandlers() {
