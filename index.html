@@ -27,7 +27,7 @@
     <!-- FLOATING PWA INSTALL POPUP BANNER -->
     <div id="pwa-install-popup-banner" class="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-app-nav border border-accent/40 backdrop-blur-xl rounded-2xl p-4 shadow-2xl z-[9000] flex items-center justify-between gap-3 transition-all duration-500 transform translate-y-0 opacity-100">
         <div class="flex items-center gap-3 min-w-0">
-            <img src="icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shrink-0">
+            <img src="icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shrink-0 shadow-md">
             <div class="min-w-0 flex-1">
                 <h4 class="text-xs font-bold text-main truncate">Install Sunofy App</h4>
                 <p class="text-[10px] text-muted truncate">Listen to songs offline on the go</p>
@@ -42,8 +42,8 @@
     <!-- SECURITY AUTHORIZATION GATEWAY OVERLAY -->
     <div id="pin-overlay" class="fixed inset-0 bg-[#060813] z-[9999] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
         <div class="max-w-xs w-full text-center space-y-6">
-            <div class="w-16 h-16 bg-green-500/10 rounded-2xl mx-auto flex items-center justify-center text-green-400 border border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
-                <i class="fa-solid fa-music text-2xl animate-pulse"></i>
+            <div class="w-20 h-20 rounded-2xl mx-auto overflow-hidden border-2 border-green-500/40 shadow-[0_0_25px_rgba(34,197,94,0.3)]">
+                <img src="icon-512.png" class="w-full h-full object-cover">
             </div>
             <div>
                 <h2 class="text-lg font-bold text-white tracking-wide" id="pin-app-heading">Sunofy Music Console</h2>
@@ -121,7 +121,10 @@
             </nav>
 
             <!-- PWA Quick Install Sidebar Button -->
-            <div class="p-4 border-t border-app">
+            <div class="p-4 border-t border-app space-y-2">
+                <button id="open-car-mode-btn" class="w-full bg-app-card hover:bg-accent/15 text-main hover:text-accent border border-app px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-car"></i> Car Play Mode
+                </button>
                 <button id="pwa-install-side-btn" class="w-full bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer hidden">
                     <i class="fa-solid fa-download"></i> Install Sunofy
                 </button>
@@ -136,12 +139,15 @@
                 <!-- Mobile App Header Title -->
                 <div class="flex items-center justify-between md:hidden">
                     <div class="flex items-center gap-2.5">
-                        <img src="icon-192.png" class="w-8 h-8 rounded-lg object-cover border border-accent/30">
+                        <img src="icon-192.png" class="w-8 h-8 rounded-lg object-cover border border-accent/30 shadow-md">
                         <h1 class="text-base font-extrabold text-main tracking-wide uppercase app-name-text">Sunofy</h1>
                     </div>
-                    <button class="nav-btn text-xs text-muted hover:text-main bg-app-card border border-app px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer" data-target="profile">
-                        <i class="fa-solid fa-circle-user text-accent"></i> Profile
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <span id="sleep-timer-badge" class="text-[10px] bg-accent/15 text-accent border border-accent/30 px-2 py-1 rounded-lg font-bold hidden">🌙 0:00</span>
+                        <button class="nav-btn text-xs text-muted hover:text-main bg-app-card border border-app px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer" data-target="profile">
+                            <i class="fa-solid fa-circle-user text-accent"></i> Profile
+                        </button>
+                    </div>
                 </div>
 
                 <form id="global-search-form" class="relative max-w-md w-full flex items-center">
@@ -240,6 +246,24 @@
                             <p class="text-xs text-muted" id="profile-bio-text">Listening & sharing beats with friends on the go</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Quick Sound Tools Deck (EQ & Sleep Timer) -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="open-eq-btn" class="p-4 bg-app-card border border-app hover:border-accent rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer">
+                        <div>
+                            <div class="text-xs font-bold text-main flex items-center gap-1.5"><i class="fa-solid fa-sliders text-accent"></i> 5-Band Equalizer</div>
+                            <div class="text-[10px] text-muted mt-0.5">Bass boost & sound presets</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-muted"></i>
+                    </button>
+                    <button id="open-sleep-timer-btn" class="p-4 bg-app-card border border-app hover:border-accent rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer">
+                        <div>
+                            <div class="text-xs font-bold text-main flex items-center gap-1.5"><i class="fa-solid fa-moon text-purple-400"></i> Bedtime Sleep Timer</div>
+                            <div class="text-[10px] text-muted mt-0.5" id="sleep-timer-status-text">Timer off</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-muted"></i>
+                    </button>
                 </div>
 
                 <!-- Stats Summary Cards Grid -->
@@ -448,6 +472,12 @@
                 <h3 class="text-xs font-bold text-main truncate max-w-[200px] mx-auto" id="fs-album-title">Sunofy Stream</h3>
             </div>
             <div class="flex gap-2">
+                <button id="fs-eq-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
+                    <i class="fa-solid fa-sliders"></i>
+                </button>
+                <button id="fs-sleep-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
                 <button id="fs-lyrics-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
                     <i class="fa-solid fa-quote-left"></i>
                 </button>
@@ -511,6 +541,107 @@
                 <button id="fs-queue-open-btn" class="text-muted hover:text-main text-xs transition-colors flex items-center gap-1.5"><i class="fa-solid fa-list-ol"></i> Queue</button>
                 <button id="fs-dl-btn" class="text-muted hover:text-blue-400 text-xs transition-colors flex items-center gap-1.5"><i class="fa-solid fa-arrow-down"></i> Save Offline</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 5-BAND EQUALIZER & BASS BOOST MODAL -->
+    <div id="equalizer-modal" class="fixed inset-0 bg-black/80 z-[950] items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-app-card border border-app rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-app pb-2">
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-main flex items-center gap-2"><i class="fa-solid fa-sliders text-accent"></i> 5-Band Equalizer</h3>
+                    <p class="text-[10px] text-muted mt-0.5">Customize frequency gain & bass</p>
+                </div>
+                <button id="close-eq-btn" class="text-xs text-muted hover:text-main p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- EQ Presets Bar -->
+            <div class="flex gap-1.5 overflow-x-auto custom-scroll pb-1">
+                <button class="eq-preset-btn text-xs py-1.5 px-3 rounded-lg border border-accent/40 bg-accent/15 text-accent font-bold transition-all cursor-pointer" data-preset="flat">Flat</button>
+                <button class="eq-preset-btn text-xs py-1.5 px-3 rounded-lg border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-preset="bass">Bass Boost</button>
+                <button class="eq-preset-btn text-xs py-1.5 px-3 rounded-lg border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-preset="vocal">Vocal</button>
+                <button class="eq-preset-btn text-xs py-1.5 px-3 rounded-lg border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-preset="pop">Pop</button>
+                <button class="eq-preset-btn text-xs py-1.5 px-3 rounded-lg border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-preset="rock">Rock</button>
+            </div>
+
+            <!-- 5 Band Sliders -->
+            <div class="grid grid-cols-5 gap-2 text-center py-2">
+                <div>
+                    <input type="range" id="eq-band-0" min="-12" max="12" value="0" step="1" class="w-full h-24 [writing-mode:vertical-lr] [direction:rtl] mx-auto">
+                    <div class="text-[9px] mono text-muted mt-2">60Hz</div>
+                </div>
+                <div>
+                    <input type="range" id="eq-band-1" min="-12" max="12" value="0" step="1" class="w-full h-24 [writing-mode:vertical-lr] [direction:rtl] mx-auto">
+                    <div class="text-[9px] mono text-muted mt-2">230Hz</div>
+                </div>
+                <div>
+                    <input type="range" id="eq-band-2" min="-12" max="12" value="0" step="1" class="w-full h-24 [writing-mode:vertical-lr] [direction:rtl] mx-auto">
+                    <div class="text-[9px] mono text-muted mt-2">910Hz</div>
+                </div>
+                <div>
+                    <input type="range" id="eq-band-3" min="-12" max="12" value="0" step="1" class="w-full h-24 [writing-mode:vertical-lr] [direction:rtl] mx-auto">
+                    <div class="text-[9px] mono text-muted mt-2">4kHz</div>
+                </div>
+                <div>
+                    <input type="range" id="eq-band-4" min="-12" max="12" value="0" step="1" class="w-full h-24 [writing-mode:vertical-lr] [direction:rtl] mx-auto">
+                    <div class="text-[9px] mono text-muted mt-2">14kHz</div>
+                </div>
+            </div>
+
+            <!-- Bass Boost Controls -->
+            <div class="pt-2 border-t border-app space-y-1">
+                <div class="flex justify-between text-xs text-main font-semibold">
+                    <span><i class="fa-solid fa-drum text-accent mr-1"></i> Bass Boost Gain</span>
+                </div>
+                <input type="range" id="bass-boost-slider" min="0" max="15" value="0" step="1" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer">
+            </div>
+        </div>
+    </div>
+
+    <!-- BEDTIME SLEEP TIMER MODAL -->
+    <div id="sleep-timer-modal" class="fixed inset-0 bg-black/80 z-[950] items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-app-card border border-app rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-center">
+            <div class="flex justify-between items-center border-b border-app pb-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-main flex items-center gap-2"><i class="fa-solid fa-moon text-purple-400"></i> Bedtime Sleep Timer</h3>
+                <button id="close-sleep-timer-btn" class="text-xs text-muted hover:text-main p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <p class="text-xs text-muted">Automatically fade out and pause playback when timer finishes.</p>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button class="sleep-opt-btn text-xs py-2 px-3 rounded-xl border border-app bg-app-body text-main hover:border-accent font-semibold transition-all cursor-pointer" data-mins="15">15 Minutes</button>
+                <button class="sleep-opt-btn text-xs py-2 px-3 rounded-xl border border-app bg-app-body text-main hover:border-accent font-semibold transition-all cursor-pointer" data-mins="30">30 Minutes</button>
+                <button class="sleep-opt-btn text-xs py-2 px-3 rounded-xl border border-app bg-app-body text-main hover:border-accent font-semibold transition-all cursor-pointer" data-mins="45">45 Minutes</button>
+                <button class="sleep-opt-btn text-xs py-2 px-3 rounded-xl border border-app bg-app-body text-main hover:border-accent font-semibold transition-all cursor-pointer" data-mins="60">60 Minutes</button>
+            </div>
+
+            <button id="cancel-sleep-timer-btn" class="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold transition-colors">Turn Off Timer</button>
+        </div>
+    </div>
+
+    <!-- CAR PLAY LARGE TOUCH MODE MODAL -->
+    <div id="car-mode-modal" class="fixed inset-0 bg-[#04060d] z-[980] flex flex-col justify-between p-6 hidden">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-car text-accent text-xl"></i>
+                <span class="text-sm font-black text-white tracking-widest uppercase">Car Play Mode</span>
+            </div>
+            <button id="close-car-mode-btn" class="bg-gray-900 border border-gray-800 text-gray-300 px-4 py-2 rounded-xl text-xs font-bold hover:text-white">Exit Mode</button>
+        </div>
+
+        <div class="my-auto text-center space-y-6 flex flex-col items-center">
+            <img id="car-track-art" src="icon-512.png" class="w-48 h-48 sm:w-56 sm:h-56 rounded-3xl object-cover border-4 border-gray-800 shadow-2xl">
+            <div class="space-y-1">
+                <h2 id="car-track-title" class="text-xl font-black text-white truncate max-w-sm">No Track Playing</h2>
+                <p id="car-track-artist" class="text-sm font-semibold text-gray-400 truncate">Select a song to start</p>
+            </div>
+        </div>
+
+        <!-- Big Touch Car Buttons -->
+        <div class="flex items-center justify-around max-w-md mx-auto w-full pb-6">
+            <button id="car-prev-btn" class="w-20 h-20 bg-gray-900 border-2 border-gray-800 rounded-full flex items-center justify-center text-white text-3xl active:scale-95 transition-transform"><i class="fa-solid fa-backward-step"></i></button>
+            <button id="car-play-pause-btn" class="w-28 h-28 bg-accent text-white rounded-full flex items-center justify-center text-4xl shadow-[0_0_30px_var(--accent-glow)] active:scale-95 transition-transform"><i class="fa-solid fa-play pl-1"></i></button>
+            <button id="car-next-btn" class="w-20 h-20 bg-gray-900 border-2 border-gray-800 rounded-full flex items-center justify-center text-white text-3xl active:scale-95 transition-transform"><i class="fa-solid fa-forward-step"></i></button>
         </div>
     </div>
 
@@ -583,6 +714,9 @@
     <script src="js/queue.js"></script>
     <script src="js/search.js"></script>
     <script src="js/profile.js"></script>
+    <script src="js/equalizer.js"></script>
+    <script src="js/sleeptimer.js"></script>
+    <script src="js/carmode.js"></script>
     <script src="js/update.js"></script>
     <script src="js/lyrics.js"></script>
 </body>
