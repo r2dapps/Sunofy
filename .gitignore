@@ -1,0 +1,9 @@
+# Dependencies & Temp Files
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE Configs
+.vscode/
+.idea/

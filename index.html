@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="app-title-tag">Sunofy - Dive into musical world</title>
+    <!-- Favicon & PWA Manifest Meta Tags -->
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#05070f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sunofy">
+
+    <!-- Modern design framework tools -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Modular CSS Styles -->
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-app-body text-main min-h-screen flex flex-col antialiased select-none overflow-x-hidden pb-16 md:pb-0">
+
+    <!-- FLOATING PWA INSTALL POPUP BANNER -->
+    <div id="pwa-install-popup-banner" class="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-app-nav border border-accent/40 backdrop-blur-xl rounded-2xl p-4 shadow-2xl z-[9000] flex items-center justify-between gap-3 transition-all duration-500 transform translate-y-0 opacity-100">
+        <div class="flex items-center gap-3 min-w-0">
+            <img src="icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shrink-0">
+            <div class="min-w-0 flex-1">
+                <h4 class="text-xs font-bold text-main truncate">Install Sunofy App</h4>
+                <p class="text-[10px] text-muted truncate">Listen to songs offline on the go</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button id="pwa-banner-install-btn" class="bg-accent hover:bg-accent/90 text-white px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors cursor-pointer">Install</button>
+            <button id="pwa-banner-close-btn" class="text-muted hover:text-main p-1 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
+    <!-- SECURITY AUTHORIZATION GATEWAY OVERLAY -->
+    <div id="pin-overlay" class="fixed inset-0 bg-[#060813] z-[9999] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+        <div class="max-w-xs w-full text-center space-y-6">
+            <div class="w-16 h-16 bg-green-500/10 rounded-2xl mx-auto flex items-center justify-center text-green-400 border border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+                <i class="fa-solid fa-music text-2xl animate-pulse"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-white tracking-wide" id="pin-app-heading">Sunofy Music Console</h2>
+                <p class="text-xs text-gray-400 mt-1">Enter your 4-digit PIN access key</p>
+            </div>
+            <!-- Pin Dots Visualizer -->
+            <div class="flex justify-center gap-4 py-2" id="pin-dots">
+                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
+                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
+                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
+                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
+            </div>
+            <!-- Numeric Grid Keypad -->
+            <div class="grid grid-cols-3 gap-3 max-w-[240px] mx-auto text-sm mono font-bold">
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="1">1</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="2">2</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="3">3</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="4">4</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="5">5</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="6">6</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="7">7</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="8">8</button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="9">9</button>
+                <button class="key-btn w-14 h-14 bg-red-950/20 text-red-400 hover:bg-red-900/30 rounded-full border border-red-900/30 flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="clr"><i class="fa-solid fa-delete-left"></i></button>
+                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="0">0</button>
+                <button class="w-14 h-14 text-gray-600 flex items-center justify-center" disabled><i class="fa-solid fa-fingerprint text-xl"></i></button>
+            </div>
+            <p id="pin-err" class="text-xs text-red-400 font-medium invisible"><i class="fa-solid fa-circle-exclamation mr-1"></i> Access denied. Incorrect PIN.</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP STRUCTURE SHELL LAYER -->
+    <div id="app-content" class="flex-1 flex flex-col md:flex-row min-h-screen opacity-0 transition-opacity duration-500">
+        
+        <!-- SIDE NAVIGATION BAR PANEL (DESKTOP) -->
+        <aside class="hidden md:flex w-64 bg-app-nav border-r border-app flex-col shrink-0">
+            <!-- Brand App Logo -->
+            <div class="p-5 border-b border-app flex items-center gap-3">
+                <img src="icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shadow-md">
+                <div>
+                    <h1 class="text-sm font-extrabold text-main tracking-wider uppercase app-name-text">Sunofy</h1>
+                    <p class="text-[10px] text-accent font-semibold tracking-wide flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Audio Hub
+                    </p>
+                </div>
+            </div>
+
+            <!-- Profile Sidebar Card -->
+            <div class="p-4 mx-3 my-3 bg-app-card border border-app rounded-xl flex items-center gap-3 relative group">
+                <div class="relative w-10 h-10 bg-gray-800 rounded-lg overflow-hidden border border-gray-700 group-hover:border-accent transition-colors cursor-pointer shadow-inner">
+                    <img id="profile-avatar-side" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=60" alt="" class="w-full h-full object-cover">
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-xs font-bold text-main truncate profile-name-display">Music Curator</h3>
+                    <p class="text-[10px] text-muted truncate profile-handle-display">@school_vibes</p>
+                </div>
+            </div>
+
+            <!-- Sidebar Navigation Tabs -->
+            <nav class="p-3 flex-1 space-y-1 text-xs font-bold tracking-wide uppercase text-muted">
+                <p class="text-[10px] text-muted font-black tracking-widest px-2 mb-2 opacity-60">Navigation</p>
+                <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer bg-accent/15 text-accent font-bold" data-target="discover"><i class="fa-solid fa-compass text-sm"></i> Discover Feed</button>
+                <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="playlists"><i class="fa-solid fa-folder-tree text-sm"></i> My Playlist</button>
+                <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="favorites"><i class="fa-solid fa-heart text-sm"></i> Favorites</button>
+                <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="offline"><i class="fa-solid fa-cloud-arrow-down text-sm"></i> Local Offline</button>
+                <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="profile"><i class="fa-solid fa-user-gear text-sm"></i> Profile & Settings</button>
+                
+                <p class="text-[10px] text-muted font-black tracking-widest px-2 pt-6 mb-2 opacity-60">Music Filters</p>
+                <div class="px-2 pt-1 grid grid-cols-2 gap-2 text-[10px]">
+                    <label class="flex items-center gap-1.5 p-1.5 bg-app-card rounded-lg border border-app cursor-pointer"><input type="checkbox" class="lang-opt" value="telugu" checked> <span class="truncate text-main">Telugu</span></label>
+                    <label class="flex items-center gap-1.5 p-1.5 bg-app-card rounded-lg border border-app cursor-pointer"><input type="checkbox" class="lang-opt" value="hindi"> <span class="truncate text-main">Hindi</span></label>
+                    <label class="flex items-center gap-1.5 p-1.5 bg-app-card rounded-lg border border-app cursor-pointer"><input type="checkbox" class="lang-opt" value="tamil"> <span class="truncate text-main">Tamil</span></label>
+                    <label class="flex items-center gap-1.5 p-1.5 bg-app-card rounded-lg border border-app cursor-pointer"><input type="checkbox" class="lang-opt" value="english"> <span class="truncate text-main">English</span></label>
+                </div>
+            </nav>
+
+            <!-- PWA Quick Install Sidebar Button -->
+            <div class="p-4 border-t border-app">
+                <button id="pwa-install-side-btn" class="w-full bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer hidden">
+                    <i class="fa-solid fa-download"></i> Install Sunofy
+                </button>
+            </div>
+        </aside>
+
+        <!-- APPLICATION VIEW DISPLAY MODULE SPACE WITH BOTTOM PADDING FOR FLOATING DOCK -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scroll p-4 md:p-6 space-y-6 pb-48 md:pb-28">
+            
+            <!-- GLOBAL TOP BAR WITH MOBILE HEADER & SEARCH CONTROLS -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center border-b border-app pb-4">
+                <!-- Mobile App Header Title -->
+                <div class="flex items-center justify-between md:hidden">
+                    <div class="flex items-center gap-2.5">
+                        <img src="icon-192.png" class="w-8 h-8 rounded-lg object-cover border border-accent/30">
+                        <h1 class="text-base font-extrabold text-main tracking-wide uppercase app-name-text">Sunofy</h1>
+                    </div>
+                    <button class="nav-btn text-xs text-muted hover:text-main bg-app-card border border-app px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer" data-target="profile">
+                        <i class="fa-solid fa-circle-user text-accent"></i> Profile
+                    </button>
+                </div>
+
+                <form id="global-search-form" class="relative max-w-md w-full flex items-center">
+                    <input type="text" id="global-search-input" placeholder="Search songs, albums, artists..." value="Telugu Melodies" class="w-full bg-app-card border border-app rounded-xl py-2.5 pl-4 pr-12 text-sm text-main focus:outline-none focus:border-accent transition-all placeholder:text-muted">
+                    <button type="submit" class="absolute right-4 text-muted hover:text-accent transition-colors cursor-pointer"><i class="fa-solid fa-magnifying-glass"></i></button>
+                </form>
+                
+                <!-- Recent Searches Tag Bar with Clear All -->
+                <div id="history-box" class="flex gap-2 max-w-full overflow-x-auto custom-scroll py-1 text-[11px] text-muted items-center">
+                    <span class="font-bold text-muted uppercase shrink-0"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Recent:</span>
+                    <div id="history-tags" class="flex gap-1.5 items-center"></div>
+                    <button id="clear-history-btn" class="text-[10px] text-muted hover:text-red-400 transition-colors font-bold uppercase shrink-0 ml-1 cursor-pointer hidden">Clear</button>
+                </div>
+            </div>
+
+            <!-- CONTENT VIEW ROUTER BLOCKS -->
+            
+            <!-- 1. DISCOVER VIEW PANEL -->
+            <section id="view-discover" class="app-view space-y-6">
+                <!-- Music categories scroll view -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] text-muted font-bold uppercase tracking-wider">Browse Categories</p>
+                    </div>
+                    <div id="category-pills-container" class="flex gap-2 overflow-x-auto pb-1.5 custom-scroll scroll-smooth select-none pr-1"></div>
+                </div>
+
+                <div class="bg-app-card border border-app rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-sm font-bold text-main tracking-tight flex items-center gap-2"><i class="fa-solid fa-bolt text-accent"></i> Track Discovery Engine</h2>
+                        <span id="loading-spinner" class="text-accent hidden"><i class="fa-solid fa-circle-notch animate-spin text-sm"></i></span>
+                    </div>
+                    <div id="search-output-list" class="space-y-2 max-h-[500px] overflow-y-auto custom-scroll pr-1"></div>
+                </div>
+            </section>
+
+            <!-- 2. MY PLAYLIST VIEW -->
+            <section id="view-playlists" class="app-view space-y-6 hidden">
+                <div class="bg-app-card border border-app rounded-2xl p-4 md:p-5 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-app pb-3">
+                        <div><h2 class="text-sm font-bold text-main tracking-tight">My Playlist</h2><p class="text-xs text-muted mt-0.5">Organize tracks into your personal music lists</p></div>
+                        <form id="playlist-create-form" class="flex gap-2"><input type="text" id="new-playlist-title" placeholder="Playlist title..." required class="bg-app-body border border-app rounded-lg px-3 py-1.5 text-xs text-main focus:outline-none focus:border-accent"><button type="submit" class="bg-accent hover:bg-accent/90 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"><i class="fa-solid fa-plus mr-1"></i> New</button></form>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="playlists-grid-box"></div>
+                </div>
+            </section>
+
+            <!-- 3. DEDICATED FAVORITES TAB SECTION -->
+            <section id="view-favorites" class="app-view space-y-6 hidden">
+                <div class="bg-app-card border border-app rounded-2xl p-4 md:p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-app pb-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-main tracking-tight flex items-center gap-2"><i class="fa-solid fa-heart text-red-500"></i> Your Favorites</h2>
+                            <p class="text-xs text-muted mt-0.5">All your quick-hearted tunes</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="favs-play-all-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"><i class="fa-solid fa-play mr-1"></i> Play All</button>
+                            <span class="text-[10px] mono bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded-md font-bold" id="favs-count-badge">0 tracks</span>
+                        </div>
+                    </div>
+                    <div id="fav-output-list" class="space-y-2 max-h-[500px] overflow-y-auto custom-scroll pr-1"></div>
+                </div>
+            </section>
+
+            <!-- 4. OFFLINE CACHE STORAGE HUB -->
+            <section id="view-offline" class="app-view space-y-6 hidden">
+                <div class="bg-app-card border border-app rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-app pb-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-main tracking-tight flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-down text-blue-400"></i> Downloaded Offline Storage</h2>
+                            <p class="text-xs text-muted mt-0.5">Listen on the way to school without cellular data.</p>
+                        </div>
+                        <span class="text-[10px] mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-md font-bold" id="offline-count-badge">0 tracks</span>
+                    </div>
+                    <div id="offline-tracks-list" class="space-y-2 max-h-[480px] overflow-y-auto custom-scroll pr-1"></div>
+                </div>
+            </section>
+
+            <!-- 5. PROFILE & SETTINGS DASHBOARD SECTION -->
+            <section id="view-profile" class="app-view space-y-6 hidden">
+                <!-- User Profile Header Banner -->
+                <div class="bg-app-card border border-app rounded-2xl p-5 md:p-6 relative overflow-hidden">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 relative z-10">
+                        <div class="relative w-20 h-20 rounded-2xl bg-gray-800 overflow-hidden border-2 border-accent shadow-xl group">
+                            <img id="profile-avatar-main" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=60" alt="Avatar" class="w-full h-full object-cover">
+                            <label class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-white transition-opacity cursor-pointer">
+                                <i class="fa-solid fa-camera mr-1"></i> Change
+                                <input type="file" id="avatar-input-main" accept="image/*" class="hidden">
+                            </label>
+                        </div>
+                        <div class="text-center sm:text-left flex-1 min-w-0 space-y-1">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <input type="text" id="profile-name-input" value="Music Curator" class="text-lg font-bold text-main bg-transparent border-b border-transparent hover:border-app focus:border-accent focus:outline-none transition-colors max-w-xs text-center sm:text-left">
+                                <span class="text-[10px] bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wide self-center sm:self-auto"><i class="fa-solid fa-shield-halved mr-1"></i> School Curator</span>
+                            </div>
+                            <p class="text-xs text-muted" id="profile-bio-text">Listening & sharing beats with friends on the go</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Summary Cards Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+                    <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
+                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider"><i class="fa-solid fa-cloud-arrow-down text-blue-400 mr-1"></i> Offline</div>
+                        <div class="text-xl font-black text-main mono" id="stat-offline-val">0</div>
+                    </div>
+                    <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
+                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider"><i class="fa-solid fa-heart text-red-400 mr-1"></i> Favorites</div>
+                        <div class="text-xl font-black text-main mono" id="stat-favs-val">0</div>
+                    </div>
+                    <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
+                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider"><i class="fa-solid fa-folder-tree text-accent mr-1"></i> Playlists</div>
+                        <div class="text-xl font-black text-main mono" id="stat-playlists-val">0</div>
+                    </div>
+                    <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
+                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider"><i class="fa-solid fa-microchip text-purple-400 mr-1"></i> Version</div>
+                        <div class="text-xs font-bold text-accent pt-1" id="stat-pwa-status">v1.2.0</div>
+                    </div>
+                </div>
+
+                <!-- App Settings Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Color Themes & Custom Categories -->
+                    <div class="bg-app-card border border-app rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-bold text-main flex items-center gap-2 border-b border-app pb-2">
+                            <i class="fa-solid fa-palette text-accent"></i> Appearance & Themes
+                        </h3>
+                        
+                        <div class="space-y-2">
+                            <label class="text-xs font-semibold text-muted">Choose App Color Theme:</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-gray-900 hover:border-accent transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="dark"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> Dark</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-black hover:border-accent transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="amoled"><span class="w-2.5 h-2.5 rounded-full bg-green-400"></span> AMOLED</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-blue-950/60 hover:border-blue-500 transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="ocean"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Ocean</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-purple-950/60 hover:border-purple-500 transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="purple"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Purple</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-emerald-950/60 hover:border-emerald-500 transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="emerald"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Emerald</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-amber-950/60 hover:border-amber-500 transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="amber"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Amber</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-pink-950/60 hover:border-pink-500 transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="cyberpunk"><span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span> Cyberpunk</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-rose-950/60 hover:border-rose-500 transition-colors font-bold text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="crimson"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Crimson</button>
+                                <button class="theme-btn text-xs py-2 px-2 rounded-xl border border-app bg-slate-200 hover:border-blue-500 transition-colors font-bold text-slate-900 flex items-center justify-center gap-1.5 cursor-pointer" data-theme="light"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Light</button>
+                            </div>
+                        </div>
+
+                        <!-- Custom Category Builder - LAYOUT FIX WITH ZERO OVERFLOW -->
+                        <div class="pt-3 border-t border-app space-y-2">
+                            <label class="text-xs font-semibold text-main">Custom Category Builder:</label>
+                            <div class="space-y-2">
+                                <input type="text" id="new-cat-name" placeholder="Category Name (e.g. Sid Sriram, Gym)" class="w-full bg-app-body border border-app rounded-xl px-3 py-2 text-xs text-main focus:outline-none focus:border-accent">
+                                <div class="flex gap-2">
+                                    <input type="text" id="new-cat-query" placeholder="Search Query (e.g. Sid Sriram Melodies)" class="flex-1 bg-app-body border border-app rounded-xl px-3 py-2 text-xs text-main focus:outline-none focus:border-accent min-w-0">
+                                    <button id="save-cat-btn" class="bg-accent hover:bg-accent/90 text-white px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"><i class="fa-solid fa-plus mr-1"></i> Add</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Singer & Music Director Curation Preferences -->
+                        <div class="pt-3 border-t border-app space-y-2">
+                            <label class="text-xs font-semibold text-main flex items-center gap-1.5"><i class="fa-solid fa-sliders text-accent"></i> Music Curation Preferences:</label>
+                            <div class="space-y-2 text-[11px] text-muted">
+                                <div>
+                                    <span class="font-bold text-main">Singers:</span>
+                                    <div class="flex flex-wrap gap-1.5 mt-1.5">
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="Sid Sriram Melodies">Sid Sriram</span>
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="Shreya Ghoshal Hits">Shreya Ghoshal</span>
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="Arijit Singh Telugu">Arijit Singh</span>
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="Anurag Kulkarni Songs">Anurag Kulkarni</span>
+                                    </div>
+                                </div>
+                                <div class="pt-1">
+                                    <span class="font-bold text-main">Music Directors:</span>
+                                    <div class="flex flex-wrap gap-1.5 mt-1.5">
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="Devi Sri Prasad Hits">Devi Sri Prasad</span>
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="Thaman S Blockbusters">Thaman S</span>
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="AR Rahman Classics">A.R. Rahman</span>
+                                        <span class="pref-pill bg-app-body px-2.5 py-1 rounded-lg border border-app text-accent font-semibold cursor-pointer hover:bg-accent/20 transition-colors" data-query="Anirudh Ravichander Hits">Anirudh</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Updates, Cache & App Info -->
+                    <div class="bg-app-card border border-app rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-bold text-main flex items-center gap-2 border-b border-app pb-2">
+                            <i class="fa-solid fa-circle-info text-blue-400"></i> App Info & Storage
+                        </h3>
+                        
+                        <!-- Check for Updates -->
+                        <div class="flex items-center justify-between p-3 bg-app-body border border-app rounded-xl">
+                            <div>
+                                <h4 class="text-xs font-bold text-main">Sunofy Music Console</h4>
+                                <p class="text-[10px] text-muted">Version 1.2.0 • Build 2026.07.21</p>
+                            </div>
+                            <button id="check-updates-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate mr-1"></i> Check Updates
+                            </button>
+                        </div>
+
+                        <!-- Storage Cache Cleaner -->
+                        <div class="flex items-center justify-between p-3 bg-app-body border border-app rounded-xl">
+                            <div>
+                                <h4 class="text-xs font-bold text-main">Offline Cache Storage</h4>
+                                <p class="text-[10px] text-muted" id="cache-size-text">Calculating storage...</p>
+                            </div>
+                            <button id="clear-cache-btn" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer">
+                                Clear Cache
+                            </button>
+                        </div>
+
+                        <div class="pt-2 border-t border-app flex justify-between text-[11px] text-muted">
+                            <button id="pwa-install-main-btn" class="hover:text-accent transition-colors font-semibold cursor-pointer"><i class="fa-solid fa-download mr-1"></i> Install PWA App</button>
+                            <button id="share-app-btn" class="hover:text-accent transition-colors font-semibold cursor-pointer"><i class="fa-solid fa-share-nodes mr-1"></i> Share Sunofy</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ENHANCED MOBILE BOTTOM NAVIGATION BAR WITH GLASSMORPHISM PILLS -->
+    <nav id="mobile-bottom-nav" class="fixed bottom-0 left-0 right-0 h-14 bg-app-nav/95 backdrop-blur-xl border-t border-app z-[400] md:hidden flex justify-around items-center px-2 shadow-2xl">
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-accent bg-accent/15 border border-accent/30 p-1 px-3 rounded-xl cursor-pointer transition-all shadow-[0_0_10px_var(--accent-glow)]" data-target="discover">
+            <i class="fa-solid fa-compass text-sm"></i>
+            <span class="text-[9px] font-extrabold">Discover</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-3 cursor-pointer transition-all" data-target="playlists">
+            <i class="fa-solid fa-layer-group text-sm"></i>
+            <span class="text-[9px] font-bold">My Playlist</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-3 cursor-pointer transition-all" data-target="favorites">
+            <i class="fa-solid fa-heart text-sm"></i>
+            <span class="text-[9px] font-bold">Favorites</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-3 cursor-pointer transition-all" data-target="offline">
+            <i class="fa-solid fa-circle-down text-sm"></i>
+            <span class="text-[9px] font-bold">Offline</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-3 cursor-pointer transition-all" data-target="profile">
+            <i class="fa-solid fa-sliders text-sm"></i>
+            <span class="text-[9px] font-bold">Profile</span>
+        </button>
+    </nav>
+
+    <!-- DOCK CONSOLE MINI PLAYER FOOTER - FLOATING OVERNAV WITH GAP FIX -->
+    <footer id="playback-dock" class="fixed bottom-[64px] md:bottom-0 left-2 right-2 md:left-0 md:right-0 bg-app-nav/95 backdrop-blur-md border border-app rounded-2xl md:rounded-none shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-[500] transition-transform duration-300 flex flex-col cursor-pointer overflow-hidden">
+        <!-- Top Edge Progress Bar Line -->
+        <div class="w-full bg-gray-800/50 h-1 overflow-hidden">
+            <div id="dock-progress-bar" class="bg-accent h-full w-0 transition-all duration-200"></div>
+        </div>
+
+        <div class="max-w-7xl w-full mx-auto flex items-center justify-between gap-3 px-3 py-2">
+            <div class="flex items-center gap-3 flex-1 min-w-0" id="dock-expand-trigger">
+                <!-- Retro Vinyl Disk Frame with Clean Placeholder -->
+                <div class="relative w-9 h-9 md:w-12 md:h-12 shrink-0">
+                    <img id="dock-art" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230d1222' stroke='%2322c55e' stroke-width='4'/%3E%3Cpath d='M38 30v40l32-20z' fill='%2322c55e'/%3E%3C/svg%3E" alt="Sunofy Music" class="w-full h-full rounded-full bg-gray-900 object-cover border border-black shadow-md">
+                    <!-- Spindle hole -->
+                    <div class="w-2 h-2 rounded-full bg-[#05070f] border border-gray-800/50 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-inner"></div>
+                </div>
+                
+                <div class="min-w-0 flex-1">
+                    <h4 id="dock-title" class="text-xs font-bold text-main truncate">No Track Selected</h4>
+                    <p id="dock-subtitle" class="text-[10px] text-muted truncate mt-0.5">Select a song to start listening</p>
+                </div>
+                <div class="hidden sm:flex items-center gap-1 h-4 px-2 opacity-50" id="dock-eq-visualizer">
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button id="dock-queue-btn" class="text-muted hover:text-main transition-colors p-1.5 text-xs"><i class="fa-solid fa-list-ol"></i></button>
+                <button id="dock-shuffle-action" class="text-muted hover:text-main transition-colors p-1.5 text-xs"><i class="fa-solid fa-shuffle"></i></button>
+                <button id="dock-loop-action" class="text-muted hover:text-main transition-colors p-1.5 text-xs"><i class="fa-solid fa-arrows-rotate"></i></button>
+                <button id="dock-fav-action" class="text-muted hover:text-red-400 transition-colors p-1.5 text-xs"><i class="fa-regular fa-heart"></i></button>
+                <button id="dock-dl-action" class="text-muted hover:text-blue-400 transition-colors p-1.5 text-xs"><i class="fa-solid fa-arrow-down"></i></button>
+                <button id="ctrl-prev" class="hidden md:flex text-muted hover:text-main transition-colors text-sm cursor-pointer p-1"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="ctrl-play-pause" class="w-8 h-8 md:w-9 md:h-9 bg-accent text-white hover:scale-105 rounded-full flex items-center justify-center transition-transform shadow-md cursor-pointer"><i class="fa-solid fa-play pl-0.5 text-xs"></i></button>
+                <button id="ctrl-next" class="hidden md:flex text-muted hover:text-main transition-colors text-sm cursor-pointer p-1"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+        </div>
+
+        <div class="hidden md:flex w-full items-center gap-2 text-[10px] text-muted mono font-bold max-w-7xl mx-auto px-4 pb-2">
+            <span id="lbl-time-now">0:00</span>
+            <input type="range" id="seek-slider" min="0" max="100" value="0" class="flex-1 h-1 rounded-lg appearance-none cursor-pointer">
+            <span id="lbl-time-max">0:00</span>
+            <div class="flex items-center gap-2 ml-4">
+                <i class="fa-solid fa-volume-low text-xs text-muted" id="vol-speaker-icon"></i>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.7" class="w-16 h-1 rounded-lg appearance-none cursor-pointer">
+            </div>
+        </div>
+    </footer>
+
+    <!-- EXPANDABLE FULLSCREEN MOBILE AUDIO PLAYER MODAL -->
+    <div id="fullscreen-player-modal" class="fixed inset-0 bg-app-body z-[900] flex flex-col justify-between p-6 transition-transform duration-300 transform translate-y-full">
+        <div class="flex justify-between items-center text-muted">
+            <button id="close-fullscreen-player" class="w-10 h-10 rounded-full bg-app-card flex items-center justify-center text-main text-base hover:bg-app-card/80 transition-colors cursor-pointer border border-app">
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div class="text-center flex-1 min-w-0 px-4">
+                <p class="text-[10px] uppercase font-bold text-accent tracking-widest">Now Playing</p>
+                <h3 class="text-xs font-bold text-main truncate max-w-[200px] mx-auto" id="fs-album-title">Sunofy Stream</h3>
+            </div>
+            <div class="flex gap-2">
+                <button id="fs-lyrics-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
+                    <i class="fa-solid fa-quote-left"></i>
+                </button>
+                <button id="fs-share-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="my-auto text-center space-y-6 flex flex-col items-center justify-center relative">
+            <!-- Retro Vinyl Disc Cover Art Frame - FULL FILL FIX -->
+            <div class="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full bg-app-card border-[10px] border-black shadow-[0_15px_40px_rgba(0,0,0,0.8)] overflow-hidden shrink-0 flex items-center justify-center">
+                <img id="fs-art" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230d1222' stroke='%2322c55e' stroke-width='4'/%3E%3Cpath d='M38 30v40l32-20z' fill='%2322c55e'/%3E%3C/svg%3E" alt="Album Art" class="w-full h-full min-w-full min-h-full object-cover rounded-full block scale-105">
+                <!-- Center Spindle Center Circle -->
+                <div class="w-10 h-10 rounded-full bg-[#05070f] border-4 border-gray-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-inner flex items-center justify-center">
+                    <div class="w-3.5 h-3.5 rounded-full bg-gray-950"></div>
+                </div>
+                <!-- Vinyl Grooves Visual Effect -->
+                <div class="absolute inset-0 rounded-full pointer-events-none border border-white/5 opacity-10 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.8)_100%)]"></div>
+            </div>
+
+            <!-- Fullscreen Lyrics Drawer Slide Over -->
+            <div id="fs-lyrics-panel" class="absolute inset-0 bg-app-body/95 backdrop-blur-xl border border-app rounded-3xl p-5 flex flex-col justify-between hidden transition-opacity">
+                <div class="flex justify-between items-center border-b border-app pb-2">
+                    <h4 class="text-xs font-bold text-accent uppercase tracking-wider"><i class="fa-solid fa-quote-left mr-1"></i> Track Lyrics</h4>
+                    <button id="close-lyrics-btn" class="text-xs text-muted hover:text-main"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div id="lyrics-content-body" class="flex-1 overflow-y-auto custom-scroll text-xs text-muted py-3 space-y-2 text-center leading-relaxed font-medium">
+                    <p class="text-muted italic">Tap any song to load lyrics...</p>
+                </div>
+            </div>
+
+            <div class="space-y-1 max-w-xs text-center">
+                <h2 id="fs-title" class="text-lg font-bold text-main truncate">No Song Playing</h2>
+                <p id="fs-subtitle" class="text-xs text-muted truncate">Select a track to start</p>
+            </div>
+        </div>
+
+        <div class="space-y-6 max-w-sm mx-auto w-full pb-6">
+            <div class="space-y-2">
+                <input type="range" id="fs-seek-slider" min="0" max="100" value="0" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[11px] text-muted mono font-bold">
+                    <span id="fs-lbl-time-now">0:00</span>
+                    <span id="fs-lbl-time-max">0:00</span>
+                </div>
+            </div>
+
+            <!-- Enhanced controls board -->
+            <div class="flex items-center justify-between px-2">
+                <button id="fs-shuffle-btn" class="text-muted hover:text-main text-base transition-colors p-2"><i class="fa-solid fa-shuffle"></i></button>
+                <button id="fs-prev-btn" class="text-main hover:text-accent text-2xl transition-colors p-2"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="fs-play-pause-btn" class="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-xl transition-transform shadow-[0_0_25px_var(--accent-glow)] active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-play pl-1"></i>
+                </button>
+                <button id="fs-next-btn" class="text-main hover:text-accent text-2xl transition-colors p-2"><i class="fa-solid fa-forward-step"></i></button>
+                <button id="fs-loop-btn" class="text-muted hover:text-main text-base transition-colors p-2"><i class="fa-solid fa-arrows-rotate"></i></button>
+            </div>
+
+            <div class="flex items-center justify-around px-4 pt-2">
+                <button id="fs-fav-btn" class="text-muted hover:text-red-400 text-xs transition-colors flex items-center gap-1.5"><i class="fa-regular fa-heart"></i> Favorite</button>
+                <button id="fs-queue-open-btn" class="text-muted hover:text-main text-xs transition-colors flex items-center gap-1.5"><i class="fa-solid fa-list-ol"></i> Queue</button>
+                <button id="fs-dl-btn" class="text-muted hover:text-blue-400 text-xs transition-colors flex items-center gap-1.5"><i class="fa-solid fa-arrow-down"></i> Save Offline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STORAGE CACHE CLEAR PANEL MODAL -->
+    <div id="cache-clear-modal" class="fixed inset-0 bg-black/80 z-[950] items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-app-card border border-app rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-main">Clear Offline Cache Storage</h3>
+                <p class="text-xs text-muted mt-1">This will remove all downloaded audio files stored on this device.</p>
+            </div>
+            
+            <div class="bg-app-body p-3 rounded-xl border border-app flex justify-around text-xs mono">
+                <div>
+                    <div class="text-[10px] text-muted uppercase font-bold">Tracks</div>
+                    <div class="text-main font-black text-sm" id="modal-cache-count">0</div>
+                </div>
+                <div class="border-r border-app"></div>
+                <div>
+                    <div class="text-[10px] text-muted uppercase font-bold">Size</div>
+                    <div class="text-red-400 font-black text-sm" id="modal-cache-mb">0 MB</div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button id="cancel-clear-cache-btn" class="flex-1 bg-app-body border border-app py-2 rounded-xl text-xs font-bold text-main hover:bg-app-card">Cancel</button>
+                <button id="confirm-clear-cache-btn" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl text-xs font-bold transition-colors">Clear Storage</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYBACK QUEUE DRAWER MODAL -->
+    <div id="queue-modal" class="fixed inset-0 bg-black/80 z-[950] items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-app-card border border-app rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center border-b border-app pb-2">
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-main flex items-center gap-2"><i class="fa-solid fa-list-ol text-accent"></i> Up Next Queue</h3>
+                    <p class="text-[10px] text-muted mt-0.5" id="queue-count-text">0 tracks queued</p>
+                </div>
+                <button id="close-queue-btn" class="text-xs text-muted hover:text-main p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="queue-tracks-list" class="space-y-2 max-h-72 overflow-y-auto custom-scroll pr-1"></div>
+
+            <div class="flex justify-between pt-2 border-t border-app">
+                <button id="clear-queue-btn" class="text-xs text-red-400 hover:underline font-bold">Clear Queue</button>
+                <button id="dismiss-queue-btn" class="bg-app-body border border-app px-3 py-1 rounded-lg text-xs font-bold text-main hover:bg-app-card">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYLIST MODAL OVERLAY -->
+    <div id="playlist-modal" class="fixed inset-0 bg-black/70 z-[999] items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-app-card border border-app rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl scale-95 transition-transform duration-300" id="modal-box">
+            <div><h3 class="text-xs font-bold uppercase tracking-wider text-main">Add Track to Playlist</h3><p class="text-[10px] text-muted mt-0.5">Select target playlist</p></div>
+            <div id="modal-playlists-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll"></div>
+            <div class="flex justify-end pt-2"><button type="button" id="close-modal-btn" class="bg-app-body border border-app px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-app-card tracking-wide uppercase transition-colors cursor-pointer text-main">Dismiss</button></div>
+        </div>
+    </div>
+
+    <!-- CORE HARDWARE NATIVE AUDIO INSTANCE -->
+    <audio id="audio-node"></audio>
+
+    <!-- Modular JavaScript Engine Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/themes.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/queue.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/update.js"></script>
+    <script src="js/lyrics.js"></script>
+</body>
+</html>
