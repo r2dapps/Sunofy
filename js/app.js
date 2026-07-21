@@ -27,9 +27,9 @@ const AppState = {
     playlists: JSON.parse(localStorage.getItem('ok_lists')) || [],
     profile: JSON.parse(localStorage.getItem('ok_profile')) || {
         name: "Music Curator",
-        handle: "@school_vibes",
-        bio: "Listening & sharing beats with friends on the go",
-        avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=60"
+        handle: "@sunofy_music",
+        bio: "Dive into musical world with friends & family",
+        avatar: "images/icon-512.png"
     }
 };
 
