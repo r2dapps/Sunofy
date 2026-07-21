@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="app-title-tag">Sunofy - Dive into musical world</title>
     <!-- Favicon & PWA Manifest Meta Tags -->
-    <link rel="icon" type="image/png" href="icon-192.png">
-    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="icon" type="image/png" href="images/icon-192.png">
+    <link rel="shortcut icon" href="images/favicon.ico">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#05070f">
     <meta name="mobile-web-app-capable" content="yes">
@@ -27,7 +27,7 @@
     <!-- FLOATING PWA INSTALL POPUP BANNER -->
     <div id="pwa-install-popup-banner" class="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-app-nav border border-accent/40 backdrop-blur-xl rounded-2xl p-4 shadow-2xl z-[9000] flex items-center justify-between gap-3 transition-all duration-500 transform translate-y-0 opacity-100">
         <div class="flex items-center gap-3 min-w-0">
-            <img src="icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shrink-0 shadow-md">
+            <img src="images/icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shrink-0 shadow-md">
             <div class="min-w-0 flex-1">
                 <h4 class="text-xs font-bold text-main truncate">Install Sunofy App</h4>
                 <p class="text-[10px] text-muted truncate">Listen to songs offline on the go</p>
@@ -43,7 +43,7 @@
     <div id="pin-overlay" class="fixed inset-0 bg-[#060813] z-[9999] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
         <div class="max-w-xs w-full text-center space-y-6">
             <div class="w-20 h-20 rounded-2xl mx-auto overflow-hidden border-2 border-green-500/40 shadow-[0_0_25px_rgba(34,197,94,0.3)]">
-                <img src="icon-512.png" class="w-full h-full object-cover">
+                <img src="images/icon-512.png" class="w-full h-full object-cover">
             </div>
             <div>
                 <h2 class="text-lg font-bold text-white tracking-wide" id="pin-app-heading">Sunofy Music Console</h2>
@@ -82,7 +82,7 @@
         <aside class="hidden md:flex w-64 bg-app-nav border-r border-app flex-col shrink-0">
             <!-- Brand App Logo -->
             <div class="p-5 border-b border-app flex items-center gap-3">
-                <img src="icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shadow-md">
+                <img src="images/icon-192.png" class="w-10 h-10 rounded-xl object-cover border border-accent/30 shadow-md">
                 <div>
                     <h1 class="text-sm font-extrabold text-main tracking-wider uppercase app-name-text">Sunofy</h1>
                     <p class="text-[10px] text-accent font-semibold tracking-wide flex items-center gap-1">
@@ -139,7 +139,7 @@
                 <!-- Mobile App Header Title -->
                 <div class="flex items-center justify-between md:hidden">
                     <div class="flex items-center gap-2.5">
-                        <img src="icon-192.png" class="w-8 h-8 rounded-lg object-cover border border-accent/30 shadow-md">
+                        <img src="images/icon-192.png" class="w-8 h-8 rounded-lg object-cover border border-accent/30 shadow-md">
                         <h1 class="text-base font-extrabold text-main tracking-wide uppercase app-name-text">Sunofy</h1>
                     </div>
                     <div class="flex items-center gap-2">
@@ -461,14 +461,14 @@
         </div>
     </footer>
 
-    <!-- EXPANDABLE FULLSCREEN MOBILE AUDIO PLAYER MODAL -->
+    <!-- EXPANDABLE FULLSCREEN MOBILE AUDIO PLAYER MODAL WITH VOLUME SLIDER & REPEAT INDICATORS -->
     <div id="fullscreen-player-modal" class="fixed inset-0 bg-app-body z-[900] flex flex-col justify-between p-6 transition-transform duration-300 transform translate-y-full">
         <div class="flex justify-between items-center text-muted">
             <button id="close-fullscreen-player" class="w-10 h-10 rounded-full bg-app-card flex items-center justify-center text-main text-base hover:bg-app-card/80 transition-colors cursor-pointer border border-app">
                 <i class="fa-solid fa-chevron-down"></i>
             </button>
             <div class="text-center flex-1 min-w-0 px-4">
-                <p class="text-[10px] uppercase font-bold text-accent tracking-widest">Now Playing</p>
+                <p class="text-[10px] uppercase font-bold text-accent tracking-widest" id="fs-repeat-state-text">Now Playing</p>
                 <h3 class="text-xs font-bold text-main truncate max-w-[200px] mx-auto" id="fs-album-title">Sunofy Stream</h3>
             </div>
             <div class="flex gap-2">
@@ -477,9 +477,6 @@
                 </button>
                 <button id="fs-sleep-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
                     <i class="fa-solid fa-moon"></i>
-                </button>
-                <button id="fs-lyrics-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
-                    <i class="fa-solid fa-quote-left"></i>
                 </button>
                 <button id="fs-share-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
                     <i class="fa-solid fa-share-nodes"></i>
@@ -499,30 +496,25 @@
                 <div class="absolute inset-0 rounded-full pointer-events-none border border-white/5 opacity-10 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.8)_100%)]"></div>
             </div>
 
-            <!-- Fullscreen Lyrics Drawer Slide Over -->
-            <div id="fs-lyrics-panel" class="absolute inset-0 bg-app-body/95 backdrop-blur-xl border border-app rounded-3xl p-5 flex flex-col justify-between hidden transition-opacity">
-                <div class="flex justify-between items-center border-b border-app pb-2">
-                    <h4 class="text-xs font-bold text-accent uppercase tracking-wider"><i class="fa-solid fa-quote-left mr-1"></i> Track Lyrics</h4>
-                    <button id="close-lyrics-btn" class="text-xs text-muted hover:text-main"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div id="lyrics-content-body" class="flex-1 overflow-y-auto custom-scroll text-xs text-muted py-3 space-y-2 text-center leading-relaxed font-medium">
-                    <p class="text-muted italic">Tap any song to load lyrics...</p>
-                </div>
-            </div>
-
             <div class="space-y-1 max-w-xs text-center">
                 <h2 id="fs-title" class="text-lg font-bold text-main truncate">No Song Playing</h2>
                 <p id="fs-subtitle" class="text-xs text-muted truncate">Select a track to start</p>
             </div>
         </div>
 
-        <div class="space-y-6 max-w-sm mx-auto w-full pb-6">
+        <div class="space-y-5 max-w-sm mx-auto w-full pb-4">
             <div class="space-y-2">
                 <input type="range" id="fs-seek-slider" min="0" max="100" value="0" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer">
                 <div class="flex justify-between text-[11px] text-muted mono font-bold">
                     <span id="fs-lbl-time-now">0:00</span>
                     <span id="fs-lbl-time-max">0:00</span>
                 </div>
+            </div>
+
+            <!-- Volume Control Bar inside Fullscreen Player -->
+            <div class="flex items-center gap-3 px-2 bg-app-card p-2 rounded-xl border border-app">
+                <i class="fa-solid fa-volume-low text-xs text-muted shrink-0" id="fs-vol-speaker-icon"></i>
+                <input type="range" id="fs-volume-slider" min="0" max="1" step="0.05" value="0.7" class="flex-1 h-1 rounded-lg appearance-none cursor-pointer">
             </div>
 
             <!-- Enhanced controls board -->
@@ -630,7 +622,7 @@
         </div>
 
         <div class="my-auto text-center space-y-6 flex flex-col items-center">
-            <img id="car-track-art" src="icon-512.png" class="w-48 h-48 sm:w-56 sm:h-56 rounded-3xl object-cover border-4 border-gray-800 shadow-2xl">
+            <img id="car-track-art" src="images/icon-512.png" class="w-48 h-48 sm:w-56 sm:h-56 rounded-3xl object-cover border-4 border-gray-800 shadow-2xl">
             <div class="space-y-1">
                 <h2 id="car-track-title" class="text-xl font-black text-white truncate max-w-sm">No Track Playing</h2>
                 <p id="car-track-artist" class="text-sm font-semibold text-gray-400 truncate">Select a song to start</p>
@@ -718,6 +710,5 @@
     <script src="js/sleeptimer.js"></script>
     <script src="js/carmode.js"></script>
     <script src="js/update.js"></script>
-    <script src="js/lyrics.js"></script>
 </body>
 </html>

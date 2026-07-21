@@ -42,23 +42,23 @@ function renderQueueDrawerList() {
     container.innerHTML = '';
 
     if (AppState.queue.length === 0) {
-        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">No tracks queued.</p>`;
+        container.innerHTML = `<p class="text-xs text-muted text-center py-6">No tracks queued.</p>`;
         return;
     }
 
     AppState.queue.forEach((t, i) => {
         const isCurrent = i === AppState.queueIndex;
         const row = document.createElement('div');
-        row.className = `flex items-center justify-between p-2 rounded-xl text-xs ${isCurrent ? 'bg-green-500/20 border border-green-500/40 text-green-400 font-bold' : 'bg-gray-900/60 border border-gray-800 text-gray-300'}`;
+        row.className = `flex items-center justify-between p-2 rounded-xl text-xs ${isCurrent ? 'bg-accent/15 border border-accent/40 text-accent font-bold' : 'bg-app-body border border-app text-main'}`;
         row.innerHTML = `
             <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer trigger-queue-item">
-                <span class="mono text-[10px] text-gray-500 w-4 shrink-0">${i + 1}</span>
+                <span class="mono text-[10px] text-muted w-4 shrink-0">${i + 1}</span>
                 <div class="min-w-0 flex-1 truncate">
                     <div class="truncate">${t.name}</div>
-                    <div class="text-[9px] text-gray-500 truncate">${t.album?.name || t.albumName || ''}</div>
+                    <div class="text-[9px] text-muted truncate">${t.album?.name || t.albumName || ''}</div>
                 </div>
             </div>
-            <button class="w-6 h-6 text-gray-500 hover:text-red-400 action-remove-queue"><i class="fa-solid fa-xmark"></i></button>
+            <button class="w-6 h-6 text-muted hover:text-red-400 action-remove-queue"><i class="fa-solid fa-xmark"></i></button>
         `;
 
         row.querySelector('.trigger-queue-item').onclick = () => {
@@ -96,7 +96,7 @@ function playNextTrack() {
             initializeTrackTargetPlayback(AppState.queueIndex + 1);
         }
     } else {
-        if (AppState.repeatMode === 2) { // Loop Queue
+        if (AppState.repeatMode === 2) { // List Repeat (Loop Queue)
             if (typeof initializeTrackTargetPlayback === 'function') {
                 initializeTrackTargetPlayback(0);
             }
@@ -129,18 +129,40 @@ function toggleLoopMode() {
     AppState.repeatMode = (AppState.repeatMode + 1) % 3;
     const loopBtn = document.getElementById('dock-loop-action');
     const fsLoopBtn = document.getElementById('fs-loop-btn');
+    const fsRepeatStateText = document.getElementById('fs-repeat-state-text');
     const audioNode = document.getElementById('audio-node');
 
     if (AppState.repeatMode === 0) { // Off
-        if (loopBtn) loopBtn.className = "text-gray-500 hover:text-white p-1.5 text-xs transition-colors";
-        if (fsLoopBtn) fsLoopBtn.className = "text-gray-500 hover:text-white text-base p-2 transition-colors";
+        if (loopBtn) {
+            loopBtn.className = "text-muted hover:text-main p-1.5 text-xs transition-colors";
+            loopBtn.title = "Repeat: Off";
+        }
+        if (fsLoopBtn) {
+            fsLoopBtn.className = "text-muted hover:text-main text-base p-2 transition-colors";
+            fsLoopBtn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i>`;
+        }
+        if (fsRepeatStateText) fsRepeatStateText.innerText = "Repeat: Off";
         if (audioNode) audioNode.loop = false;
-    } else if (AppState.repeatMode === 1) { // Loop Track
-        if (loopBtn) loopBtn.className = "text-green-400 drop-shadow-[0_0_6px_rgba(34,197,94,0.6)] p-1.5 text-xs transition-colors";
-        if (fsLoopBtn) fsLoopBtn.className = "text-green-400 drop-shadow-[0_0_6px_rgba(34,197,94,0.6)] text-base p-2 transition-colors";
-    } else if (AppState.repeatMode === 2) { // Loop Queue
-        if (loopBtn) loopBtn.className = "text-blue-400 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)] p-1.5 text-xs transition-colors";
-        if (fsLoopBtn) fsLoopBtn.className = "text-blue-400 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)] text-base p-2 transition-colors";
+    } else if (AppState.repeatMode === 1) { // Single Repeat (Loop Track)
+        if (loopBtn) {
+            loopBtn.className = "text-accent drop-shadow-[0_0_6px_var(--accent-glow)] p-1.5 text-xs transition-colors font-bold";
+            loopBtn.title = "Repeat: Single Track";
+        }
+        if (fsLoopBtn) {
+            fsLoopBtn.className = "text-accent drop-shadow-[0_0_6px_var(--accent-glow)] text-base p-2 transition-colors font-bold";
+            fsLoopBtn.innerHTML = `<i class="fa-solid fa-repeat"></i> <span class="text-[9px] font-black uppercase ml-1">Track</span>`;
+        }
+        if (fsRepeatStateText) fsRepeatStateText.innerText = "Repeat: Single Track";
+    } else if (AppState.repeatMode === 2) { // List Repeat (Loop Queue)
+        if (loopBtn) {
+            loopBtn.className = "text-blue-400 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)] p-1.5 text-xs transition-colors font-bold";
+            loopBtn.title = "Repeat: List Queue";
+        }
+        if (fsLoopBtn) {
+            fsLoopBtn.className = "text-blue-400 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)] text-base p-2 transition-colors font-bold";
+            fsLoopBtn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> <span class="text-[9px] font-black uppercase ml-1">Queue</span>`;
+        }
+        if (fsRepeatStateText) fsRepeatStateText.innerText = "Repeat: List Queue";
         if (audioNode) audioNode.loop = false;
     }
 }
@@ -151,10 +173,10 @@ function toggleShuffleMode() {
     const fsShuffleBtn = document.getElementById('fs-shuffle-btn');
 
     if (AppState.shuffle) {
-        if (shuffleBtn) shuffleBtn.className = "text-green-400 drop-shadow-[0_0_6px_rgba(34,197,94,0.6)] p-1.5 text-xs transition-colors";
-        if (fsShuffleBtn) fsShuffleBtn.className = "text-green-400 drop-shadow-[0_0_6px_rgba(34,197,94,0.6)] text-base p-2 transition-colors";
+        if (shuffleBtn) shuffleBtn.className = "text-accent drop-shadow-[0_0_6px_var(--accent-glow)] p-1.5 text-xs transition-colors";
+        if (fsShuffleBtn) fsShuffleBtn.className = "text-accent drop-shadow-[0_0_6px_var(--accent-glow)] text-base p-2 transition-colors";
     } else {
-        if (shuffleBtn) shuffleBtn.className = "text-gray-500 hover:text-white p-1.5 text-xs transition-colors";
-        if (fsShuffleBtn) fsShuffleBtn.className = "text-gray-500 hover:text-white text-base p-2 transition-colors";
+        if (shuffleBtn) shuffleBtn.className = "text-muted hover:text-main p-1.5 text-xs transition-colors";
+        if (fsShuffleBtn) fsShuffleBtn.className = "text-muted hover:text-main text-base p-2 transition-colors";
     }
 }

@@ -7,6 +7,7 @@ function setupAudioHardwareEngineControls() {
     const bBtn = document.getElementById('ctrl-prev');
     const seek = document.getElementById('seek-slider');
     const vol = document.getElementById('volume-slider');
+    const fsVol = document.getElementById('fs-volume-slider');
 
     if (pBtn) pBtn.onclick = (e) => { e.stopPropagation(); toggleAudioPlayPause(); };
     if (nBtn) nBtn.onclick = (e) => { e.stopPropagation(); playNextTrack(); };
@@ -63,17 +64,30 @@ function setupAudioHardwareEngineControls() {
                 audioNode.volume = e.target.value;
                 AppState.volume = e.target.value;
                 vol.style.setProperty('--seek-pct', `${e.target.value * 100}%`);
-                const spk = document.getElementById('vol-speaker-icon');
-                if (spk) {
-                    if (e.target.value == 0) spk.className = "fa-solid fa-volume-xmark text-xs text-gray-500";
-                    else if (e.target.value < 0.4) spk.className = "fa-solid fa-volume-low text-xs text-gray-400";
-                    else spk.className = "fa-solid fa-volume-high text-xs text-gray-400";
+                if (fsVol) {
+                    fsVol.value = e.target.value;
+                    fsVol.style.setProperty('--seek-pct', `${e.target.value * 100}%`);
                 }
+                updateSpeakerIcons(e.target.value);
+            });
+        }
+
+        if (fsVol) {
+            fsVol.style.setProperty('--seek-pct', `${AppState.volume * 100}%`);
+            fsVol.addEventListener('input', (e) => {
+                audioNode.volume = e.target.value;
+                AppState.volume = e.target.value;
+                fsVol.style.setProperty('--seek-pct', `${e.target.value * 100}%`);
+                if (vol) {
+                    vol.value = e.target.value;
+                    vol.style.setProperty('--seek-pct', `${e.target.value * 100}%`);
+                }
+                updateSpeakerIcons(e.target.value);
             });
         }
 
         audioNode.addEventListener('ended', () => {
-            if (AppState.repeatMode === 1) { // Loop single track
+            if (AppState.repeatMode === 1) { // Single Repeat (Loop Track)
                 audioNode.currentTime = 0;
                 audioNode.play();
             } else {
@@ -105,6 +119,15 @@ function setupAudioHardwareEngineControls() {
             }
         };
     }
+}
+
+function updateSpeakerIcons(val) {
+    const spk = document.getElementById('vol-speaker-icon');
+    const fsSpk = document.getElementById('fs-vol-speaker-icon');
+    const iconClass = val == 0 ? "fa-solid fa-volume-xmark" : (val < 0.4 ? "fa-solid fa-volume-low" : "fa-solid fa-volume-high");
+
+    if (spk) spk.className = `${iconClass} text-xs text-muted`;
+    if (fsSpk) fsSpk.className = `${iconClass} text-sm text-muted`;
 }
 
 function updateMiniPlayerIdleState() {
@@ -235,7 +258,7 @@ async function initializeTrackTargetPlayback(index) {
     const track = AppState.queue[AppState.queueIndex];
     AppState.currentTrack = track;
 
-    const artUrl = track.image?.[track.image.length - 1]?.url || track.artUrl || '';
+    const artUrl = track.image?.[track.image.length - 1]?.url || track.artUrl || 'images/icon-512.png';
     const albumName = track.album?.name || track.albumName || 'Single Track';
     
     const dTitle = document.getElementById('dock-title');
@@ -319,12 +342,12 @@ function updateFloatingDockInterfaceUI() {
         req.onsuccess = () => {
             const isDownloaded = !!req.result;
             const dDl = document.getElementById('dock-dl-action');
-            if (dDl) dDl.className = isDownloaded ? "text-blue-400 p-2 text-sm" : "text-gray-500 hover:text-blue-400 transition-colors p-2 text-sm";
+            if (dDl) dDl.className = isDownloaded ? "text-blue-400 p-2 text-sm" : "text-muted hover:text-blue-400 transition-colors p-2 text-sm";
             
             const fsDlBtn = document.getElementById('fs-dl-btn');
             if (fsDlBtn) {
                 fsDlBtn.innerHTML = `<i class="fa-solid fa-arrow-down"></i> ${isDownloaded ? 'Saved' : 'Save Offline'}`;
-                fsDlBtn.className = isDownloaded ? "text-blue-400 text-sm p-2" : "text-gray-500 hover:text-blue-400 text-sm transition-colors p-2";
+                fsDlBtn.className = isDownloaded ? "text-blue-400 text-sm p-2" : "text-muted hover:text-blue-400 text-sm transition-colors p-2";
             }
         };
     }
@@ -332,7 +355,7 @@ function updateFloatingDockInterfaceUI() {
 
 function updateNativeMediaSession(track) {
     if ('mediaSession' in navigator) {
-        const artUrl = track.image?.[track.image.length - 1]?.url || track.artUrl || '';
+        const artUrl = track.image?.[track.image.length - 1]?.url || track.artUrl || 'images/icon-512.png';
         navigator.mediaSession.metadata = new MediaMetadata({
             title: track.name,
             artist: track.album?.name || track.albumName || 'Sunofy Music',

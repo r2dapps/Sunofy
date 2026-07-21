@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="icon-512.png" width="160" height="160" alt="Sunofy Logo" style="border-radius: 28px; box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);">
+  <img src="images/icon-512.png" width="160" height="160" alt="Sunofy Logo" style="border-radius: 28px; box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);">
   <h1>Sunofy</h1>
   <p><em>dive into musical world</em></p>
   <p>
@@ -12,15 +12,15 @@
 
 ## 🌟 Key Features
 
-- 📻 **Mini & Fullscreen Player**: Sleek vinyl disc rotating deck with smooth progress sliders and MediaSession lockscreen controls.
-- 📶 **PWA Offline Storage Vault**: Download and cache high-quality audio files locally in IndexedDB to play without cellular data.
-- 🎨 **9 Theme Presets & Custom Colors**: Dark, AMOLED Black, Ocean Blue, Deep Purple, Emerald Green, Warm Amber, Cyberpunk Neon, Sunset Crimson, and Studio Light.
-- 🎛️ **5-Band Equalizer & Bass Boost**: Built-in Web Audio API Equalizer with presets (Bass Boost, Vocal Clarity, Pop, Acoustic, Rock).
-- ⏱️ **Bedtime Sleep Timer**: Sleep countdown timer (15m, 30m, 45m, 60m) with automatic smooth volume fade-out.
-- 🚗 **Car Play Large Touch Mode**: High-contrast, extra-large touch interface for safe listening while riding or traveling.
-- 🎶 **Up Next Queue Drawer**: Full queue management, shuffle, loop track, and loop queue state machines.
-- 🎙️ **Song Lyrics Viewer**: Async lyrics fetching with graceful fallback for instrumental tracks.
-- 🎯 **Music Curation Preferences**: Favorite Singers (Sid Sriram, Shreya Ghoshal, Arijit Singh) & Music Directors (DSP, Thaman S, A.R. Rahman).
+- 📻 **Mini & Fullscreen Deck**: Sleek vinyl disc rotating deck with smooth seek bar, synced **Volume slider**, and lockscreen MediaSession controls.
+- 🔁 **3 Repeat Modes**: Cycle through **Repeat Off**, **Single Track Loop**, and **Full Queue Loop** with active visual badges.
+- 🎛️ **5-Band Equalizer & Bass Boost**: Built-in Web Audio API Equalizer with custom gains & presets (**Bass Boost**, **Vocal Clarity**, **Pop**, **Acoustic**, **Rock**).
+- 🌙 **Bedtime Sleep Timer**: Sleep countdown timer (15m, 30m, 45m, 60m) with automatic smooth volume fade-out.
+- 🚗 **Car Play Large Touch Mode**: High-contrast, extra-large touch interface for safe listening while driving or traveling.
+- 📶 **PWA Offline Vault**: Download and cache audio files locally in IndexedDB to play without cellular data.
+- 🎨 **9 Color Themes**: Dark, AMOLED Black, Ocean Blue, Deep Purple, Emerald Green, Warm Amber, Cyberpunk Neon, Sunset Crimson, and Studio Light.
+- 🎶 **Up Next Queue Drawer**: Dynamic queue management with instant drag/tap playback navigation.
+- 🎯 **Telugu & Regional Music Preferences**: Quick curation pills for Telugu, Hindi, Tamil, Sid Sriram, Shreya Ghoshal, Arijit Singh, DSP, and Thaman S.
 
 ---
 
@@ -32,24 +32,25 @@ Sunofy/
 ├── manifest.json       # PWA Web Application Manifest
 ├── sw.js               # Service Worker for offline app shell caching
 ├── README.md           # Documentation & Feature overview
-├── favicon.ico         # App Favicon
-├── icon-192.png        # App Icon 192x192
-├── icon-512.png        # App Icon 512x512
+├── favicon.ico         # Root favicon fallback
+├── images/             # Organized Assets Directory
+│   ├── favicon.ico     # App Favicon
+│   ├── icon-192.png    # App Icon 192x192
+│   └── icon-512.png    # App Icon 512x512
 ├── css/
 │   ├── style.css       # Custom scrollbars, vinyl spin, slider track fill
 │   └── themes.css      # CSS variables for all 9 theme presets
 └── js/
     ├── app.js          # Shared AppState, PIN security, IndexedDB, router
     ├── themes.js       # Dynamic theme switcher & localStorage engine
-    ├── player.js       # HTML5 audio engine, seek bar, MediaSession controls
-    ├── queue.js        # Single source of truth for Queue, Next, Prev, Shuffle
-    ├── search.js       # JioSaavn API queries, recent history tags, category pills
+    ├── player.js       # Audio engine, seek bar, volume control, MediaSession
+    ├── queue.js        # Single source of truth for Queue, Next, Prev, Repeat Modes, Shuffle
+    ├── search.js       # Saavn API queries, recent history tags, category pills
     ├── profile.js      # User profile editor, custom categories, cache cleaner
     ├── equalizer.js     # 5-band Web Audio API EQ & Bass Boost engine
     ├── sleeptimer.js    # Bedtime sleep countdown timer module
     ├── carmode.js       # Car Play large-touch navigation interface
-    ├── update.js       # GitHub release update checker for r2dapps/Sunofy
-    └── lyrics.js       # Song lyrics fetcher & drawer viewer
+    └── update.js       # GitHub release update checker for r2dapps/Sunofy
 ```
 
 ---
