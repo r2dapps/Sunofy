@@ -293,36 +293,30 @@
                     </div>
                 </div>
 
-                <!-- Quick Sound Tools Deck (EQ & Sleep Timer) -->
-                <div class="grid grid-cols-2 gap-3">
-                    <button id="open-eq-btn" class="p-4 bg-app-card border border-app hover:border-accent rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer">
-                        <div>
-                            <div class="text-xs font-bold text-main flex items-center gap-1.5"><i class="fa-solid fa-sliders text-accent"></i> 5-Band Equalizer</div>
-                            <div class="text-[10px] text-muted mt-0.5">Bass boost & sound presets</div>
-                        </div>
-                        <i class="fa-solid fa-chevron-right text-xs text-muted"></i>
-                    </button>
-                    <button id="open-sleep-timer-btn" class="p-4 bg-app-card border border-app hover:border-accent rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer">
+                <!-- Quick Sound Tools Deck (Sleep Timer) -->
+                <div>
+                    <button id="open-sleep-timer-btn" class="w-full p-4 bg-app-card border border-app hover:border-accent rounded-xl text-left transition-colors flex items-center justify-between cursor-pointer">
                         <div>
                             <div class="text-xs font-bold text-main flex items-center gap-1.5"><i class="fa-solid fa-moon text-purple-400"></i> Bedtime Sleep Timer</div>
                             <div class="text-[10px] text-muted mt-0.5" id="sleep-timer-status-text">Timer off</div>
                         </div>
                         <i class="fa-solid fa-chevron-right text-xs text-muted"></i>
                     </button>
+                    <button id="open-eq-btn" class="hidden"></button>
                 </div>
 
                 <!-- Stats Summary Cards Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-                    <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
-                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider"><i class="fa-solid fa-cloud-arrow-down text-blue-400 mr-1"></i> Offline</div>
+                    <div id="profile-card-offline" class="bg-app-card border border-app hover:border-accent p-4 rounded-xl text-center space-y-1 cursor-pointer transition-all active:scale-95 group">
+                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider group-hover:text-blue-400 transition-colors"><i class="fa-solid fa-cloud-arrow-down text-blue-400 mr-1"></i> Offline</div>
                         <div class="text-xl font-black text-main mono" id="stat-offline-val">0</div>
                     </div>
-                    <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
-                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider"><i class="fa-solid fa-heart text-red-400 mr-1"></i> Favorites</div>
+                    <div id="profile-card-favorites" class="bg-app-card border border-app hover:border-accent p-4 rounded-xl text-center space-y-1 cursor-pointer transition-all active:scale-95 group">
+                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider group-hover:text-red-400 transition-colors"><i class="fa-solid fa-heart text-red-400 mr-1"></i> Favorites</div>
                         <div class="text-xl font-black text-main mono" id="stat-favs-val">0</div>
                     </div>
-                    <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
-                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider"><i class="fa-solid fa-folder-tree text-accent mr-1"></i> Playlists</div>
+                    <div id="profile-card-playlists" class="bg-app-card border border-app hover:border-accent p-4 rounded-xl text-center space-y-1 cursor-pointer transition-all active:scale-95 group">
+                        <div class="text-muted text-[10px] font-extrabold uppercase tracking-wider group-hover:text-accent transition-colors"><i class="fa-solid fa-folder-tree text-accent mr-1"></i> Playlists</div>
                         <div class="text-xl font-black text-main mono" id="stat-playlists-val">0</div>
                     </div>
                     <div class="bg-app-card border border-app p-4 rounded-xl text-center space-y-1">
@@ -375,7 +369,15 @@
                                 <span class="flex items-center gap-2"><i class="fa-solid fa-key text-accent"></i> Security & PIN Access Key</span>
                                 <span class="text-[10px] bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-full font-bold">4-Digits</span>
                             </h3>
-                            <div class="space-y-2">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-[10px] font-bold text-muted uppercase">App Lock Method</label>
+                                    <div class="grid grid-cols-3 gap-1.5 pt-1" id="lock-type-selector">
+                                        <button type="button" class="lock-type-btn text-[11px] py-1.5 px-2 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-locktype="pin">📌 PIN</button>
+                                        <button type="button" class="lock-type-btn text-[11px] py-1.5 px-2 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-locktype="biometric">👆 Fingerprint</button>
+                                        <button type="button" class="lock-type-btn text-[11px] py-1.5 px-2 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-locktype="disabled">🔓 None</button>
+                                    </div>
+                                </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="text-[10px] font-bold text-muted uppercase">Current PIN</label>
@@ -593,9 +595,7 @@
                 <h3 class="text-xs font-bold text-main truncate max-w-[200px] mx-auto" id="fs-album-title">Sunofy Stream</h3>
             </div>
             <div class="flex gap-2">
-                <button id="fs-eq-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
-                    <i class="fa-solid fa-sliders"></i>
-                </button>
+                <button id="fs-eq-btn" class="hidden"></button>
                 <button id="fs-sleep-btn" class="w-10 h-10 rounded-full bg-app-card border border-app flex items-center justify-center text-main text-sm hover:bg-app-card/80 transition-colors cursor-pointer">
                     <i class="fa-solid fa-moon"></i>
                 </button>

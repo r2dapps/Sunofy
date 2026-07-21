@@ -78,6 +78,8 @@ function setupProfileDataBindings() {
     setupPreferencePillsHandlers();
     setupPinSecurityHandlers();
     setupLockThemeSelectorHandlers();
+    setupLockTypeSelectorHandlers();
+    setupProfileCardNavigation();
     updateProfileStats();
 }
 
@@ -104,6 +106,64 @@ function setupLockThemeSelectorHandlers() {
             }
         });
     });
+}
+
+function setupLockTypeSelectorHandlers() {
+    const activeType = AppState.lockType || 'pin';
+    updateLockTypeButtonsUI(activeType);
+
+    document.querySelectorAll('.lock-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.getAttribute('data-locktype');
+            if (type) {
+                AppState.lockType = type;
+                localStorage.setItem('ok_lock_type', type);
+                updateLockTypeButtonsUI(type);
+
+                const pinMsg = document.getElementById('pin-settings-msg');
+                if (pinMsg) {
+                    const labelMap = { pin: "📌 PIN", biometric: "👆 Fingerprint", disabled: "🔓 Disabled" };
+                    pinMsg.innerText = `🔒 Lock method updated to: ${labelMap[type] || type.toUpperCase()}`;
+                    pinMsg.className = "text-xs text-accent font-bold";
+                    pinMsg.classList.remove('hidden');
+                    setTimeout(() => pinMsg.classList.add('hidden'), 3500);
+                }
+            }
+        });
+    });
+}
+
+function updateLockTypeButtonsUI(selectedType) {
+    document.querySelectorAll('.lock-type-btn').forEach(b => {
+        const bType = b.getAttribute('data-locktype');
+        if (bType === selectedType) {
+            b.className = "lock-type-btn text-[11px] py-1.5 px-2 rounded-xl border border-accent/40 bg-accent/15 text-accent font-extrabold transition-all cursor-pointer shadow-sm";
+        } else {
+            b.className = "lock-type-btn text-[11px] py-1.5 px-2 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer";
+        }
+    });
+}
+
+function setupProfileCardNavigation() {
+    const offlineCard = document.getElementById('profile-card-offline');
+    const favsCard = document.getElementById('profile-card-favorites');
+    const playlistsCard = document.getElementById('profile-card-playlists');
+
+    if (offlineCard) {
+        offlineCard.addEventListener('click', () => {
+            if (typeof switchAppView === 'function') switchAppView('offline');
+        });
+    }
+    if (favsCard) {
+        favsCard.addEventListener('click', () => {
+            if (typeof switchAppView === 'function') switchAppView('favorites');
+        });
+    }
+    if (playlistsCard) {
+        playlistsCard.addEventListener('click', () => {
+            if (typeof switchAppView === 'function') switchAppView('library');
+        });
+    }
 }
 
 function setupPinSecurityHandlers() {

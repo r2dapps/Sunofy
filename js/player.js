@@ -95,8 +95,14 @@ function setupAudioHardwareEngineControls() {
             }
         });
 
-        audioNode.addEventListener('play', () => toggleRotationAnimation(true));
-        audioNode.addEventListener('pause', () => toggleRotationAnimation(false));
+        audioNode.addEventListener('play', () => {
+            toggleRotationAnimation(true);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+        });
+        audioNode.addEventListener('pause', () => {
+            toggleRotationAnimation(false);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        });
     }
 
     const favDock = document.getElementById('dock-fav-action');
@@ -361,14 +367,34 @@ function updateNativeMediaSession(track) {
             artist: track.album?.name || track.albumName || 'Sunofy Music',
             album: track.album?.name || track.albumName || 'Sunofy Engine',
             artwork: [
+                { src: artUrl, sizes: '96x96', type: 'image/png' },
+                { src: artUrl, sizes: '128x128', type: 'image/png' },
+                { src: artUrl, sizes: '192x192', type: 'image/png' },
                 { src: artUrl, sizes: '512x512', type: 'image/png' }
             ]
         });
         
-        navigator.mediaSession.setActionHandler('play', () => toggleAudioPlayPause());
-        navigator.mediaSession.setActionHandler('pause', () => toggleAudioPlayPause());
+        navigator.mediaSession.playbackState = 'playing';
+        
+        navigator.mediaSession.setActionHandler('play', () => {
+            toggleAudioPlayPause();
+            navigator.mediaSession.playbackState = 'playing';
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+            toggleAudioPlayPause();
+            navigator.mediaSession.playbackState = 'paused';
+        });
         navigator.mediaSession.setActionHandler('previoustrack', () => playPrevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
+
+        try {
+            navigator.mediaSession.setActionHandler('seekto', (details) => {
+                const audioNode = document.getElementById('audio-node');
+                if (audioNode && details.seekTime !== undefined) {
+                    audioNode.currentTime = details.seekTime;
+                }
+            });
+        } catch(e) {}
     }
 }
 

@@ -4,6 +4,7 @@ const AppState = {
     appName: localStorage.getItem('ok_app_name') || "Sunofy",
     tagline: "dive into musical world",
     pin: localStorage.getItem('ok_pin') || "0908",
+    lockType: localStorage.getItem('ok_lock_type') || 'pin', // 'pin', 'biometric', 'disabled'
     apiEndpoint: "https://saavn.sumit.co/api/search/songs",
     currentTrack: null,
     queue: [],
@@ -54,6 +55,12 @@ function initIndexedDB() {
     };
 }
 
+function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           window.navigator.standalone === true || 
+           document.referrer.includes('android-app://');
+}
+
 // PWA SERVICE WORKER & PROMPT POPUP SETUP
 function initServiceWorker() {
     if ('serviceWorker' in navigator) {
@@ -64,20 +71,29 @@ function initServiceWorker() {
         });
     }
 
+    if (isStandalone()) {
+        const sideBtn = document.getElementById('pwa-install-side-btn');
+        const mainBtn = document.getElementById('pwa-install-main-btn');
+        if (sideBtn) sideBtn.classList.add('hidden');
+        if (mainBtn) mainBtn.classList.add('hidden');
+        return;
+    }
+
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPwaPrompt = e;
-        showPwaInstallBanner();
+        if (!isStandalone()) showPwaInstallBanner();
     });
 
     setTimeout(() => {
-        if (!window.matchMedia('(display-mode: standalone)').matches) {
+        if (!isStandalone()) {
             showPwaInstallBanner();
         }
     }, 2000);
 }
 
 function showPwaInstallBanner() {
+    if (isStandalone()) return;
     const banner = document.getElementById('pwa-install-popup-banner');
     if (banner) {
         banner.classList.remove('translate-y-full', 'hidden', 'opacity-0');
@@ -139,6 +155,11 @@ function setupPwaAndShareHandlers() {
 
 // PIN & HARDWARE BIOMETRIC FINGERPRINT LOCK SYSTEM ROUTINES
 async function initPinLockSystem() {
+    if (AppState.lockType === 'disabled') {
+        unlockApplicationShell();
+        return;
+    }
+
     let inputPinBuffer = "";
     const pinOverlay = document.getElementById('pin-overlay');
     const pinErr = document.getElementById('pin-err');
@@ -297,37 +318,44 @@ function setupKeyboardShortcuts() {
 }
 
 // VIEW ROUTER NAVIGATION HANDLERS
+function switchAppView(target) {
+    if (!target) return;
+
+    document.querySelectorAll('aside .nav-btn').forEach(b => {
+        b.className = "nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-gray-800/40 hover:text-gray-200";
+        if (b.getAttribute('data-target') === target) {
+            b.className = "nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer bg-green-500/10 text-green-400 font-bold";
+        }
+    });
+
+    document.querySelectorAll('#mobile-bottom-nav .nav-btn').forEach(b => {
+        b.className = "nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 p-1 cursor-pointer transition-all";
+        if (b.getAttribute('data-target') === target) {
+            b.className = "nav-btn flex flex-col items-center gap-1 text-green-400 p-1 cursor-pointer transition-all font-bold";
+        }
+    });
+
+    document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
+    const targetView = document.getElementById(`view-${target}`);
+    if (targetView) targetView.classList.remove('hidden');
+
+    if (target === 'profile') {
+        if (typeof updateProfileStats === 'function') updateProfileStats();
+        if (typeof calculateCacheStorageSize === 'function') calculateCacheStorageSize();
+    }
+    if (target === 'favorites' && typeof renderFavoritesStackView === 'function') {
+        renderFavoritesStackView();
+    }
+    if (target === 'offline' && typeof refreshOfflineViewList === 'function') {
+        refreshOfflineViewList();
+    }
+}
+
 function setupViewNavigationHandlers() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
-            if (!target) return;
-
-            document.querySelectorAll('aside .nav-btn').forEach(b => {
-                b.className = "nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-gray-800/40 hover:text-gray-200";
-                if (b.getAttribute('data-target') === target) {
-                    b.className = "nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer bg-green-500/10 text-green-400 font-bold";
-                }
-            });
-
-            document.querySelectorAll('#mobile-bottom-nav .nav-btn').forEach(b => {
-                b.className = "nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 p-1 cursor-pointer transition-all";
-                if (b.getAttribute('data-target') === target) {
-                    b.className = "nav-btn flex flex-col items-center gap-1 text-green-400 p-1 cursor-pointer transition-all font-bold";
-                }
-            });
-
-            document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
-            const targetView = document.getElementById(`view-${target}`);
-            if (targetView) targetView.classList.remove('hidden');
-
-            if (target === 'profile') {
-                if (typeof updateProfileStats === 'function') updateProfileStats();
-                if (typeof calculateCacheStorageSize === 'function') calculateCacheStorageSize();
-            }
-            if (target === 'favorites' && typeof renderFavoritesStackView === 'function') {
-                renderFavoritesStackView();
-            }
+            switchAppView(target);
         });
     });
 }
