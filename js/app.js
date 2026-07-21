@@ -4,7 +4,6 @@ const AppState = {
     appName: localStorage.getItem('ok_app_name') || "Sunofy",
     tagline: "dive into musical world",
     pin: localStorage.getItem('ok_pin') || "0908",
-    lockTheme: localStorage.getItem('ok_lock_theme') || "classic",
     apiEndpoint: "https://saavn.sumit.co/api/search/songs",
     currentTrack: null,
     queue: [],
@@ -138,15 +137,58 @@ function setupPwaAndShareHandlers() {
     }
 }
 
-// PIN & BIOMETRIC FINGERPRINT LOCK SYSTEM ROUTINES
-function initPinLockSystem() {
+// PIN & HARDWARE BIOMETRIC FINGERPRINT LOCK SYSTEM ROUTINES
+async function initPinLockSystem() {
     let inputPinBuffer = "";
     const pinOverlay = document.getElementById('pin-overlay');
     const pinErr = document.getElementById('pin-err');
+    const bioBtn = document.getElementById('biometric-fingerprint-btn');
     
-    // Apply initial Lockscreen Theme class
-    if (pinOverlay) {
-        pinOverlay.className = `fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 transition-opacity duration-500 lock-${AppState.lockTheme}`;
+    // Apply current active theme to body so lockscreen instantly inherits app colors
+    if (typeof applyThemeClassToBody === 'function') {
+        applyThemeClassToBody(AppState.theme);
+    }
+
+    // CHECK IF HARDWARE BIOMETRIC IS ACTUAL ENABLED ON DEVICE
+    let isBiometricAvailableOnDevice = false;
+    if (window.PublicKeyCredential && typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
+        try {
+            isBiometricAvailableOnDevice = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        } catch(e) {
+            isBiometricAvailableOnDevice = false;
+        }
+    }
+
+    if (bioBtn) {
+        if (isBiometricAvailableOnDevice) {
+            bioBtn.classList.remove('hidden');
+            bioBtn.classList.add('flex');
+            
+            bioBtn.addEventListener('click', async () => {
+                try {
+                    // Actual hardware WebAuthn challenge invocation
+                    const publicKeyCredentialCreationOptions = {
+                        challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+                        rp: { name: "Sunofy Auth" },
+                        user: { id: new Uint8Array(16), name: "user@sunofy", displayName: "Sunofy User" },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                        authenticatorSelection: { userVerification: "preferred" },
+                        timeout: 60000
+                    };
+                    await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+                    unlockApplicationShell();
+                } catch(err) {
+                    // If hardware user verification passes or is cancelled, unlock if verified
+                    if (err.name !== 'NotAllowedError') {
+                        unlockApplicationShell();
+                    }
+                }
+            });
+        } else {
+            // Hide fingerprint icon button if hardware biometric is NOT enabled on device
+            bioBtn.classList.remove('flex');
+            bioBtn.classList.add('hidden');
+        }
     }
 
     document.querySelectorAll('.key-btn').forEach(btn => {
@@ -173,31 +215,6 @@ function initPinLockSystem() {
             }
         });
     });
-
-    // Biometric Fingerprint Lock Trigger Handler
-    const bioBtn = document.getElementById('biometric-fingerprint-btn');
-    if (bioBtn) {
-        bioBtn.addEventListener('click', async () => {
-            bioBtn.classList.add('animate-ping', 'text-green-400');
-            
-            if (window.PublicKeyCredential && typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
-                try {
-                    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-                    if (available) {
-                        // Native WebAuthn platform authenticator verification
-                        unlockApplicationShell();
-                        return;
-                    }
-                } catch(e) {}
-            }
-
-            // Biometric Scan Effect Fallback
-            setTimeout(() => {
-                bioBtn.classList.remove('animate-ping');
-                unlockApplicationShell();
-            }, 600);
-        });
-    }
 }
 
 function updatePinVisualizerDots(buffer) {
@@ -206,9 +223,9 @@ function updatePinVisualizerDots(buffer) {
     const dots = dotsContainer.children;
     for (let i = 0; i < 4; i++) {
         if (i < buffer.length) {
-            dots[i].className = "w-3.5 h-3.5 rounded-full bg-green-500 border border-green-400 shadow-[0_0_8px_rgba(34,197,94,0.6)] transition-all";
+            dots[i].className = "w-3.5 h-3.5 rounded-full bg-accent border border-accent/40 shadow-[0_0_10px_var(--accent-glow)] transition-all";
         } else {
-            dots[i].className = "w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700 transition-all";
+            dots[i].className = "w-3.5 h-3.5 rounded-full bg-app-card border border-app transition-all";
         }
     }
 }

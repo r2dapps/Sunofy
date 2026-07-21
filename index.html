@@ -39,37 +39,71 @@
         </div>
     </div>
 
-    <!-- SECURITY AUTHORIZATION GATEWAY OVERLAY (WITH FINGERPRINT BIOMETRIC & CUSTOM LOCKSCREENS) -->
-    <div id="pin-overlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 transition-opacity duration-500 lock-classic">
+    <!-- APP-THEME MATCHING LOCKSCREEN WITH THEMED KEYPAD ICONS & HARDWARE BIOMETRIC -->
+    <div id="pin-overlay" class="fixed inset-0 bg-app-body z-[9999] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
         <div class="max-w-xs w-full text-center space-y-6">
-            <div class="w-20 h-20 rounded-2xl mx-auto overflow-hidden border-2 border-green-500/40 shadow-[0_0_25px_rgba(34,197,94,0.3)]">
+            <div class="w-20 h-20 rounded-2xl mx-auto overflow-hidden border-2 border-accent/50 shadow-[0_0_30px_var(--accent-glow)]">
                 <img src="images/icon-512.png" class="w-full h-full object-cover">
             </div>
             <div>
-                <h2 class="text-lg font-bold text-white tracking-wide" id="pin-app-heading">Sunofy Music Console</h2>
-                <p class="text-xs text-gray-400 mt-1">Enter 4-digit PIN or tap Fingerprint</p>
+                <h2 class="text-lg font-extrabold text-main tracking-wide" id="pin-app-heading">Sunofy Music Console</h2>
+                <p class="text-xs text-muted mt-1">Enter 4-digit PIN access key</p>
             </div>
             <!-- Pin Dots Visualizer -->
             <div class="flex justify-center gap-4 py-2" id="pin-dots">
-                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
-                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
-                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
-                <div class="w-3.5 h-3.5 rounded-full bg-gray-800 border border-gray-700"></div>
+                <div class="w-3.5 h-3.5 rounded-full bg-app-card border border-app"></div>
+                <div class="w-3.5 h-3.5 rounded-full bg-app-card border border-app"></div>
+                <div class="w-3.5 h-3.5 rounded-full bg-app-card border border-app"></div>
+                <div class="w-3.5 h-3.5 rounded-full bg-app-card border border-app"></div>
             </div>
-            <!-- Numeric Grid Keypad with Fingerprint Biometric Key -->
-            <div class="grid grid-cols-3 gap-3 max-w-[240px] mx-auto text-sm mono font-bold">
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="1">1</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="2">2</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="3">3</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="4">4</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="5">5</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="6">6</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="7">7</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="8">8</button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="9">9</button>
-                <button class="key-btn w-14 h-14 bg-red-950/20 text-red-400 hover:bg-red-900/30 rounded-full border border-red-900/30 flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="clr"><i class="fa-solid fa-delete-left"></i></button>
-                <button class="key-btn w-14 h-14 bg-gray-900/50 hover:bg-gray-800/80 rounded-full border border-gray-800 text-white flex items-center justify-center transition-all cursor-pointer active:scale-95" data-val="0">0</button>
-                <button id="biometric-fingerprint-btn" class="w-14 h-14 bg-accent/15 hover:bg-accent/30 text-accent rounded-full border border-accent/40 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-[0_0_15px_var(--accent-glow)]" title="Scan Fingerprint / FaceID">
+            
+            <!-- Keypad with Themed Music Icons -->
+            <div class="grid grid-cols-3 gap-3 max-w-[250px] mx-auto text-sm mono font-extrabold">
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="1">
+                    <i class="fa-solid fa-music text-[10px] text-accent opacity-80"></i>
+                    <span>1</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="2">
+                    <i class="fa-solid fa-compact-disc text-[10px] text-accent opacity-80"></i>
+                    <span>2</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="3">
+                    <i class="fa-solid fa-headphones text-[10px] text-accent opacity-80"></i>
+                    <span>3</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="4">
+                    <i class="fa-solid fa-radio text-[10px] text-accent opacity-80"></i>
+                    <span>4</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="5">
+                    <i class="fa-solid fa-sliders text-[10px] text-accent opacity-80"></i>
+                    <span>5</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="6">
+                    <i class="fa-solid fa-drum text-[10px] text-accent opacity-80"></i>
+                    <span>6</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="7">
+                    <i class="fa-solid fa-guitar text-[10px] text-accent opacity-80"></i>
+                    <span>7</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="8">
+                    <i class="fa-solid fa-bolt text-[10px] text-accent opacity-80"></i>
+                    <span>8</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="9">
+                    <i class="fa-solid fa-heart text-[10px] text-accent opacity-80"></i>
+                    <span>9</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-2xl border border-red-500/20 flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95" data-val="clr">
+                    <i class="fa-solid fa-delete-left text-sm"></i>
+                    <span class="text-[9px] font-sans">Clear</span>
+                </button>
+                <button class="key-btn w-16 h-16 bg-app-card hover:bg-app-card/80 rounded-2xl border border-app text-main flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 shadow-sm" data-val="0">
+                    <i class="fa-solid fa-circle-play text-[10px] text-accent opacity-80"></i>
+                    <span>0</span>
+                </button>
+                <button id="biometric-fingerprint-btn" class="w-16 h-16 bg-accent/15 hover:bg-accent/30 text-accent rounded-2xl border border-accent/40 hidden items-center justify-center transition-all cursor-pointer active:scale-95 shadow-[0_0_15px_var(--accent-glow)]" title="Hardware Biometric Verification">
                     <i class="fa-solid fa-fingerprint text-2xl"></i>
                 </button>
             </div>
@@ -349,27 +383,15 @@
                         </div>
                     </div>
 
-                    <!-- Security PIN Access, Lockscreen Themes & App Storage Info -->
+                    <!-- Security PIN Access & App Storage Info -->
                     <div class="space-y-4">
-                        <!-- Security PIN & Lockscreen Themes Settings Card -->
-                        <div class="bg-app-card border border-app rounded-2xl p-5 space-y-4">
+                        <!-- Security PIN Settings Card -->
+                        <div class="bg-app-card border border-app rounded-2xl p-5 space-y-3">
                             <h3 class="text-sm font-bold text-main flex items-center justify-between border-b border-app pb-2">
-                                <span class="flex items-center gap-2"><i class="fa-solid fa-fingerprint text-accent"></i> Security & Lockscreen Themes</span>
-                                <span class="text-[10px] bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-full font-bold">Biometric Ready</span>
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-key text-accent"></i> Security & PIN Access Key</span>
+                                <span class="text-[10px] bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-full font-bold">4-Digits</span>
                             </h3>
-                            
-                            <!-- Lockscreen Theme Selector Bar -->
                             <div class="space-y-2">
-                                <label class="text-xs font-semibold text-muted">Select Lockscreen Theme:</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button class="lock-theme-btn text-xs py-1.5 px-2.5 rounded-xl border border-accent/40 bg-accent/15 text-accent font-bold transition-all cursor-pointer" data-locktheme="classic"><i class="fa-solid fa-[#22c55e] fa-compact-disc mr-1"></i> Classic Neon</button>
-                                    <button class="lock-theme-btn text-xs py-1.5 px-2.5 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-locktheme="cyberpunk"><i class="fa-solid fa-bolt text-pink-400 mr-1"></i> Cyberpunk</button>
-                                    <button class="lock-theme-btn text-xs py-1.5 px-2.5 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-locktheme="ios"><i class="fa-solid fa-apple text-blue-400 mr-1"></i> iOS Frosted</button>
-                                    <button class="lock-theme-btn text-xs py-1.5 px-2.5 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer" data-locktheme="amoled"><span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1"></span> AMOLED Black</button>
-                                </div>
-                            </div>
-
-                            <div class="space-y-2 pt-2 border-t border-app">
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="text-[10px] font-bold text-muted uppercase">Current PIN</label>
