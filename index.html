@@ -347,37 +347,65 @@
                         </div>
                     </div>
 
-                    <!-- Updates, Cache & App Info -->
-                    <div class="bg-app-card border border-app rounded-2xl p-5 space-y-4">
-                        <h3 class="text-sm font-bold text-main flex items-center gap-2 border-b border-app pb-2">
-                            <i class="fa-solid fa-circle-info text-blue-400"></i> App Info & Storage
-                        </h3>
-                        
-                        <!-- Check for Updates -->
-                        <div class="flex items-center justify-between p-3 bg-app-body border border-app rounded-xl">
-                            <div>
-                                <h4 class="text-xs font-bold text-main">Sunofy Music Console</h4>
-                                <p class="text-[10px] text-muted">Version 1.2.0 • Build 2026.07.21</p>
+                    <!-- Security PIN Access & App Storage Info -->
+                    <div class="space-y-4">
+                        <!-- Security PIN Settings Card -->
+                        <div class="bg-app-card border border-app rounded-2xl p-5 space-y-3">
+                            <h3 class="text-sm font-bold text-main flex items-center justify-between border-b border-app pb-2">
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-key text-accent"></i> Security & PIN Access Key</span>
+                                <span class="text-[10px] bg-accent/15 text-accent border border-accent/30 px-2 py-0.5 rounded-full font-bold">4-Digits</span>
+                            </h3>
+                            <div class="space-y-2">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-[10px] font-bold text-muted uppercase">Current PIN</label>
+                                        <input type="password" id="old-pin-input" maxlength="4" placeholder="••••" class="w-full bg-app-body border border-app rounded-xl px-3 py-2 text-xs text-main focus:outline-none focus:border-accent text-center mono">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-muted uppercase">New PIN</label>
+                                        <input type="password" id="new-pin-input" maxlength="4" placeholder="••••" class="w-full bg-app-body border border-app rounded-xl px-3 py-2 text-xs text-main focus:outline-none focus:border-accent text-center mono">
+                                    </div>
+                                </div>
+                                <div id="pin-settings-msg" class="text-xs font-semibold hidden"></div>
+                                <div class="flex gap-2 pt-1">
+                                    <button id="save-pin-btn" class="flex-1 bg-accent hover:bg-accent/90 text-white py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"><i class="fa-solid fa-lock mr-1"></i> Change PIN</button>
+                                    <button id="reset-pin-btn" class="bg-app-body border border-app hover:border-accent text-muted hover:text-main px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer shrink-0">Reset Default</button>
+                                </div>
                             </div>
-                            <button id="check-updates-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5">
-                                <i class="fa-solid fa-rotate mr-1"></i> Check Updates
-                            </button>
                         </div>
 
-                        <!-- Storage Cache Cleaner -->
-                        <div class="flex items-center justify-between p-3 bg-app-body border border-app rounded-xl">
-                            <div>
-                                <h4 class="text-xs font-bold text-main">Offline Cache Storage</h4>
-                                <p class="text-[10px] text-muted" id="cache-size-text">Calculating storage...</p>
+                        <!-- Updates, Cache & App Info Card -->
+                        <div class="bg-app-card border border-app rounded-2xl p-5 space-y-4">
+                            <h3 class="text-sm font-bold text-main flex items-center gap-2 border-b border-app pb-2">
+                                <i class="fa-solid fa-circle-info text-blue-400"></i> App Info & Storage
+                            </h3>
+                            
+                            <!-- Check for Updates -->
+                            <div class="flex items-center justify-between p-3 bg-app-body border border-app rounded-xl">
+                                <div>
+                                    <h4 class="text-xs font-bold text-main">Sunofy Music Console</h4>
+                                    <p class="text-[10px] text-muted">Version 1.2.0 • Build 2026.07.21</p>
+                                </div>
+                                <button id="check-updates-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5">
+                                    <i class="fa-solid fa-rotate mr-1"></i> Check Updates
+                                </button>
                             </div>
-                            <button id="clear-cache-btn" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer">
-                                Clear Cache
-                            </button>
-                        </div>
 
-                        <div class="pt-2 border-t border-app flex justify-between text-[11px] text-muted">
-                            <button id="pwa-install-main-btn" class="hover:text-accent transition-colors font-semibold cursor-pointer"><i class="fa-solid fa-download mr-1"></i> Install PWA App</button>
-                            <button id="share-app-btn" class="hover:text-accent transition-colors font-semibold cursor-pointer"><i class="fa-solid fa-share-nodes mr-1"></i> Share Sunofy</button>
+                            <!-- Storage Cache Cleaner -->
+                            <div class="flex items-center justify-between p-3 bg-app-body border border-app rounded-xl">
+                                <div>
+                                    <h4 class="text-xs font-bold text-main">Offline Cache Storage</h4>
+                                    <p class="text-[10px] text-muted" id="cache-size-text">Calculating storage...</p>
+                                </div>
+                                <button id="clear-cache-btn" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer">
+                                    Clear Cache
+                                </button>
+                            </div>
+
+                            <div class="pt-2 border-t border-app flex justify-between text-[11px] text-muted">
+                                <button id="pwa-install-main-btn" class="hover:text-accent transition-colors font-semibold cursor-pointer"><i class="fa-solid fa-download mr-1"></i> Install PWA App</button>
+                                <button id="share-app-btn" class="hover:text-accent transition-colors font-semibold cursor-pointer"><i class="fa-solid fa-share-nodes mr-1"></i> Share Sunofy</button>
+                            </div>
                         </div>
                     </div>
                 </div>

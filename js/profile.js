@@ -76,7 +76,68 @@ function setupProfileDataBindings() {
     }
 
     setupPreferencePillsHandlers();
+    setupPinSecurityHandlers();
     updateProfileStats();
+}
+
+function setupPinSecurityHandlers() {
+    const savePinBtn = document.getElementById('save-pin-btn');
+    const resetPinBtn = document.getElementById('reset-pin-btn');
+    const oldPinInput = document.getElementById('old-pin-input');
+    const newPinInput = document.getElementById('new-pin-input');
+    const pinMsg = document.getElementById('pin-settings-msg');
+
+    if (savePinBtn) {
+        savePinBtn.addEventListener('click', () => {
+            const oldVal = oldPinInput ? oldPinInput.value.trim() : '';
+            const newVal = newPinInput ? newPinInput.value.trim() : '';
+
+            if (oldVal !== AppState.pin) {
+                if (pinMsg) {
+                    pinMsg.innerText = "❌ Current PIN is incorrect.";
+                    pinMsg.className = "text-xs text-red-400 font-semibold";
+                    pinMsg.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (!/^\d{4}$/.test(newVal)) {
+                if (pinMsg) {
+                    pinMsg.innerText = "⚠️ New PIN must be exactly 4 digits.";
+                    pinMsg.className = "text-xs text-amber-400 font-semibold";
+                    pinMsg.classList.remove('hidden');
+                }
+                return;
+            }
+
+            AppState.pin = newVal;
+            localStorage.setItem('ok_pin', newVal);
+            if (oldPinInput) oldPinInput.value = '';
+            if (newPinInput) newPinInput.value = '';
+
+            if (pinMsg) {
+                pinMsg.innerText = `✅ PIN updated successfully to: ${newVal}`;
+                pinMsg.className = "text-xs text-accent font-bold";
+                pinMsg.classList.remove('hidden');
+                setTimeout(() => pinMsg.classList.add('hidden'), 3500);
+            }
+        });
+    }
+
+    if (resetPinBtn) {
+        resetPinBtn.addEventListener('click', () => {
+            AppState.pin = "0908";
+            localStorage.setItem('ok_pin', "0908");
+            if (oldPinInput) oldPinInput.value = '';
+            if (newPinInput) newPinInput.value = '';
+            if (pinMsg) {
+                pinMsg.innerText = "🔄 PIN reset to default: 0908";
+                pinMsg.className = "text-xs text-blue-400 font-bold";
+                pinMsg.classList.remove('hidden');
+                setTimeout(() => pinMsg.classList.add('hidden'), 3500);
+            }
+        });
+    }
 }
 
 function setupPreferencePillsHandlers() {
