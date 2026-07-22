@@ -8,8 +8,24 @@ function getActiveLanguageFilterQuery() {
     return selected.length > 0 ? selected.join(',') : 'telugu,hindi,tamil,english';
 }
 
+let _currentSearchType = 'songs'; // 'songs', 'playlists', 'albums'
+
+function setSearchTypeMode(mode) {
+    _currentSearchType = mode;
+    document.querySelectorAll('.search-type-pill').forEach(btn => {
+        if (btn.dataset.mode === mode) {
+            btn.className = "search-type-pill bg-accent text-white px-3 py-1 rounded-full text-xs font-bold transition-all shadow-sm";
+        } else {
+            btn.className = "search-type-pill bg-app-card text-muted hover:text-main border border-app px-3 py-1 rounded-full text-xs font-semibold transition-all";
+        }
+    });
+
+    const searchInput = document.getElementById('global-search-input');
+    const query = searchInput ? searchInput.value.trim() : 'Telugu Melodies';
+    if (query) triggerLiveQuerySearch(query, 0);
+}
+
 async function triggerLiveQuerySearch(query, debounceMs = 0) {
-    // Debounce: cancel any pending search before scheduling a new one
     if (_searchDebounceTimer) clearTimeout(_searchDebounceTimer);
     if (debounceMs > 0) {
         return new Promise(resolve => {
@@ -28,18 +44,22 @@ async function triggerLiveQuerySearch(query, debounceMs = 0) {
     renderHistoryTagsFeed();
 
     try {
-        const activeLangs = getActiveLanguageFilterQuery();
-        // Use the multi-mirror apiFetch helper (defined in app.js)
-        const payload = await apiFetch('search/songs', { query, language: activeLangs });
-
-        if (payload.success && payload.data?.results?.length > 0) {
-            renderSearchOutputsFeed(payload.data.results);
+        if (_currentSearchType === 'playlists') {
+            await executePlaylistSearch(query);
+        } else if (_currentSearchType === 'albums') {
+            await executeAlbumSearch(query);
         } else {
-            if (targetOutput) targetOutput.innerHTML = `<p class="text-xs text-muted text-center py-12">No songs found matching "${query}". Try selecting different filters or language options.</p>`;
+            const activeLangs = getActiveLanguageFilterQuery();
+            const payload = await apiFetch('search/songs', { query, language: activeLangs });
+            if (payload.success && payload.data?.results?.length > 0) {
+                renderSearchOutputsFeed(payload.data.results);
+            } else {
+                if (targetOutput) targetOutput.innerHTML = `<p class="text-xs text-muted text-center py-12">No songs found matching "${query}".</p>`;
+            }
         }
     } catch (e) {
-        console.error('[Search] All mirrors failed:', e);
-        if (targetOutput) targetOutput.innerHTML = `<p class="text-xs text-red-400 text-center py-12"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Could not reach any music server. Check your connection and try again.</p>`;
+        console.error('[Search] Error during search:', e);
+        if (targetOutput) targetOutput.innerHTML = `<p class="text-xs text-red-400 text-center py-12"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Could not fetch results. Please try again.</p>`;
     } finally {
         if (spinner) spinner.classList.add('hidden');
     }
@@ -94,8 +114,9 @@ function createStandardTrackRowItem(track, actionsContext = true) {
         </div>
         ${actionsContext ? `
         <div class="flex items-center gap-1 pl-2">
-            <button class="w-7 h-7 text-xs flex items-center justify-center transition-colors action-fav ${isFav ? 'text-red-500' : 'text-muted hover:text-main'}"><i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button>
-            <button class="w-7 h-7 text-xs text-muted hover:text-main flex items-center justify-center action-modal-pl"><i class="fa-solid fa-folder-plus"></i></button>
+            <button class="w-7 h-7 text-xs text-muted hover:text-purple-400 flex items-center justify-center action-add-queue" title="Add to Queue"><i class="fa-solid fa-list-check"></i></button>
+            <button class="w-7 h-7 text-xs flex items-center justify-center transition-colors action-fav ${isFav ? 'text-red-500' : 'text-muted hover:text-main'}" title="Favorite"><i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button>
+            <button class="w-7 h-7 text-xs text-muted hover:text-main flex items-center justify-center action-modal-pl" title="Add to Playlist Vault"><i class="fa-solid fa-folder-plus"></i></button>
         </div>` : ''}
     `;
 
@@ -107,6 +128,13 @@ function createStandardTrackRowItem(track, actionsContext = true) {
     });
 
     if (actionsContext) {
+        row.querySelector('.action-add-queue').addEventListener('click', (e) => {
+            e.stopPropagation();
+            AppState.queue.push(track);
+            if (typeof showToastNotification === 'function') {
+                showToastNotification(`Added "${track.name}" to queue`, 'queue');
+            }
+        });
         row.querySelector('.action-fav').addEventListener('click', (e) => {
             e.stopPropagation();
             toggleFavoriteTrackState(track);
@@ -246,4 +274,170 @@ function setupFormHandlers() {
     }
 
     setupMusicFilterModalHandlers();
+}
+
+async function executePlaylistSearch(query) {
+    const targetOutput = document.getElementById('search-output-list');
+    if (!targetOutput) return;
+    targetOutput.innerHTML = `<p class="text-xs text-muted text-center py-12"><i class="fa-solid fa-circle-notch animate-spin mr-1 text-accent"></i> Searching public playlists...</p>`;
+
+    try {
+        const res = await fetch(`https://saavn.sumit.co/api/search/playlists?query=${encodeURIComponent(query)}`);
+        const json = await res.json();
+        if (json.success && json.data?.results?.length > 0) {
+            renderPlaylistsSearchResults(json.data.results);
+        } else {
+            targetOutput.innerHTML = `<p class="text-xs text-muted text-center py-12">No playlists found matching "${query}".</p>`;
+        }
+    } catch (e) {
+        targetOutput.innerHTML = `<p class="text-xs text-red-400 text-center py-12">Failed to load playlists.</p>`;
+    }
+}
+
+async function executeAlbumSearch(query) {
+    const targetOutput = document.getElementById('search-output-list');
+    if (!targetOutput) return;
+    targetOutput.innerHTML = `<p class="text-xs text-muted text-center py-12"><i class="fa-solid fa-circle-notch animate-spin mr-1 text-accent"></i> Searching music albums...</p>`;
+
+    try {
+        const res = await fetch(`https://saavn.sumit.co/api/search/albums?query=${encodeURIComponent(query)}`);
+        const json = await res.json();
+        if (json.success && json.data?.results?.length > 0) {
+            renderAlbumsSearchResults(json.data.results);
+        } else {
+            targetOutput.innerHTML = `<p class="text-xs text-muted text-center py-12">No albums found matching "${query}".</p>`;
+        }
+    } catch (e) {
+        targetOutput.innerHTML = `<p class="text-xs text-red-400 text-center py-12">Failed to load albums.</p>`;
+    }
+}
+
+function renderPlaylistsSearchResults(playlists) {
+    const container = document.getElementById('search-output-list');
+    if (!container) return;
+    container.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>`;
+    const grid = container.querySelector('div');
+
+    playlists.forEach(pl => {
+        const imgUrl = pl.image?.[pl.image.length - 1]?.url || pl.image || 'images/icon-512.png';
+        const card = document.createElement('div');
+        card.className = "bg-app-card border border-app rounded-xl p-3 flex gap-3 items-center hover:border-accent transition-colors group cursor-pointer shadow-sm";
+        card.innerHTML = `
+            <img src="${imgUrl}" class="w-14 h-14 rounded-lg object-cover shadow-sm shrink-0">
+            <div class="flex-1 min-w-0">
+                <h4 class="text-xs font-bold text-main group-hover:text-accent truncate">${pl.name}</h4>
+                <p class="text-[10px] text-muted truncate mt-0.5"><i class="fa-solid fa-list-ul mr-1 text-accent"></i> ${pl.songCount || '20+'} tracks</p>
+                <div class="flex items-center gap-1.5 mt-2">
+                    <button class="bg-accent hover:bg-accent-hover text-white text-[10px] font-bold px-2.5 py-1 rounded-md transition-all action-play-full-pl">
+                        <i class="fa-solid fa-play mr-1"></i> Play Playlist
+                    </button>
+                    <button class="bg-app-body border border-app hover:border-accent text-main text-[10px] font-bold px-2 py-1 rounded-md transition-all action-import-pl" title="Import to My Vault">
+                        <i class="fa-solid fa-bookmark text-accent"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        card.querySelector('.action-play-full-pl').onclick = (e) => {
+            e.stopPropagation();
+            loadAndPlayPlaylistById(pl.id, pl.name);
+        };
+        card.querySelector('.action-import-pl').onclick = (e) => {
+            e.stopPropagation();
+            importExternalPlaylistToVault(pl.id, pl.name);
+        };
+
+        grid.appendChild(card);
+    });
+}
+
+function renderAlbumsSearchResults(albums) {
+    const container = document.getElementById('search-output-list');
+    if (!container) return;
+    container.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>`;
+    const grid = container.querySelector('div');
+
+    albums.forEach(alb => {
+        const imgUrl = alb.image?.[alb.image.length - 1]?.url || alb.image || 'images/icon-512.png';
+        const card = document.createElement('div');
+        card.className = "bg-app-card border border-app rounded-xl p-3 flex gap-3 items-center hover:border-accent transition-colors group cursor-pointer shadow-sm";
+        card.innerHTML = `
+            <img src="${imgUrl}" class="w-14 h-14 rounded-lg object-cover shadow-sm shrink-0">
+            <div class="flex-1 min-w-0">
+                <h4 class="text-xs font-bold text-main group-hover:text-accent truncate">${alb.name}</h4>
+                <p class="text-[10px] text-muted truncate mt-0.5"><i class="fa-solid fa-compact-disc mr-1 text-accent"></i> ${alb.year || 'Album'}</p>
+                <button class="mt-2 bg-accent hover:bg-accent-hover text-white text-[10px] font-bold px-2.5 py-1 rounded-md transition-all action-play-alb">
+                    <i class="fa-solid fa-play mr-1"></i> Play Album
+                </button>
+            </div>
+        `;
+
+        card.querySelector('.action-play-alb').onclick = (e) => {
+            e.stopPropagation();
+            loadAndPlayAlbumById(alb.id, alb.name);
+        };
+
+        grid.appendChild(card);
+    });
+}
+
+async function loadAndPlayPlaylistById(playlistId, name = "Playlist") {
+    try {
+        const res = await fetch(`https://saavn.sumit.co/api/playlists?id=${playlistId}`);
+        const json = await res.json();
+        if (json.success && json.data?.songs?.length > 0) {
+            AppState.queue = json.data.songs;
+            if (typeof initializeTrackTargetPlayback === 'function') {
+                initializeTrackTargetPlayback(0);
+            }
+            if (typeof showToastNotification === 'function') {
+                showToastNotification(`Loaded ${json.data.songs.length} songs from playlist "${name}"`, 'queue');
+            }
+        } else {
+            if (typeof showToastNotification === 'function') {
+                showToastNotification(`Could not load tracks for playlist "${name}".`, 'error');
+            }
+        }
+    } catch (e) {
+        console.error("Playlist load error:", e);
+    }
+}
+
+async function loadAndPlayAlbumById(albumId, name = "Album") {
+    try {
+        const res = await fetch(`https://saavn.sumit.co/api/albums?id=${albumId}`);
+        const json = await res.json();
+        if (json.success && json.data?.songs?.length > 0) {
+            AppState.queue = json.data.songs;
+            if (typeof initializeTrackTargetPlayback === 'function') {
+                initializeTrackTargetPlayback(0);
+            }
+            if (typeof showToastNotification === 'function') {
+                showToastNotification(`Loaded ${json.data.songs.length} songs from album "${name}"`, 'queue');
+            }
+        }
+    } catch (e) {
+        console.error("Album load error:", e);
+    }
+}
+
+async function importExternalPlaylistToVault(playlistId, name = "Playlist") {
+    try {
+        const res = await fetch(`https://saavn.sumit.co/api/playlists?id=${playlistId}`);
+        const json = await res.json();
+        if (json.success && json.data?.songs?.length > 0) {
+            AppState.playlists.push({
+                id: 'pl_' + Date.now(),
+                name: name,
+                tracks: json.data.songs
+            });
+            saveStateToLocalStorage('ok_lists', AppState.playlists);
+            if (typeof renderPlaylistsVaultGrid === 'function') renderPlaylistsVaultGrid();
+            if (typeof showToastNotification === 'function') {
+                showToastNotification(`Imported playlist "${name}" (${json.data.songs.length} tracks)`, 'success');
+            }
+        }
+    } catch (e) {
+        if (typeof showToastNotification === 'function') showToastNotification("Import failed.", 'error');
+    }
 }

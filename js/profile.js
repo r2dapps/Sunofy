@@ -447,7 +447,9 @@ function renderPlaylistsVaultGrid() {
 
 async function downloadEntirePlaylistBatch(playlist) {
     if (!playlist || !playlist.tracks || playlist.tracks.length === 0) return;
-    alert(`Starting offline download for all ${playlist.tracks.length} tracks in "${playlist.name}". They will be saved to your device cache!`);
+    if (typeof showToastNotification === 'function') {
+        showToastNotification(`Downloading ${playlist.tracks.length} tracks from "${playlist.name}"...`, 'download');
+    }
     
     for (let i = 0; i < playlist.tracks.length; i++) {
         const track = playlist.tracks[i];
@@ -530,17 +532,29 @@ async function executeBinaryOfflineDownloadCache(track) {
             };
         }
 
-        // 2. Trigger direct file download to user's device downloads folder
+        // 2. Trigger direct file download to user's device downloads folder or custom directory
         const blob = new Blob([buffer], { type: "audio/mp4" });
-        const downloadAnchor = document.createElement("a");
-        downloadAnchor.href = URL.createObjectURL(blob);
-        const safeFileName = (track.name || "track").replace(/[^a-zA-Z0-9_-]/g, "_");
-        downloadAnchor.download = `${safeFileName}.m4a`;
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        document.body.removeChild(downloadAnchor);
-        setTimeout(() => URL.revokeObjectURL(downloadAnchor.href), 10000);
+        const artistName = track.primaryArtists || track.singers || "Sunofy Music";
+        const safeTitle = (track.name || "track").replace(/[/\\?%*:|"<>]/g, "-");
+        const safeArtist = artistName.replace(/[/\\?%*:|"<>]/g, "-");
+        const fileName = `${safeTitle} - ${safeArtist}.m4a`;
 
+        if (_customDownloadDirHandle) {
+            try {
+                const fileHandle = await _customDownloadDirHandle.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                if (typeof showToastNotification === 'function') {
+                    showToastNotification(`Saved directly to "${_customDownloadDirHandle.name}"`, 'download');
+                }
+            } catch(dirErr) {
+                console.warn("[Download] Custom directory write failed, falling back to anchor:", dirErr);
+                triggerAnchorDownload(blob, fileName);
+            }
+        } else {
+            triggerAnchorDownload(blob, fileName);
+        }
     } catch(e) {
         // Fallback: direct anchor download if arrayBuffer fetch fails cross-origin
         const downloadAnchor = document.createElement("a");
@@ -601,4 +615,33 @@ function refreshOfflineViewList() {
             container.appendChild(row);
         });
     };
+}
+
+let _customDownloadDirHandle = null;
+
+async function selectCustomDownloadDirectory() {
+    try {
+        if ('showDirectoryPicker' in window) {
+            _customDownloadDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            const btn = document.getElementById('select-download-dir-btn');
+            if (btn) btn.innerHTML = `<i class="fa-solid fa-folder-check text-green-400 mr-1"></i> Folder: ${_customDownloadDirHandle.name}`;
+            if (typeof showToastNotification === 'function') {
+                showToastNotification(`Download folder set to "${_customDownloadDirHandle.name}"`, 'success');
+            }
+        } else {
+            if (typeof showToastNotification === 'function') {
+                showToastNotification("Your browser uses the standard Downloads folder.", 'info');
+            }
+        }
+    } catch(e) {}
+}
+
+function triggerAnchorDownload(blob, fileName) {
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.href = URL.createObjectURL(blob);
+    downloadAnchor.download = fileName;
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    document.body.removeChild(downloadAnchor);
+    setTimeout(() => URL.revokeObjectURL(downloadAnchor.href), 10000);
 }

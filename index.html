@@ -204,12 +204,6 @@
                         <span>Filters</span>
                         <span id="filter-active-count" class="bg-accent text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-extrabold">4</span>
                     </button>
-
-                    <!-- YOUTUBE MUSIC ENGINE SANDBOX PREVIEW BUTTON -->
-                    <a href="test_ytmusic.html" target="_blank" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm" title="Test YouTube Music Integration">
-                        <i class="fa-brands fa-youtube text-red-500"></i>
-                        <span class="hidden sm:inline">YT Sandbox</span>
-                    </a>
                 </div>
                 
                 <!-- Recent Searches Tag Bar with Clear All -->
@@ -233,8 +227,23 @@
                 </div>
 
                 <div class="bg-app-card border border-app rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-sm font-bold text-main tracking-tight flex items-center gap-2"><i class="fa-solid fa-bolt text-accent"></i> Track Discovery Engine</h2>
+                    <div class="flex flex-wrap justify-between items-center gap-2 border-b border-app pb-3">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-sm font-bold text-main tracking-tight flex items-center gap-2"><i class="fa-solid fa-bolt text-accent"></i> Discovery Engine</h2>
+                        </div>
+
+                        <!-- SEARCH TYPE SELECTOR PILLS -->
+                        <div class="flex items-center gap-1 bg-app-body border border-app p-1 rounded-full text-xs">
+                            <button type="button" onclick="setSearchTypeMode('songs')" data-mode="songs" class="search-type-pill bg-accent text-white px-3 py-1 rounded-full text-xs font-bold transition-all shadow-sm">
+                                <i class="fa-solid fa-music mr-1"></i> Songs
+                            </button>
+                            <button type="button" onclick="setSearchTypeMode('playlists')" data-mode="playlists" class="search-type-pill bg-app-card text-muted hover:text-main border border-app px-3 py-1 rounded-full text-xs font-semibold transition-all">
+                                <i class="fa-solid fa-list-ul mr-1"></i> Playlists
+                            </button>
+                            <button type="button" onclick="setSearchTypeMode('albums')" data-mode="albums" class="search-type-pill bg-app-card text-muted hover:text-main border border-app px-3 py-1 rounded-full text-xs font-semibold transition-all">
+                                <i class="fa-solid fa-compact-disc mr-1"></i> Albums
+                            </button>
+                        </div>
                         <span id="loading-spinner" class="text-accent hidden"><i class="fa-solid fa-circle-notch animate-spin text-sm"></i></span>
                     </div>
                     <div id="search-output-list" class="space-y-2 max-h-[500px] overflow-y-auto custom-scroll pr-1"></div>
@@ -360,15 +369,25 @@
                         </div>
 
                         <!-- LIVE API QUOTA & HEALTH STATUS -->
-                        <div class="bg-app-body border border-app rounded-xl p-3 space-y-1.5 text-[11px]">
+                        <div class="bg-app-body border border-app rounded-xl p-3 space-y-2 text-[11px]">
                             <div class="flex items-center justify-between">
                                 <span class="text-muted font-bold"><i class="fa-solid fa-gauge-high text-green-400 mr-1"></i> API Health & Quota:</span>
                                 <span class="text-green-400 font-mono font-bold" id="api-quota-status">100% Operational</span>
                             </div>
-                            <div class="flex items-center justify-between text-muted text-[10px]">
-                                <span>Requests: <strong class="text-main">Unlimited (Shield Active)</strong></span>
-                                <span>Latency: <strong class="text-accent" id="api-latency-val">24ms</strong></span>
+                            <div class="grid grid-cols-2 gap-2 pt-1 text-[10px] text-muted border-t border-app">
+                                <div>Total Requests: <strong class="text-main" id="api-req-count-val">0 made</strong></div>
+                                <div>Avg Latency: <strong class="text-accent" id="api-latency-val">24ms</strong></div>
+                                <div>JioSaavn API: <strong class="text-main" id="jiosaavn-req-count-val">0 calls</strong></div>
+                                <div>YouTube Cobalt: <strong class="text-main" id="yt-req-count-val">0 calls</strong></div>
+                                <div class="col-span-2">Vercel Serverless: <strong class="text-main" id="vercel-req-count-val">0 calls</strong></div>
                             </div>
+                        </div>
+
+                        <!-- PREFERRED DOWNLOAD FOLDER PICKER -->
+                        <div class="pt-2">
+                            <button id="select-download-dir-btn" onclick="if(typeof selectCustomDownloadDirectory==='function') selectCustomDownloadDirectory()" class="w-full text-xs bg-app-body border border-app hover:border-accent text-main py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm">
+                                <i class="fa-solid fa-folder-gear text-amber-400"></i> Set Preferred Download Folder
+                            </button>
                         </div>
 
                         <!-- LISTEN TOGETHER / SYNC PARTY CARD -->

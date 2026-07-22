@@ -93,6 +93,14 @@ async function apiFetch(path, params = {}) {
             
             // Increment request count & update live metrics UI
             AppState.requestCount = (AppState.requestCount || 0) + 1;
+            if (base.includes('saavn') || base.includes('3000')) {
+                AppState.jiosaavnReqCount = (AppState.jiosaavnReqCount || 0) + 1;
+            } else if (base.includes('cobalt')) {
+                AppState.youtubeReqCount = (AppState.youtubeReqCount || 0) + 1;
+            } else if (base.includes('vercel')) {
+                AppState.vercelReqCount = (AppState.vercelReqCount || 0) + 1;
+            }
+
             localStorage.setItem('ok_req_count', AppState.requestCount.toString());
             const latency = Date.now() - startTime;
             updateApiMetricsBadge(latency);
@@ -112,8 +120,15 @@ async function apiFetch(path, params = {}) {
 function updateApiMetricsBadge(latencyMs = 24) {
     const reqCountEl = document.getElementById('api-req-count-val');
     const latencyEl = document.getElementById('api-latency-val');
+    const jioCountEl = document.getElementById('jiosaavn-req-count-val');
+    const ytCountEl = document.getElementById('yt-req-count-val');
+    const vercelCountEl = document.getElementById('vercel-req-count-val');
+
     if (reqCountEl) reqCountEl.innerText = `${AppState.requestCount || 0} made`;
-    if (latencyEl) latencyEl.innerText = `${latencyMs}ms`;
+    if (latencyEl) latencyEl.innerText = `${latencyMs}ms ping`;
+    if (jioCountEl) jioCountEl.innerText = `${AppState.jiosaavnReqCount || 0} calls`;
+    if (ytCountEl) ytCountEl.innerText = `${AppState.youtubeReqCount || 0} calls`;
+    if (vercelCountEl) vercelCountEl.innerText = `${AppState.vercelReqCount || 0} calls`;
 }
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -161,18 +176,17 @@ function initServiceWorker() {
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPwaPrompt = e;
-        if (!isStandalone()) showPwaInstallBanner();
     });
 
     setTimeout(() => {
-        if (!isStandalone()) {
+        if (!isStandalone() && localStorage.getItem('pwa_banner_dismissed') !== 'true') {
             showPwaInstallBanner();
         }
-    }, 2000);
+    }, 4000);
 }
 
 function showPwaInstallBanner() {
-    if (isStandalone()) return;
+    if (isStandalone() || localStorage.getItem('pwa_banner_dismissed') === 'true') return;
     const banner = document.getElementById('pwa-install-popup-banner');
     if (banner) {
         banner.classList.remove('translate-y-full', 'hidden', 'opacity-0');
@@ -186,7 +200,10 @@ function setupPwaAndShareHandlers() {
     const banner = document.getElementById('pwa-install-popup-banner');
 
     if (bannerCloseBtn && banner) {
-        bannerCloseBtn.onclick = () => banner.classList.add('hidden');
+        bannerCloseBtn.onclick = () => {
+            banner.classList.add('hidden');
+            localStorage.setItem('pwa_banner_dismissed', 'true');
+        };
     }
 
     const installButtons = [
@@ -482,3 +499,36 @@ document.addEventListener('DOMContentLoaded', () => {
     initIndexedDB();
     initPinLockSystem();
 });
+
+function showToastNotification(msg, icon = 'info') {
+    let container = document.getElementById('toast-container-box');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container-box';
+        container.className = "fixed bottom-20 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none max-w-xs w-full px-4";
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = "bg-app-card/95 backdrop-blur-md border border-accent/40 text-main text-xs font-semibold py-2.5 px-4 rounded-xl shadow-2xl flex items-center gap-2.5 transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-auto";
+    
+    let iconClass = "fa-solid fa-circle-info text-accent";
+    if (icon === 'success') iconClass = "fa-solid fa-circle-check text-green-400";
+    if (icon === 'download') iconClass = "fa-solid fa-cloud-arrow-down text-blue-400";
+    if (icon === 'queue') iconClass = "fa-solid fa-layer-group text-purple-400";
+    if (icon === 'error') iconClass = "fa-solid fa-triangle-exclamation text-red-400";
+
+    toast.innerHTML = `<i class="${iconClass} text-sm shrink-0"></i><span class="truncate flex-1">${msg}</span>`;
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+    });
+
+    setTimeout(() => {
+        toast.classList.replace('opacity-100', 'opacity-0');
+        toast.classList.replace('translate-y-0', 'translate-y-4');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}

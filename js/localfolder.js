@@ -16,11 +16,11 @@ async function openLocalMusicFolder() {
 
             if (tracks.length > 0) {
                 renderLocalFolderFeed(tracks, dirHandle.name);
+                if (typeof showToastNotification === 'function') showToastNotification(`Loaded ${tracks.length} tracks from "${dirHandle.name}"`, 'success');
             } else {
-                alert("No audio files (.mp3, .m4a, .flac, .wav) found in selected directory.");
+                if (typeof showToastNotification === 'function') showToastNotification("No audio files found in directory.", 'error');
             }
         } else {
-            // Fallback for browsers without showDirectoryPicker: standard directory input
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.webkitdirectory = true;
@@ -32,8 +32,9 @@ async function openLocalMusicFolder() {
                 const tracks = files.map(createTrackObjFromFile);
                 if (tracks.length > 0) {
                     renderLocalFolderFeed(tracks, "Local Music Folder");
+                    if (typeof showToastNotification === 'function') showToastNotification(`Loaded ${tracks.length} local audio files`, 'success');
                 } else {
-                    alert("No audio files selected.");
+                    if (typeof showToastNotification === 'function') showToastNotification("No audio files selected.", 'error');
                 }
             };
             fileInput.click();
@@ -52,13 +53,23 @@ function isAudioFileName(name) {
 
 function createTrackObjFromFile(file) {
     const blobUrl = URL.createObjectURL(file);
-    const cleanTitle = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
-    
+    const rawName = file.name.replace(/\.[^/.]+$/, "");
+    let title = rawName;
+    let artist = "Local Music File";
+
+    if (rawName.includes(" - ")) {
+        const parts = rawName.split(" - ");
+        title = parts[0].trim();
+        artist = parts[1].trim();
+    } else {
+        title = rawName.replace(/_/g, " ");
+    }
+
     return {
         id: `local_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        name: cleanTitle,
+        name: title,
         album: { name: "Local Disk Media" },
-        primaryArtists: "Local Audio File",
+        primaryArtists: artist,
         audioUrl: blobUrl,
         downloadUrl: [{ quality: "Original", url: blobUrl }],
         image: [{ quality: "500x500", url: "images/icon-512.png" }],
