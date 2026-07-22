@@ -2,6 +2,8 @@
 let _peerInstance = null;
 let _peerConnections = []; // Host's active connected peers
 let _activeHostConnection = null; // Listener's connection to host
+let _listenerRoomMembers = []; // Listener's copy of synced room members
+let _listenerRoomHost = null; // Listener's copy of host profile
 
 // Cross-Network NAT & Cellular Firewall Traversal STUN/TURN Servers
 const PEER_CONFIG = {
@@ -116,6 +118,7 @@ function createSyncPartyRoom() {
         
         conn.on('open', () => {
             updateJoinedListenersCountUI();
+            broadcastMembersListToAllListeners();
             // Send initial sync state to new listener
             const audioNode = document.getElementById('audio-node');
             conn.send({
@@ -125,6 +128,7 @@ function createSyncPartyRoom() {
                 isPlaying: audioNode ? !audioNode.paused : false,
                 hostProfile: {
                     name: AppState.profile?.name || 'Host',
+                    handle: AppState.profile?.handle || '@host',
                     avatar: AppState.profile?.avatar || 'images/icon-512.png'
                 }
             });
@@ -139,9 +143,16 @@ function createSyncPartyRoom() {
                     avatar: data.avatar || "images/icon-512.png"
                 };
                 updateJoinedListenersCountUI();
+                broadcastMembersListToAllListeners();
                 if (typeof showToastNotification === 'function') {
                     showToastNotification(`${conn._userInfo.name} joined room #${AppState.syncRoomId}`, 'success');
                 }
+            } else if (data.type === 'EMOJI_REACTION') {
+                createFloatingEmojiAnimation(data.emoji);
+                // Broadcast reaction to other listeners
+                _peerConnections.forEach(c => {
+                    if (c && c.open && c !== conn) c.send({ type: 'EMOJI_REACTION', emoji: data.emoji });
+                });
             }
         });
 
@@ -149,6 +160,7 @@ function createSyncPartyRoom() {
             const userName = conn._userInfo?.name || "A listener";
             _peerConnections = _peerConnections.filter(c => c !== conn);
             updateJoinedListenersCountUI();
+            broadcastMembersListToAllListeners();
             if (typeof showToastNotification === 'function') {
                 showToastNotification(`${userName} left room #${AppState.syncRoomId}`, 'info');
             }
@@ -195,6 +207,12 @@ function joinSyncPartyRoom(roomId) {
             if (data.type === 'KICK') {
                 leaveSyncPartyRoom();
                 if (typeof showToastNotification === 'function') showToastNotification("You were removed from the room by the Host.", 'error');
+            } else if (data.type === 'MEMBERS_LIST_SYNC') {
+                _listenerRoomHost = data.host;
+                _listenerRoomMembers = data.members || [];
+                updateJoinedListenersCountUI();
+            } else if (data.type === 'EMOJI_REACTION') {
+                createFloatingEmojiAnimation(data.emoji);
             } else {
                 handleIncomingHostStateCommand(data);
             }
@@ -220,10 +238,32 @@ function kickListenerFromRoom(peerId) {
         setTimeout(() => conn.close(), 200);
         _peerConnections = _peerConnections.filter(c => c.peer !== peerId);
         updateJoinedListenersCountUI();
+        broadcastMembersListToAllListeners();
         if (typeof showToastNotification === 'function') {
             showToastNotification(`Removed user from room.`, 'info');
         }
     }
+}
+
+function broadcastMembersListToAllListeners() {
+    if (!AppState.isSyncHost) return;
+    const activeConns = _peerConnections.filter(c => c.open);
+    const hostProfile = {
+        name: AppState.profile?.name || 'Room Host',
+        handle: AppState.profile?.handle || '@host',
+        avatar: AppState.profile?.avatar || 'images/icon-512.png'
+    };
+    const membersList = activeConns.map(c => c._userInfo || { name: 'Listener', handle: '@user', avatar: 'images/icon-512.png' });
+
+    activeConns.forEach(conn => {
+        if (conn && conn.open) {
+            conn.send({
+                type: 'MEMBERS_LIST_SYNC',
+                host: hostProfile,
+                members: membersList
+            });
+        }
+    });
 }
 
 function broadcastHostSyncState(command, extra = {}) {
@@ -253,6 +293,11 @@ function broadcastHostSyncState(command, extra = {}) {
 
 function handleIncomingHostStateCommand(data) {
     if (!data || AppState.isSyncHost) return;
+
+    if (data.hostProfile) {
+        _listenerRoomHost = data.hostProfile;
+        updateJoinedListenersCountUI();
+    }
 
     const audioNode = document.getElementById('audio-node');
     const unmuteBanner = document.getElementById('sync-unmute-banner');
@@ -381,16 +426,42 @@ function updateJoinedListenersCountUI() {
     const infoEl = document.getElementById('sync-dock-listeners-info');
     const countEl = document.getElementById('sync-modal-member-count');
     const membersListContainer = document.getElementById('sync-modal-members-list');
+    const pageCountEl = document.getElementById('sync-page-member-count');
+    const pageMembersContainer = document.getElementById('sync-page-members-list');
+    const statusBadge = document.getElementById('sync-view-status-badge');
 
-    const activeConnections = _peerConnections.filter(c => c.open);
-    const activeCount = activeConnections.length;
-    
+    let activeCount = 0;
+    let hostInfo = null;
+    let memberList = [];
+
+    if (AppState.isSyncHost) {
+        const activeConns = _peerConnections.filter(c => c.open);
+        activeCount = activeConns.length;
+        hostInfo = {
+            name: AppState.profile?.name || 'Room Host',
+            handle: AppState.profile?.handle || '@host',
+            avatar: AppState.profile?.avatar || 'images/icon-512.png',
+            isHost: true
+        };
+        memberList = activeConns.map(c => c._userInfo || { name: 'Listener', handle: '@user', avatar: 'images/icon-512.png' });
+    } else {
+        memberList = _listenerRoomMembers || [];
+        activeCount = memberList.length;
+        hostInfo = _listenerRoomHost || { name: 'Room Host', handle: '@host', avatar: 'images/icon-512.png', isHost: true };
+    }
+
     if (countEl) countEl.innerText = activeCount.toString();
+    if (pageCountEl) pageCountEl.innerText = activeCount.toString();
+    if (statusBadge) {
+        statusBadge.innerText = AppState.syncRoomId 
+            ? (AppState.isSyncHost ? `Host - Room #${AppState.syncRoomId}` : `Listener - Room #${AppState.syncRoomId}`) 
+            : "Offline / Ready";
+    }
 
     // 1. Update Bottom Dock Text
     if (infoEl) {
         if (activeCount > 0) {
-            const names = activeConnections.map(c => c._userInfo?.name || 'Listener').join(', ');
+            const names = memberList.map(m => m.name || 'Listener').join(', ');
             infoEl.innerText = `👥 ${activeCount} Listener${activeCount > 1 ? 's' : ''} (${names})`;
         } else {
             infoEl.innerText = AppState.isSyncHost 
@@ -399,18 +470,7 @@ function updateJoinedListenersCountUI() {
         }
     }
 
-    // 2. Update Room Management Console Members Grid (Modal & Page View)
-    const pageCountEl = document.getElementById('sync-page-member-count');
-    const pageMembersContainer = document.getElementById('sync-page-members-list');
-    const statusBadge = document.getElementById('sync-view-status-badge');
-
-    if (pageCountEl) pageCountEl.innerText = activeCount.toString();
-    if (statusBadge) {
-        statusBadge.innerText = AppState.syncRoomId 
-            ? (AppState.isSyncHost ? `Host - Room #${AppState.syncRoomId}` : `Listener - Room #${AppState.syncRoomId}`) 
-            : "Offline / Ready";
-    }
-
+    // 2. Update Members Grid (Modal & Page View)
     [membersListContainer, pageMembersContainer].forEach(container => {
         if (!container) return;
         container.innerHTML = '';
@@ -420,24 +480,24 @@ function updateJoinedListenersCountUI() {
         hostRow.className = "flex items-center justify-between p-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl";
         hostRow.innerHTML = `
             <div class="flex items-center gap-2.5 min-w-0">
-                <img src="${AppState.profile?.avatar || 'images/icon-512.png'}" class="w-8 h-8 rounded-full object-cover border border-purple-400/50">
+                <img src="${hostInfo.avatar}" class="w-8 h-8 rounded-full object-cover border border-purple-400/50">
                 <div class="min-w-0">
-                    <h4 class="text-xs font-bold text-main truncate">${AppState.profile?.name || 'Room Host'} (You)</h4>
-                    <p class="text-[10px] text-purple-300 font-mono">${AppState.profile?.handle || '@host'}</p>
+                    <h4 class="text-xs font-bold text-main truncate">${hostInfo.name} ${AppState.isSyncHost ? '(You)' : ''}</h4>
+                    <p class="text-[10px] text-purple-300 font-mono">${hostInfo.handle}</p>
                 </div>
             </div>
             <span class="text-[9px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded font-bold uppercase">HOST</span>
         `;
         container.appendChild(hostRow);
 
-        if (activeConnections.length === 0 && AppState.isSyncHost) {
+        if (memberList.length === 0 && AppState.isSyncHost) {
             const emptyNotice = document.createElement('p');
             emptyNotice.className = "text-[11px] text-muted text-center py-4 italic col-span-full";
             emptyNotice.innerText = "No listeners joined yet. Share Room Code #" + AppState.syncRoomId;
             container.appendChild(emptyNotice);
         } else {
-            activeConnections.forEach(conn => {
-                const info = conn._userInfo || { name: "Listener", handle: "@user", avatar: "images/icon-512.png" };
+            memberList.forEach(m => {
+                const info = m || { name: "Listener", handle: "@user", avatar: "images/icon-512.png" };
                 const row = document.createElement('div');
                 row.className = "flex items-center justify-between p-2.5 bg-app-body border border-app rounded-xl group hover:border-accent transition-colors";
                 row.innerHTML = `
@@ -454,10 +514,10 @@ function updateJoinedListenersCountUI() {
                     </button>` : `<span class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold uppercase">MEMBER</span>`}
                 `;
 
-                if (AppState.isSyncHost) {
+                if (AppState.isSyncHost && info.peerId) {
                     const kickBtn = row.querySelector('.action-kick-user');
                     if (kickBtn) {
-                        kickBtn.onclick = () => kickListenerFromRoom(conn.peer);
+                        kickBtn.onclick = () => kickListenerFromRoom(info.peerId);
                     }
                 }
 
@@ -481,6 +541,8 @@ function leaveSyncPartyRoom() {
     _peerInstance = null;
     _peerConnections = [];
     _activeHostConnection = null;
+    _listenerRoomMembers = [];
+    _listenerRoomHost = null;
 
     AppState.syncRoomId = null;
     AppState.isSyncHost = false;
@@ -495,7 +557,6 @@ function updateSyncPartyDockUI() {
     const roleBadgeEl = document.getElementById('sync-dock-role-badge');
     const syncBtn = document.getElementById('sync-dock-force-sync-btn');
     const badge = document.getElementById('sync-room-badge');
-
     const setupCard = document.getElementById('sync-room-setup-card');
 
     if (AppState.syncRoomId) {

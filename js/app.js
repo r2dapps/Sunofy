@@ -5,19 +5,22 @@ const AppState = {
     tagline: "dive into musical world",
     pin: localStorage.getItem('ok_pin') || "0908",
     lockType: localStorage.getItem('ok_lock_type') || 'pin', // 'pin', 'biometric', 'disabled'
-    // Dynamic API Mirrors: uses localhost when on PC, and cloud endpoints when on mobile / GitHub Pages
     apiMirrors: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
         ? [
             "http://localhost:3000/api/search/songs",
-            "./api/search/songs",
             "https://saavn.sumit.co/api/search/songs"
+          ]
+        : window.location.hostname.includes('github.io')
+        ? [
+            "https://saavn.sumit.co/api/search/songs",
+            "https://jiosaavn-api-v3.vercel.app/api/search/songs"
           ]
         : [
             "./api/search/songs",
             "https://saavn.sumit.co/api/search/songs",
             "https://jiosaavn-api-v3.vercel.app/api/search/songs"
           ],
-    apiEndpoint: "./api/search/songs",
+    apiEndpoint: "https://saavn.sumit.co/api/search/songs",
     currentTrack: JSON.parse(localStorage.getItem('ok_last_track')) || null,
     queue: JSON.parse(localStorage.getItem('ok_last_queue')) || [],
     queueIndex: parseInt(localStorage.getItem('ok_last_index') || "-1"),
