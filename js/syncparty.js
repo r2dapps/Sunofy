@@ -41,26 +41,46 @@ function initSyncPartyEngine() {
     setupSyncPartyControls();
 }
 
+function getTrackAudioUrl(track) {
+    if (!track) return '';
+    if (typeof track.downloadUrl === 'string' && track.downloadUrl.length > 5) return track.downloadUrl;
+    if (Array.isArray(track.downloadUrl) && track.downloadUrl.length > 0) {
+        const last = track.downloadUrl[track.downloadUrl.length - 1];
+        if (typeof last === 'string') return last;
+        if (last && last.url) return last.url;
+        if (last && last.link) return last.link;
+    }
+    if (track.audioUrl) return track.audioUrl;
+    if (track.url) return track.url;
+    if (track.media_url) return track.media_url;
+    if (track.streamUrl) return track.streamUrl;
+    return '';
+}
+
 function setupSyncPartyControls() {
-    const hostBtn = document.getElementById('host-sync-btn');
-    const joinBtn = document.getElementById('join-sync-btn');
+    const hostBtns = [document.getElementById('host-sync-btn'), document.getElementById('page-host-sync-btn')];
+    const joinBtns = [document.getElementById('join-sync-btn'), document.getElementById('page-join-sync-btn')];
     const modal = document.getElementById('join-sync-modal');
     const closeBtn = document.getElementById('close-join-sync-modal-btn');
     const form = document.getElementById('join-sync-room-form');
     const dockTrigger = document.getElementById('sync-party-bottom-bar');
 
-    if (hostBtn) hostBtn.onclick = () => createSyncPartyRoom();
+    hostBtns.forEach(btn => {
+        if (btn) btn.onclick = () => createSyncPartyRoom();
+    });
     
-    if (joinBtn && modal) {
-        joinBtn.onclick = () => {
-            modal.classList.remove('hidden');
-            const input = document.getElementById('sync-room-input-code');
-            if (input) {
-                input.value = "";
-                input.focus();
-            }
-        };
-    }
+    joinBtns.forEach(btn => {
+        if (btn && modal) {
+            btn.onclick = () => {
+                modal.classList.remove('hidden');
+                const input = document.getElementById('sync-room-input-code');
+                if (input) {
+                    input.value = "";
+                    input.focus();
+                }
+            };
+        }
+    });
 
     if (closeBtn && modal) {
         closeBtn.onclick = () => modal.classList.add('hidden');
@@ -303,36 +323,32 @@ function handleIncomingHostStateCommand(data) {
     const unmuteBanner = document.getElementById('sync-unmute-banner');
 
     if (data.track) {
-        // Switch track if different
+        const url = getTrackAudioUrl(data.track);
+
         if (!AppState.currentTrack || AppState.currentTrack.id !== data.track.id) {
             AppState.currentTrack = data.track;
             AppState.queue = [data.track];
             AppState.queueIndex = 0;
             if (typeof updateFloatingDockInterfaceUI === 'function') updateFloatingDockInterfaceUI();
-            
-            const url = data.track.downloadUrl?.[data.track.downloadUrl.length - 1]?.url || data.track.audioUrl || '';
-            if (audioNode && url) {
-                audioNode.src = url;
-            }
         }
 
-        // Sync playback time & play/pause state
         if (audioNode) {
-            if (Math.abs(audioNode.currentTime - (data.currentTime || 0)) > 2) {
+            if (url && audioNode.src !== url) {
+                audioNode.src = url;
+            }
+            if (Math.abs(audioNode.currentTime - (data.currentTime || 0)) > 1.5) {
                 audioNode.currentTime = data.currentTime || 0;
             }
             if (data.isPlaying) {
-                if (audioNode.paused) {
-                    audioNode.play().then(() => {
-                        if (unmuteBanner) unmuteBanner.classList.add('hidden');
-                    }).catch((err) => {
-                        console.warn("[SyncParty] Autoplay blocked by browser policy:", err);
-                        if (unmuteBanner) unmuteBanner.classList.remove('hidden');
-                        if (typeof showToastNotification === 'function') {
-                            showToastNotification("Tap 'TAP HERE TO UNMUTE' banner to start audio!", 'info');
-                        }
-                    });
-                }
+                audioNode.play().then(() => {
+                    if (unmuteBanner) unmuteBanner.classList.add('hidden');
+                }).catch((err) => {
+                    console.warn("[SyncParty] Autoplay blocked by browser policy:", err);
+                    if (unmuteBanner) unmuteBanner.classList.remove('hidden');
+                    if (typeof showToastNotification === 'function') {
+                        showToastNotification("Tap 'TAP HERE TO UNMUTE' banner to start audio!", 'info');
+                    }
+                });
             } else {
                 if (!audioNode.paused) audioNode.pause();
             }
