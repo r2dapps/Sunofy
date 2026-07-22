@@ -468,10 +468,27 @@ function saveStateToLocalStorage(key, obj) {
     localStorage.setItem(key, JSON.stringify(obj));
 }
 
+function initCollapsibleCards() {
+    document.querySelectorAll('[data-accordion-toggle]').forEach(trigger => {
+        trigger.addEventListener('click', () => {
+            const targetId = trigger.getAttribute('data-accordion-toggle');
+            const target = document.getElementById(targetId);
+            const chevron = trigger.querySelector('.fa-chevron-down');
+            if (target) {
+                target.classList.toggle('hidden');
+                if (chevron) {
+                    chevron.classList.toggle('rotate-180');
+                }
+            }
+        });
+    });
+}
+
 function initializeAppCoreArchitecture() {
     updateAppBrandDisplay();
     if (typeof setupProfileDataBindings === 'function') setupProfileDataBindings();
     setupViewNavigationHandlers();
+    initCollapsibleCards();
     setupKeyboardShortcuts();
     if (typeof setupFormHandlers === 'function') setupFormHandlers();
     if (typeof setupAudioHardwareEngineControls === 'function') setupAudioHardwareEngineControls();

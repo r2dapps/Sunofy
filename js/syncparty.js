@@ -222,6 +222,8 @@ function handleIncomingHostStateCommand(data) {
     if (!data || AppState.isSyncHost) return;
 
     const audioNode = document.getElementById('audio-node');
+    const unmuteBanner = document.getElementById('sync-unmute-banner');
+
     if (data.track) {
         // Switch track if different
         if (!AppState.currentTrack || AppState.currentTrack.id !== data.track.id) {
@@ -242,11 +244,36 @@ function handleIncomingHostStateCommand(data) {
                 audioNode.currentTime = data.currentTime || 0;
             }
             if (data.isPlaying) {
-                if (audioNode.paused) audioNode.play().catch(() => {});
+                if (audioNode.paused) {
+                    audioNode.play().then(() => {
+                        if (unmuteBanner) unmuteBanner.classList.add('hidden');
+                    }).catch((err) => {
+                        console.warn("[SyncParty] Autoplay blocked by browser policy:", err);
+                        if (unmuteBanner) unmuteBanner.classList.remove('hidden');
+                        if (typeof showToastNotification === 'function') {
+                            showToastNotification("Tap 'TAP HERE TO UNMUTE' banner to start audio!", 'info');
+                        }
+                    });
+                }
             } else {
                 if (!audioNode.paused) audioNode.pause();
             }
         }
+    }
+}
+
+function forceUnlockSyncAudio() {
+    const audioNode = document.getElementById('audio-node');
+    const unmuteBanner = document.getElementById('sync-unmute-banner');
+    if (audioNode) {
+        audioNode.play().then(() => {
+            if (unmuteBanner) unmuteBanner.classList.add('hidden');
+            if (typeof showToastNotification === 'function') {
+                showToastNotification("Live sync audio unmuted and playing!", 'success');
+            }
+        }).catch((err) => {
+            console.error("Audio unlock error:", err);
+        });
     }
 }
 
