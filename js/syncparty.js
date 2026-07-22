@@ -5,7 +5,7 @@ let _activeHostConnection = null; // Listener's connection to host
 let _listenerRoomMembers = []; // Listener's copy of synced room members
 let _listenerRoomHost = null; // Listener's copy of host profile
 
-// Cross-Network NAT & Cellular Firewall Traversal STUN/TURN Servers
+// Optimized High-Speed STUN Servers for Zero-Latency P2P & NAT Traversal
 const PEER_CONFIG = {
     debug: 1,
     config: {
@@ -15,24 +15,8 @@ const PEER_CONFIG = {
             { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun4.l.google.com:19302' },
-            { urls: 'stun:stun.services.mozilla.com' },
-            { urls: 'stun:global.stun.twilio.com:3478' },
             { urls: 'stun:stun.cloudflare.com:3478' },
-            {
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelay',
-                credential: 'openrelay'
-            },
-            {
-                urls: 'turn:openrelay.metered.ca:443',
-                username: 'openrelay',
-                credential: 'openrelay'
-            },
-            {
-                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                username: 'openrelay',
-                credential: 'openrelay'
-            }
+            { urls: 'stun:stun.services.mozilla.com' }
         ]
     }
 };
@@ -203,7 +187,11 @@ function joinSyncPartyRoom(roomId) {
     if (_peerInstance) _peerInstance.destroy();
     _peerInstance = new Peer(PEER_CONFIG);
 
-    _peerInstance.on('open', () => {
+    let retryCount = 0;
+
+    function attemptConnectionToHost() {
+        if (!_peerInstance || _peerInstance.destroyed) return;
+        
         _activeHostConnection = _peerInstance.connect(targetPeerId, { reliable: true });
 
         _activeHostConnection.on('open', () => {
@@ -242,11 +230,28 @@ function joinSyncPartyRoom(roomId) {
             leaveSyncPartyRoom();
             if (typeof showToastNotification === 'function') showToastNotification("Host ended the session.", 'info');
         });
+
+        _activeHostConnection.on('error', (err) => {
+            console.warn("[SyncParty] Connection attempt error:", err);
+            if (retryCount < 3) {
+                retryCount++;
+                setTimeout(attemptConnectionToHost, 1200);
+            }
+        });
+    }
+
+    _peerInstance.on('open', () => {
+        attemptConnectionToHost();
     });
 
     _peerInstance.on('error', (err) => {
         console.warn("[SyncParty] Listener peer error:", err);
-        if (typeof showToastNotification === 'function') showToastNotification(`Room #${roomId} not found or inactive.`, 'error');
+        if (err.type === 'peer-unavailable' && retryCount < 3) {
+            retryCount++;
+            setTimeout(attemptConnectionToHost, 1500);
+        } else {
+            if (typeof showToastNotification === 'function') showToastNotification(`Room #${roomId} not found or starting up. Retrying...`, 'info');
+        }
     });
 }
 
