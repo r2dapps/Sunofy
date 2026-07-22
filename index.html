@@ -180,8 +180,9 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span id="sleep-timer-badge" class="text-[10px] bg-accent/15 text-accent border border-accent/30 px-2 py-1 rounded-lg font-bold hidden">🌙 0:00</span>
-                        <button class="nav-btn text-xs text-muted hover:text-main bg-app-card border border-app px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer" data-target="profile">
-                            <i class="fa-solid fa-circle-user text-accent"></i> Profile
+                        <button class="nav-btn text-xs text-main bg-app-card hover:border-accent border border-app p-1 pr-2.5 rounded-full flex items-center gap-2 cursor-pointer transition-all shadow-sm group" data-target="profile" title="My Profile & Settings">
+                            <img id="header-profile-avatar" src="images/icon-512.png" class="w-6 h-6 rounded-full object-cover border border-accent/40 group-hover:scale-105 transition-transform">
+                            <span class="font-bold text-xs profile-name-display hidden sm:inline">Music Curator</span>
                         </button>
                     </div>
                 </div>
@@ -838,6 +839,55 @@
             </div>
 
             <button id="cancel-sleep-timer-btn" class="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold transition-colors">Turn Off Timer</button>
+        </div>
+    </div>
+
+    <!-- SYNC PARTY ROOM MANAGEMENT CONSOLE MODAL -->
+    <div id="sync-room-manage-modal" class="fixed inset-0 bg-black/80 z-[960] flex items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-app-card border border-app rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-app pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-400/40 text-purple-300 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-users-rays"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-main">VibeSync™ Room Console</h3>
+                        <p class="text-[10px] text-muted">Real-time room member management</p>
+                    </div>
+                </div>
+                <button id="close-sync-manage-modal-btn" onclick="document.getElementById('sync-room-manage-modal').classList.add('hidden')" class="text-xs text-muted hover:text-main p-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Room Info Header Box -->
+            <div class="bg-app-body border border-app rounded-xl p-3 flex justify-between items-center">
+                <div>
+                    <div class="text-[10px] text-muted uppercase font-bold">Room Access Code</div>
+                    <div class="text-lg font-black text-purple-300 tracking-wider flex items-center gap-2">
+                        <span id="sync-modal-room-code">4821</span>
+                        <button id="copy-sync-code-btn" onclick="copySyncRoomCodeToClipboard()" class="text-xs text-muted hover:text-main p-1 cursor-pointer" title="Copy Code"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span id="sync-modal-role-badge" class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold uppercase">HOST</span>
+                </div>
+            </div>
+
+            <!-- Members List Header -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-main flex items-center gap-1.5"><i class="fa-solid fa-user-group text-accent"></i> Joined Listeners (<span id="sync-modal-member-count">0</span>)</span>
+                    <button id="sync-modal-force-sync-btn" onclick="if(typeof broadcastHostSyncState==='function') broadcastHostSyncState('MANUAL_SYNC')" class="text-[10px] bg-purple-600 hover:bg-purple-500 text-white font-bold px-2 py-1 rounded-md cursor-pointer"><i class="fa-solid fa-rotate"></i> Sync All</button>
+                </div>
+
+                <!-- Members List Container -->
+                <div id="sync-modal-members-list" class="space-y-2 max-h-56 overflow-y-auto custom-scroll pr-1"></div>
+            </div>
+
+            <div class="pt-2 border-t border-app flex gap-2">
+                <button onclick="leaveSyncPartyRoom(); document.getElementById('sync-room-manage-modal').classList.add('hidden');" class="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-right-from-bracket"></i> Leave Room
+                </button>
+            </div>
         </div>
     </div>
 

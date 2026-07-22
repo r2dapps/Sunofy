@@ -3,8 +3,11 @@
 function setupProfileDataBindings() {
     const sideAvatar = document.getElementById('profile-avatar-side');
     const mainAvatar = document.getElementById('profile-avatar-main');
+    const headerAvatar = document.getElementById('header-profile-avatar');
+
     if (sideAvatar) sideAvatar.src = AppState.profile.avatar;
     if (mainAvatar) mainAvatar.src = AppState.profile.avatar;
+    if (headerAvatar) headerAvatar.src = AppState.profile.avatar;
 
     document.querySelectorAll('.profile-name-display').forEach(el => el.innerText = AppState.profile.name);
     document.querySelectorAll('.profile-handle-display').forEach(el => el.innerText = AppState.profile.handle);
@@ -25,6 +28,7 @@ function setupProfileDataBindings() {
                     saveStateToLocalStorage('ok_profile', AppState.profile);
                     if (sideAvatar) sideAvatar.src = evt.target.result;
                     if (mainAvatar) mainAvatar.src = evt.target.result;
+                    if (headerAvatar) headerAvatar.src = evt.target.result;
                 };
                 reader.readAsDataURL(file);
             }
