@@ -60,13 +60,61 @@ Click the button below to deploy your private instance of Sunofy directly to Ver
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fr2dapps%2FSunofy)
 
-### How to Make Your Repository Private
+---
+
+### 🐙 Deploying with a Secondary / Collaborated GitHub Account
+
+If you are using a secondary GitHub account or a collaborated team account linked to Vercel, follow these exact setup steps to ensure 100% clean deployment without build errors:
+
+#### 1️⃣ Fork or Import Repository
+- Fork or push the repository to your secondary GitHub account.
+
+#### 2️⃣ Grant Vercel Access to the Repository
+- Open your **Vercel Dashboard** -> Click **Add New...** -> **Project**.
+- If your secondary repository does not appear in the list:
+  1. Click **Adjust GitHub App Permissions** link in Vercel.
+  2. Select your secondary GitHub account/organization.
+  3. Under **Repository Access**, select **All Repositories** or select `Sunofy`.
+  4. Click **Save**.
+
+#### 3️⃣ Required Vercel Project Settings (CRITICAL)
+When importing the project in Vercel, configure the build settings as follows:
+
+| Vercel Setting | Required Value | Notes |
+| :--- | :--- | :--- |
+| **Framework Preset** | `Other` | **Do NOT select Vite, React, or Next.js**. Sunofy is pure Vanilla HTML5 + Serverless. |
+| **Root Directory** | `./` | Leave default root directory. |
+| **Build Command** | *Leave EMPTY* | Override default by leaving blank (no build script needed). |
+| **Output Directory** | *Leave EMPTY* | Override default by leaving blank (serves root `index.html`). |
+| **Install Command** | *Leave EMPTY* | No dependencies required for static frontend. |
+
+> [!IMPORTANT]
+> **Why set Framework Preset to "Other"?**  
+> If Vercel auto-detects a framework preset like Vite or Next.js, it will try to run `npm run build` which will fail because Sunofy is built with zero-build-step Vanilla HTML/JS and Vercel Serverless Functions (`api/search/songs.js`). Setting Preset to `Other` guarantees 100% instant deployment success!
+
+---
+
+### 🛠️ Common Vercel Deployment Troubleshooting
+
+- ❌ **Build Error: `Command "npm run build" exited with 1`**  
+  👉 **Fix:** Go to **Project Settings** -> **Build & Development Settings** -> Toggle **Override** next to **Build Command** and leave it completely blank. Set Framework Preset to `Other`. Re-deploy.
+
+- ❌ **API 404 Error on Search**  
+  👉 **Fix:** Make sure both `vercel.json` and the `api/` folder are committed to your repository's `main` branch. Vercel automatically exposes `api/search/songs.js` as `/api/search/songs`.
+
+- ❌ **Repository Not Appearing in Vercel Import List**  
+  👉 **Fix:** Check your secondary GitHub account permissions under GitHub -> **Settings** -> **Applications** -> **Vercel** -> Ensure repository access is enabled.
+
+---
+
+### 🔒 How to Make Your Repository Private After Deployment
+
 Once your project is deployed on Vercel:
-1. Go to your repository on GitHub (`https://github.com/r2dapps/Sunofy`).
+1. Go to your repository on GitHub (`https://github.com/your-username/Sunofy`).
 2. Click **Settings** -> Scroll to **Danger Zone**.
 3. Click **Change repository visibility** -> Select **Make private**.
 4. Confirm by typing the repository name.
-5. **Vercel will continue working seamlessly** on cellular data and Wi-Fi using your private Vercel deployment URL (`https://your-sunofy-app.vercel.app`)!
+5. **Vercel will continue working seamlessly** on cellular data and Wi-Fi using your private Vercel URL (`https://your-sunofy-app.vercel.app`)!
 
 ---
 
