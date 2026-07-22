@@ -294,8 +294,8 @@
                 </div>
             </section>
 
-            <!-- 5. VIBESYNC™ SYNC PARTY DEDICATED VIEW PANEL -->
-            <section id="view-syncparty" class="app-view space-y-4 hidden">
+            <!-- 5. VIBESYNC™ WATCH PARTY STAGE VIEW PANEL -->
+            <section id="view-syncparty" class="app-view space-y-5 hidden">
                 <!-- TAP TO UNMUTE SYNC AUDIO BANNER FOR BROWSER AUTOPLAY RESTRICTION -->
                 <div id="sync-unmute-banner" class="hidden">
                     <button id="unmute-sync-audio-btn" onclick="if(typeof forceUnlockSyncAudio==='function') forceUnlockSyncAudio()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xl cursor-pointer animate-pulse transition-transform active:scale-95 border border-emerald-400/50">
@@ -304,25 +304,57 @@
                     </button>
                 </div>
 
-                <!-- COLLAPSIBLE ROOM CREATION & JOIN CARD -->
-                <div class="bg-gradient-to-r from-purple-950/60 via-app-card to-app-card border border-purple-500/40 rounded-2xl p-4 md:p-5 space-y-4 shadow-xl relative overflow-hidden">
-                    <div class="flex justify-between items-center cursor-pointer select-none" data-accordion-toggle="sync-room-options-body">
-                        <div class="space-y-0.5">
-                            <h2 class="text-sm md:text-base font-extrabold text-main flex items-center gap-2">
-                                <i class="fa-solid fa-users-rays text-purple-400 text-base animate-pulse"></i> VibeSync™ Listen Together Party
-                            </h2>
-                            <p class="text-[11px] text-muted">Listen to songs in real-time sync with friends & family worldwide.</p>
+                <!-- WATCH PARTY CENTER STAGE CINEMA CARD -->
+                <div class="bg-gradient-to-b from-purple-950/80 via-[#0a0d18] to-app-card border border-purple-500/40 rounded-3xl p-5 md:p-6 space-y-5 shadow-2xl relative overflow-hidden text-center">
+                    <!-- Top Stage Room Bar -->
+                    <div class="flex justify-between items-center border-b border-purple-500/20 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span class="text-xs font-black text-white uppercase tracking-wider">LIVE WATCH PARTY STAGE</span>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span id="sync-view-status-badge" class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-400/40 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                        <div class="flex items-center gap-2">
+                            <span id="sync-view-status-badge" class="text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/40 px-3 py-1 rounded-full font-bold uppercase tracking-wide">
                                 Offline / Ready
                             </span>
-                            <i class="fa-solid fa-chevron-down text-xs text-muted transition-transform duration-300"></i>
+                            <button id="copy-stage-code-btn" onclick="copySyncRoomCodeToClipboard()" class="text-xs bg-app-card hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/40 px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer hidden">
+                                <i class="fa-solid fa-share-nodes mr-1"></i> Share Room
+                            </button>
                         </div>
                     </div>
 
+                    <!-- CENTER STAGE ROTATING VINYL DECK -->
+                    <div class="flex flex-col items-center justify-center space-y-4 py-2">
+                        <div class="relative w-36 h-36 md:w-44 md:h-44 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-accent to-pink-500 shadow-[0_0_40px_rgba(168,85,247,0.3)]">
+                            <img id="stage-track-art" src="images/icon-512.png" class="w-full h-full rounded-full object-cover border-4 border-[#070913] shadow-inner vinyl-spin">
+                            <!-- Center Spindle Hole -->
+                            <div class="w-6 h-6 rounded-full bg-[#070913] border-2 border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl"></div>
+                        </div>
+
+                        <div class="space-y-1 max-w-md mx-auto">
+                            <h3 id="stage-track-title" class="text-base md:text-lg font-black text-white truncate">Select or Sync a Track</h3>
+                            <p id="stage-track-artist" class="text-xs text-purple-300 font-medium truncate">Sunofy VibeSync™ Stage</p>
+                        </div>
+
+                        <!-- LIVE PARTY EMOJI REACTION FLOAT BAR -->
+                        <div class="flex items-center justify-center gap-2 pt-1">
+                            <button onclick="sendPartyEmojiReaction('❤️')" class="w-9 h-9 rounded-full bg-app-card/80 hover:bg-purple-600/40 border border-purple-500/30 text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95">❤️</button>
+                            <button onclick="sendPartyEmojiReaction('🔥')" class="w-9 h-9 rounded-full bg-app-card/80 hover:bg-purple-600/40 border border-purple-500/30 text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95">🔥</button>
+                            <button onclick="sendPartyEmojiReaction('🎵')" class="w-9 h-9 rounded-full bg-app-card/80 hover:bg-purple-600/40 border border-purple-500/30 text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95">🎵</button>
+                            <button onclick="sendPartyEmojiReaction('👏')" class="w-9 h-9 rounded-full bg-app-card/80 hover:bg-purple-600/40 border border-purple-500/30 text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95">👏</button>
+                            <button onclick="sendPartyEmojiReaction('🎉')" class="w-9 h-9 rounded-full bg-app-card/80 hover:bg-purple-600/40 border border-purple-500/30 text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95">🎉</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLLAPSIBLE ROOM CREATION & JOIN SETUP CARD -->
+                <div class="bg-app-card border border-app rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center cursor-pointer select-none" data-accordion-toggle="sync-room-options-body">
+                        <h3 class="text-xs md:text-sm font-bold text-main flex items-center gap-2"><i class="fa-solid fa-sliders text-purple-400"></i> Room Setup & Connections</h3>
+                        <i class="fa-solid fa-chevron-down text-xs text-muted transition-transform duration-300"></i>
+                    </div>
+
                     <!-- Collapsible Room Setup Body -->
-                    <div id="sync-room-options-body" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div id="sync-room-options-body" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         <!-- Host Room Card -->
                         <div class="bg-app-body border border-app hover:border-purple-400/50 p-3.5 rounded-xl space-y-3 transition-all flex flex-col justify-between">
                             <div class="flex items-center gap-2.5">
@@ -331,7 +363,7 @@
                                 </div>
                                 <div class="min-w-0">
                                     <h4 class="text-xs font-bold text-main truncate">Host a Music Room</h4>
-                                    <p class="text-[10px] text-muted truncate">Create a room & broadcast queue</p>
+                                    <p class="text-[10px] text-muted truncate">Create room & broadcast queue</p>
                                 </div>
                             </div>
                             <button id="page-host-sync-btn" onclick="createSyncPartyRoom()" class="w-full bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer">
@@ -357,12 +389,11 @@
                     </div>
                 </div>
 
-                <!-- COLLAPSIBLE ACTIVE PARTY MEMBERS PANEL -->
+                <!-- COLLAPSIBLE AUDIENCE & MEMBERS STAGE GRID -->
                 <div id="sync-page-active-room-panel" class="bg-app-card border border-app rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
                     <div class="flex justify-between items-center cursor-pointer select-none border-b border-app pb-3" data-accordion-toggle="sync-members-body">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-xs md:text-sm font-bold text-main flex items-center gap-2"><i class="fa-solid fa-users text-purple-400"></i> Active Party Members</h3>
-                            <span id="sync-page-member-count" class="text-xs font-mono font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md">0</span>
+                            <h3 class="text-xs md:text-sm font-bold text-main flex items-center gap-2"><i class="fa-solid fa-users text-purple-400"></i> Audience Stage (<span id="sync-page-member-count">0</span>)</h3>
                         </div>
                         <div class="flex items-center gap-2">
                             <button onclick="event.stopPropagation(); if(typeof broadcastHostSyncState==='function') broadcastHostSyncState('MANUAL_SYNC')" class="text-[11px] bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-sm">
@@ -373,7 +404,7 @@
                     </div>
 
                     <!-- Collapsible Members Body -->
-                    <div id="sync-members-body" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <div id="sync-page-members-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         <p class="text-xs text-muted text-center col-span-full py-6 italic">No active sync room session. Host or join a room above!</p>
                     </div>
                 </div>

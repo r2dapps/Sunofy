@@ -260,6 +260,52 @@ function handleIncomingHostStateCommand(data) {
             }
         }
     }
+    updateWatchPartyStageTrackUI();
+}
+
+function sendPartyEmojiReaction(emoji) {
+    createFloatingEmojiAnimation(emoji);
+    if (AppState.syncRoomId) {
+        if (AppState.isSyncHost) {
+            _peerConnections.forEach(conn => {
+                if (conn && conn.open) conn.send({ type: 'EMOJI_REACTION', emoji: emoji });
+            });
+        } else if (_activeHostConnection && _activeHostConnection.open) {
+            _activeHostConnection.send({ type: 'EMOJI_REACTION', emoji: emoji });
+        }
+    }
+}
+
+function createFloatingEmojiAnimation(emoji) {
+    const el = document.createElement('div');
+    el.innerText = emoji;
+    el.className = "fixed bottom-28 text-3xl pointer-events-none z-[990] transition-all duration-1000 transform opacity-100";
+    el.style.left = `${Math.floor(30 + Math.random() * 40)}%`;
+    document.body.appendChild(el);
+    setTimeout(() => {
+        el.style.transform = `translateY(-140px) scale(1.6)`;
+        el.style.opacity = '0';
+    }, 50);
+    setTimeout(() => el.remove(), 1000);
+}
+
+function updateWatchPartyStageTrackUI() {
+    const titleEl = document.getElementById('stage-track-title');
+    const artistEl = document.getElementById('stage-track-artist');
+    const artEl = document.getElementById('stage-track-art');
+    const copyBtn = document.getElementById('copy-stage-code-btn');
+
+    if (AppState.currentTrack) {
+        if (titleEl) titleEl.innerText = AppState.currentTrack.name || AppState.currentTrack.title || 'Live Track';
+        if (artistEl) artistEl.innerText = AppState.currentTrack.primaryArtists || AppState.currentTrack.artist || 'Playing Live';
+        const img = AppState.currentTrack.image?.[AppState.currentTrack.image.length - 1]?.url || AppState.currentTrack.art || 'images/icon-512.png';
+        if (artEl) artEl.src = img;
+    }
+
+    if (copyBtn) {
+        if (AppState.syncRoomId) copyBtn.classList.remove('hidden');
+        else copyBtn.classList.add('hidden');
+    }
 }
 
 function forceUnlockSyncAudio() {
