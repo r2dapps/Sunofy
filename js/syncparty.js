@@ -216,6 +216,7 @@ function broadcastHostSyncState(command, extra = {}) {
     if (command === 'MANUAL_SYNC' && typeof showToastNotification === 'function') {
         showToastNotification(`Broadcasted track playback to ${_peerConnections.length} listeners!`, 'success');
     }
+    updateWatchPartyStageTrackUI();
 }
 
 function handleIncomingHostStateCommand(data) {
@@ -294,12 +295,20 @@ function updateWatchPartyStageTrackUI() {
     const artistEl = document.getElementById('stage-track-artist');
     const artEl = document.getElementById('stage-track-art');
     const copyBtn = document.getElementById('copy-stage-code-btn');
+    const audioNode = document.getElementById('audio-node');
 
     if (AppState.currentTrack) {
         if (titleEl) titleEl.innerText = AppState.currentTrack.name || AppState.currentTrack.title || 'Live Track';
         if (artistEl) artistEl.innerText = AppState.currentTrack.primaryArtists || AppState.currentTrack.artist || 'Playing Live';
         const img = AppState.currentTrack.image?.[AppState.currentTrack.image.length - 1]?.url || AppState.currentTrack.art || 'images/icon-512.png';
-        if (artEl) artEl.src = img;
+        if (artEl) {
+            artEl.src = img;
+            if (audioNode && !audioNode.paused) {
+                artEl.classList.add('vinyl-spin');
+            } else {
+                artEl.classList.remove('vinyl-spin');
+            }
+        }
     }
 
     if (copyBtn) {
@@ -455,6 +464,8 @@ function updateSyncPartyDockUI() {
     const syncBtn = document.getElementById('sync-dock-force-sync-btn');
     const badge = document.getElementById('sync-room-badge');
 
+    const setupCard = document.getElementById('sync-room-setup-card');
+
     if (AppState.syncRoomId) {
         if (dockBar) {
             dockBar.classList.remove('hidden', 'translate-y-full', 'opacity-0');
@@ -475,6 +486,7 @@ function updateSyncPartyDockUI() {
             badge.innerText = `LIVE ROOM #${AppState.syncRoomId}`;
             badge.classList.remove('hidden');
         }
+        if (setupCard) setupCard.classList.add('hidden');
     } else {
         if (dockBar) {
             dockBar.classList.replace('translate-y-0', 'translate-y-full');
@@ -482,7 +494,9 @@ function updateSyncPartyDockUI() {
             setTimeout(() => dockBar.classList.add('hidden'), 300);
         }
         if (badge) badge.classList.add('hidden');
+        if (setupCard) setupCard.classList.remove('hidden');
     }
+    updateWatchPartyStageTrackUI();
 }
 
 function openSyncPartyNavigationTarget() {

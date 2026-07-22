@@ -173,14 +173,19 @@ function toggleAudioPlayPause() {
 function toggleRotationAnimation(shouldSpin) {
     const dockArt = document.getElementById('dock-art');
     const fsArt = document.getElementById('fs-art');
+    const stageArt = document.getElementById('stage-track-art');
     
     if (shouldSpin) {
         if (dockArt) dockArt.classList.add('vinyl-spin');
         if (fsArt) fsArt.classList.add('vinyl-spin');
+        if (stageArt) stageArt.classList.add('vinyl-spin');
     } else {
         if (dockArt) dockArt.classList.remove('vinyl-spin');
         if (fsArt) fsArt.classList.remove('vinyl-spin');
+        if (stageArt) stageArt.classList.remove('vinyl-spin');
     }
+
+    if (typeof updateWatchPartyStageTrackUI === 'function') updateWatchPartyStageTrackUI();
 }
 
 function setupFullscreenPlayerControls() {
