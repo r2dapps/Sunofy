@@ -190,7 +190,7 @@ function setupFullscreenPlayerControls() {
 
     if (trigger) {
         trigger.addEventListener('click', () => {
-            if (AppState.queueIndex > -1) {
+            if (AppState.currentTrack || AppState.queueIndex > -1) {
                 if (fsModal) fsModal.classList.remove('translate-y-full');
             }
         });

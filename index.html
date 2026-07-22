@@ -615,6 +615,8 @@
             <i class="fa-solid fa-sliders text-sm"></i>
             <span class="text-[9px] font-bold">Profile</span>
         </button>
+    </nav>
+
     <!-- DEDICATED SYNC PARTY FLOATING BOTTOM BAR -->
     <div id="sync-party-bottom-bar" class="fixed bottom-[115px] md:bottom-[70px] left-2 right-2 md:left-auto md:right-4 md:w-[480px] bg-purple-950/95 border border-purple-500/50 backdrop-blur-xl rounded-2xl p-2.5 px-3.5 shadow-2xl z-[510] flex items-center justify-between gap-2 transition-all duration-300 transform translate-y-full opacity-0 hidden">
         <div class="flex items-center gap-2.5 min-w-0">
@@ -641,7 +643,7 @@
     </div>
 
     <!-- DOCK CONSOLE MINI PLAYER FOOTER - FLOATING OVERNAV WITH GAP FIX -->
-    <footer id="playback-dock" class="fixed bottom-[64px] md:bottom-0 left-2 right-2 md:left-0 md:right-0 bg-app-nav/95 backdrop-blur-md border border-app rounded-2xl md:rounded-none shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-[500] transition-transform duration-300 flex flex-col cursor-pointer overflow-hidden">
+    <footer id="playback-dock" class="fixed bottom-[64px] md:bottom-0 left-2 right-2 md:left-0 md:right-0 bg-app-card bg-[#0d111d] border border-app rounded-2xl md:rounded-none shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-[500] transition-transform duration-300 flex flex-col cursor-pointer overflow-hidden">
         <!-- Top Edge Progress Bar Line -->
         <div class="w-full bg-gray-800/50 h-1 overflow-hidden">
             <div id="dock-progress-bar" class="bg-accent h-full w-0 transition-all duration-200"></div>
@@ -836,6 +838,25 @@
             </div>
 
             <button id="cancel-sleep-timer-btn" class="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 py-2 rounded-xl text-xs font-bold transition-colors">Turn Off Timer</button>
+        </div>
+    </div>
+
+    <!-- JOIN SYNC PARTY ROOM MODAL -->
+    <div id="join-sync-modal" class="fixed inset-0 bg-black/80 z-[950] flex items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-app-card border border-app rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl text-center">
+            <div class="flex justify-between items-center border-b border-app pb-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-main flex items-center gap-2"><i class="fa-solid fa-users-rays text-purple-400"></i> Join Sync Party</h3>
+                <button id="close-join-sync-modal-btn" class="text-xs text-muted hover:text-main p-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <p class="text-xs text-muted">Enter the 4-digit Room Code created by the Host:</p>
+
+            <form id="join-sync-room-form" class="space-y-3">
+                <input type="text" id="sync-room-input-code" maxlength="4" placeholder="4821" class="w-full bg-app-body border border-app rounded-xl p-3 text-center text-lg font-black text-accent tracking-widest uppercase focus:border-accent focus:outline-none">
+                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-lg">
+                    <i class="fa-solid fa-right-to-bracket"></i> Join Party
+                </button>
+            </form>
         </div>
     </div>
 

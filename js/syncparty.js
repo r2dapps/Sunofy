@@ -10,13 +10,39 @@ function initSyncPartyEngine() {
 function setupSyncPartyControls() {
     const hostBtn = document.getElementById('host-sync-btn');
     const joinBtn = document.getElementById('join-sync-btn');
+    const modal = document.getElementById('join-sync-modal');
+    const closeBtn = document.getElementById('close-join-sync-modal-btn');
+    const form = document.getElementById('join-sync-room-form');
 
     if (hostBtn) hostBtn.onclick = () => createSyncPartyRoom();
-    if (joinBtn) {
+    
+    if (joinBtn && modal) {
         joinBtn.onclick = () => {
-            const inputCode = prompt("Enter 4-digit Sync Party Room Code (e.g. 4821):");
-            if (inputCode && inputCode.trim().length === 4) {
-                joinSyncPartyRoom(inputCode.trim());
+            modal.classList.remove('hidden');
+            const input = document.getElementById('sync-room-input-code');
+            if (input) {
+                input.value = "";
+                input.focus();
+            }
+        };
+    }
+
+    if (closeBtn && modal) {
+        closeBtn.onclick = () => modal.classList.add('hidden');
+    }
+
+    if (form && modal) {
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const input = document.getElementById('sync-room-input-code');
+            const code = input ? input.value.trim() : '';
+            if (code.length === 4) {
+                modal.classList.add('hidden');
+                joinSyncPartyRoom(code);
+            } else {
+                if (typeof showToastNotification === 'function') {
+                    showToastNotification("Enter valid 4-digit room code.", 'error');
+                }
             }
         };
     }
