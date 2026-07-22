@@ -301,6 +301,7 @@ async function initializeTrackTargetPlayback(index) {
     updateFloatingDockInterfaceUI();
     updateNativeMediaSession(track);
     toggleRotationAnimation(true);
+    if (typeof broadcastSyncCommand === 'function') broadcastSyncCommand('PLAY_TRACK', { track });
 
     const audioNode = document.getElementById('audio-node');
 
@@ -314,17 +315,29 @@ async function initializeTrackTargetPlayback(index) {
                 if (audioNode) {
                     audioNode.src = URL.createObjectURL(blob);
                     audioNode.load();
-                    audioNode.play();
+                    safePlayAudioNode(audioNode);
                 }
             } else {
                 const directUrl = track.downloadUrl?.[track.downloadUrl.length - 1]?.url || track.audioUrl || '';
                 if (audioNode) {
                     audioNode.src = directUrl;
                     audioNode.load();
-                    audioNode.play();
+                    safePlayAudioNode(audioNode);
                 }
             }
         };
+    }
+}
+
+function safePlayAudioNode(audioNode) {
+    if (!audioNode) return;
+    const playPromise = audioNode.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            if (error.name !== 'AbortError') {
+                console.warn("[Player] Playback handle:", error.message);
+            }
+        });
     }
 }
 

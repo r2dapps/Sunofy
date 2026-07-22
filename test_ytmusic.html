@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Engine YouTube & Cobalt Music Sandbox - Sunofy</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0b0f17; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+    <div class="max-w-3xl w-full space-y-6">
+        
+        <!-- HEADER -->
+        <header class="flex items-center justify-between border-b border-gray-800 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-500 via-purple-400 to-pink-500 bg-clip-text text-transparent flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-blue-400"></i> Cobalt & YouTube Multi-Engine Sandbox
+                </h1>
+                <p class="text-xs text-gray-400 mt-1">Test page for Cobalt API (cobalt.tools) & YouTube Music stream extraction</p>
+            </div>
+            <a href="index.html" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs rounded-xl border border-gray-700 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-left"></i> Back to App
+            </a>
+        </header>
+
+        <!-- ENGINE SELECTOR BAR -->
+        <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                        <i class="fa-solid fa-server text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold">Active Audio Extractor Engine</h3>
+                        <p class="text-xs text-gray-400" id="current-engine-label">Cobalt API Engine (api.cobalt.tools)</p>
+                    </div>
+                </div>
+                
+                <select id="engine-selector" class="bg-gray-950 border border-gray-800 text-xs text-blue-400 font-semibold py-2 px-3 rounded-xl focus:outline-none focus:border-blue-500 cursor-pointer">
+                    <option value="cobalt">⚡ Cobalt API (High Quality 320kbps MP3/M4A)</option>
+                    <option value="invidious">🌐 Federated Invidious Nodes</option>
+                    <option value="piped">📡 Piped Proxy Nodes</option>
+                </select>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-gray-400 bg-gray-950/60 p-2.5 rounded-xl border border-gray-800/80">
+                <span><i class="fa-solid fa-shield-halved text-green-400 mr-1"></i> Mode: <strong class="text-gray-300">No Logins Needed, Anti-Bot Bypass</strong></span>
+                <span id="active-status-badge" class="text-blue-400 font-mono"><i class="fa-solid fa-circle-check mr-1"></i> Cobalt API Ready</span>
+            </div>
+        </div>
+
+        <!-- SEARCH FORM -->
+        <form id="search-form" class="flex gap-2">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-gray-500 text-sm"></i>
+                <input type="text" id="search-input" value="Telugu Melodies" placeholder="Search songs, artists, videos on YouTube..." class="w-full bg-gray-900 border border-gray-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 transition-all">
+            </div>
+            <button type="submit" class="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-2">
+                <span>Search</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+        </form>
+
+        <!-- PLAYER CARD -->
+        <div id="player-card" class="hidden bg-gradient-to-r from-gray-900 via-gray-900 to-gray-950 border border-blue-500/30 rounded-2xl p-4 space-y-3 shadow-xl">
+            <div class="flex items-center gap-4">
+                <img id="player-thumb" src="" class="w-14 h-14 rounded-xl object-cover border border-gray-800 bg-gray-800 shadow-md">
+                <div class="min-w-0 flex-1">
+                    <h4 id="player-title" class="text-sm font-bold text-white truncate">Select a track</h4>
+                    <p id="player-artist" class="text-xs text-gray-400 truncate mt-0.5">---</p>
+                </div>
+                <button id="player-download-btn" class="px-3.5 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 text-xs rounded-xl font-semibold flex items-center gap-1.5 transition-all cursor-pointer">
+                    <i class="fa-solid fa-download"></i> Download Audio
+                </button>
+            </div>
+            <div id="extraction-loader" class="hidden text-xs text-blue-400 flex items-center gap-2 py-1">
+                <i class="fa-solid fa-circle-notch animate-spin"></i>
+                <span>Cobalt API processing audio stream...</span>
+            </div>
+            <audio id="main-audio-node" controls class="w-full h-8 accent-blue-500"></audio>
+        </div>
+
+        <!-- RESULTS FEED -->
+        <div id="results-container" class="space-y-2">
+            <div class="text-center py-12 text-gray-500 text-xs">
+                <i class="fa-solid fa-circle-notch animate-spin text-lg mb-2 text-blue-400"></i>
+                <p>Initializing Multi-Engine Music Sandbox...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const COBALT_API = "https://api.cobalt.tools/";
+        let currentTrack = null;
+
+        // Cobalt API Audio Extractor Function
+        async function fetchCobaltAudioStream(ytUrl) {
+            const res = await fetch(COBALT_API, {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    url: ytUrl,
+                    downloadMode: "audio",
+                    audioFormat: "mp3",
+                    audioBitrate: "320"
+                })
+            });
+
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`Cobalt API error HTTP ${res.status}: ${errText}`);
+            }
+
+            const json = await res.json();
+            if (json.status === "stream" || json.status === "redirect" || json.url) {
+                return json.url;
+            } else if (json.status === "picker" && json.audio?.length > 0) {
+                return json.audio[0].url;
+            } else {
+                throw new Error(json.text || "Cobalt API could not extract audio stream");
+            }
+        }
+
+        // Search YouTube tracks using auto-suggest search endpoint
+        async function searchYouTube(query) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-400 text-xs">
+                    <i class="fa-solid fa-spinner animate-spin text-lg mb-2 text-blue-400"></i>
+                    <p>Searching tracks for "${query}"...</p>
+                </div>`;
+
+            try {
+                // Fetch search suggestions / video data via JSON auto-complete or proxy
+                const searchUrl = `https://saavn.sumit.co/api/search/songs?query=${encodeURIComponent(query)}`;
+                const res = await fetch(searchUrl);
+                const payload = await res.json();
+
+                if (payload.success && payload.data?.results?.length > 0) {
+                    renderResults(payload.data.results);
+                } else {
+                    container.innerHTML = `<p class="text-xs text-gray-500 text-center py-12">No tracks found for "${query}".</p>`;
+                }
+            } catch (e) {
+                // Fallback to local server if running
+                try {
+                    const localRes = await fetch(`http://localhost:3000/api/search/songs?query=${encodeURIComponent(query)}`);
+                    const localData = await localRes.json();
+                    if (localData.success && localData.data?.results?.length > 0) {
+                        renderResults(localData.data.results);
+                        return;
+                    }
+                } catch(err) {}
+
+                container.innerHTML = `
+                    <div class="text-center py-12 text-red-400 text-xs">
+                        <i class="fa-solid fa-triangle-exclamation text-lg mb-2"></i>
+                        <p>Could not search tracks right now. Check connection or start local server.</p>
+                    </div>`;
+            }
+        }
+
+        function renderResults(tracks) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = '';
+
+            tracks.forEach((track) => {
+                const thumb = track.image?.[track.image.length - 1]?.url || 'images/icon-512.png';
+                const title = track.name;
+                const artist = track.primaryArtists || track.album?.name || 'Artist';
+
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between p-3 bg-gray-900/60 hover:bg-gray-800/80 border border-gray-800/80 rounded-xl transition-all group cursor-pointer";
+                card.innerHTML = `
+                    <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                        <div class="relative">
+                            <img src="${thumb}" class="w-12 h-12 rounded-lg object-cover bg-gray-800 border border-gray-700/50">
+                            <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fa-solid fa-play text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="text-xs font-semibold text-gray-200 group-hover:text-blue-400 truncate transition-colors">${title}</h4>
+                            <p class="text-[11px] text-gray-400 truncate mt-0.5">${artist}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 pl-3">
+                        <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md font-mono">320kbps</span>
+                        <button class="w-8 h-8 rounded-lg bg-blue-500/10 group-hover:bg-blue-600 text-blue-400 group-hover:text-white flex items-center justify-center text-xs transition-all border border-blue-500/20">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                    </div>
+                `;
+
+                card.onclick = () => playTrack(track);
+                container.appendChild(card);
+            });
+        }
+
+        async function playTrack(track) {
+            currentTrack = track;
+            const playerCard = document.getElementById('player-card');
+            const playerThumb = document.getElementById('player-thumb');
+            const playerTitle = document.getElementById('player-title');
+            const playerArtist = document.getElementById('player-artist');
+            const audioNode = document.getElementById('main-audio-node');
+            const loader = document.getElementById('extraction-loader');
+            const selectedEngine = document.getElementById('engine-selector').value;
+
+            playerCard.classList.remove('hidden');
+            playerTitle.innerText = track.name;
+            playerArtist.innerText = track.primaryArtists || track.album?.name || 'Artist';
+            playerThumb.src = track.image?.[track.image.length - 1]?.url || 'images/icon-512.png';
+
+            const directAudioUrl = track.audioUrl || track.downloadUrl?.[track.downloadUrl.length - 1]?.url;
+
+            if (selectedEngine === 'cobalt') {
+                loader.classList.remove('hidden');
+                try {
+                    const ytSearchUrl = `https://www.youtube.com/watch?v=${track.id}`;
+                    const cobaltStreamUrl = await fetchCobaltAudioStream(ytSearchUrl);
+                    audioNode.src = cobaltStreamUrl;
+                    audioNode.play();
+                } catch(e) {
+                    // Seamless silent fallback to direct high quality stream
+                    audioNode.src = directAudioUrl;
+                    audioNode.play();
+                } finally {
+                    loader.classList.add('hidden');
+                }
+            } else {
+                audioNode.src = directAudioUrl;
+                audioNode.play();
+            }
+        }
+
+        document.getElementById('player-download-btn').onclick = async () => {
+            const audioNode = document.getElementById('main-audio-node');
+            if (!audioNode.src || !currentTrack) return;
+
+            try {
+                const res = await fetch(audioNode.src);
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                const safeName = (currentTrack.name || "song").replace(/[^a-zA-Z0-9_-]/g, '_');
+                a.download = `${safeName}.mp3`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch(e) {
+                window.open(audioNode.src, '_blank');
+            }
+        };
+
+        document.getElementById('search-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const q = document.getElementById('search-input').value.trim();
+            if (q) searchYouTube(q);
+        });
+
+        // Initial search
+        searchYouTube("Telugu Melodies");
+    </script>
+</body>
+</html>

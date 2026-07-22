@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sunofy-pwa-v2';
+const CACHE_NAME = 'sunofy-pwa-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -50,15 +50,18 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.url.includes('saavn.sumit.co')) {
-    return; // Bypass API stream requests from SW cache
+  const url = e.request.url;
+
+  // Bypass API requests and audio stream requests from Service Worker caching completely
+  if (!url.startsWith(self.location.origin) && !url.includes('cdn.jsdelivr.net') && !url.includes('cdnjs.cloudflare.com')) {
+    return; // Allow browser to perform default direct fetch for external APIs
   }
   
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
         fetch(e.request).then((networkResponse) => {
-          if (networkResponse.status === 200) {
+          if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
           }
         }).catch(() => {});
@@ -66,15 +69,11 @@ self.addEventListener('fetch', (e) => {
       }
       
       return fetch(e.request).then((networkResponse) => {
-        if (e.request.method === 'GET' && networkResponse.status === 200) {
+        if (e.request.method === 'GET' && networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseToCache));
         }
         return networkResponse;
-      }).catch(() => {
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
       });
     })
   );

@@ -79,8 +79,71 @@ function setupProfileDataBindings() {
     setupPinSecurityHandlers();
     setupLockThemeSelectorHandlers();
     setupLockTypeSelectorHandlers();
+    setupMusicEngineHandlers();
+    setupSyncPartyRoomHandlers();
     setupProfileCardNavigation();
+    if (typeof initSyncPartyEngine === 'function') initSyncPartyEngine();
     updateProfileStats();
+}
+
+function setupMusicEngineHandlers() {
+    const btnSaavn = document.getElementById('engine-btn-saavn');
+    const btnYt = document.getElementById('engine-btn-ytmusic');
+
+    function updateEngineButtonsUI(selected) {
+        if (selected === 'ytmusic') {
+            if (btnYt) btnYt.className = "text-xs py-2 px-2.5 rounded-xl border border-red-500/40 bg-red-500/15 text-red-400 font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm";
+            if (btnSaavn) btnSaavn.className = "text-xs py-2 px-2.5 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5";
+        } else {
+            if (btnSaavn) btnSaavn.className = "text-xs py-2 px-2.5 rounded-xl border border-accent/40 bg-accent/15 text-accent font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm";
+            if (btnYt) btnYt.className = "text-xs py-2 px-2.5 rounded-xl border border-app bg-app-body text-muted hover:text-main font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5";
+        }
+    }
+
+    updateEngineButtonsUI(AppState.musicProvider || 'jiosaavn');
+
+    if (btnSaavn) {
+        btnSaavn.onclick = () => {
+            AppState.musicProvider = 'jiosaavn';
+            localStorage.setItem('ok_music_provider', 'jiosaavn');
+            updateEngineButtonsUI('jiosaavn');
+        };
+    }
+
+    if (btnYt) {
+        btnYt.onclick = () => {
+            AppState.musicProvider = 'ytmusic';
+            localStorage.setItem('ok_music_provider', 'ytmusic');
+            updateEngineButtonsUI('ytmusic');
+        };
+    }
+}
+
+function setupSyncPartyRoomHandlers() {
+    const hostBtn = document.getElementById('host-sync-btn');
+    const joinBtn = document.getElementById('join-sync-btn');
+    const leaveBtn = document.getElementById('leave-sync-btn');
+
+    if (hostBtn) {
+        hostBtn.onclick = () => {
+            if (typeof createSyncPartyRoom === 'function') createSyncPartyRoom();
+        };
+    }
+
+    if (joinBtn) {
+        joinBtn.onclick = () => {
+            const code = prompt("Enter 4-digit Sync Party Room Code from Host (e.g. 4821):");
+            if (code && typeof joinSyncPartyRoom === 'function') {
+                joinSyncPartyRoom(code);
+            }
+        };
+    }
+
+    if (leaveBtn) {
+        leaveBtn.onclick = () => {
+            if (typeof leaveSyncPartyRoom === 'function') leaveSyncPartyRoom();
+        };
+    }
 }
 
 function setupLockThemeSelectorHandlers() {
@@ -344,7 +407,10 @@ function renderPlaylistsVaultGrid() {
                     <h4 class="text-xs font-bold text-main group-hover:text-accent truncate">${pl.name}</h4>
                     <p class="text-[10px] text-muted mt-0.5 mono">${pl.tracks.length} tracks</p>
                 </div>
-                <button class="text-gray-500 hover:text-red-400 transition-colors p-1 text-xs action-del-pl"><i class="fa-solid fa-trash-can"></i></button>
+                <div class="flex items-center gap-1">
+                    ${pl.tracks.length > 0 ? `<button class="text-[10px] text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/30 px-2 py-1 rounded-lg font-bold transition-all action-dl-all-pl" title="Download all songs in playlist for offline listening"><i class="fa-solid fa-download mr-1"></i> Download All</button>` : ''}
+                    <button class="text-gray-500 hover:text-red-400 transition-colors p-1 text-xs action-del-pl"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
             </div>
             <div class="space-y-1 max-h-24 overflow-y-auto custom-scroll text-[11px] text-muted">
                 ${pl.tracks.map(t => `<div class="truncate border-b border-app py-0.5"><i class="fa-solid fa-music text-[9px] mr-1 text-gray-500"></i> ${t.name}</div>`).join('') || '<div class="text-gray-500 italic">Empty playlist</div>'}
@@ -359,7 +425,17 @@ function renderPlaylistsVaultGrid() {
                 }
             }
         };
-        card.querySelector('.action-del-pl').onclick = () => {
+
+        const dlAllBtn = card.querySelector('.action-dl-all-pl');
+        if (dlAllBtn) {
+            dlAllBtn.onclick = (e) => {
+                e.stopPropagation();
+                downloadEntirePlaylistBatch(pl);
+            };
+        }
+
+        card.querySelector('.action-del-pl').onclick = (e) => {
+            e.stopPropagation();
             AppState.playlists.splice(idx, 1);
             saveStateToLocalStorage('ok_lists', AppState.playlists);
             renderPlaylistsVaultGrid();
@@ -367,6 +443,18 @@ function renderPlaylistsVaultGrid() {
         };
         container.appendChild(card);
     });
+}
+
+async function downloadEntirePlaylistBatch(playlist) {
+    if (!playlist || !playlist.tracks || playlist.tracks.length === 0) return;
+    alert(`Starting offline download for all ${playlist.tracks.length} tracks in "${playlist.name}". They will be saved to your device cache!`);
+    
+    for (let i = 0; i < playlist.tracks.length; i++) {
+        const track = playlist.tracks[i];
+        if (typeof executeBinaryOfflineDownloadCache === 'function') {
+            await executeBinaryOfflineDownloadCache(track);
+        }
+    }
 }
 
 function launchPlaylistVaultAppendModal(track) {
@@ -410,7 +498,7 @@ function toggleFavoriteTrackState(track) {
 
 async function executeBinaryOfflineDownloadCache(track) {
     const url = track.downloadUrl?.[track.downloadUrl.length - 1]?.url || track.audioUrl || '';
-    if (!url || !idb) return;
+    if (!url) return;
     
     const dDl = document.getElementById('dock-dl-action');
     if (dDl) dDl.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i>`;
@@ -421,25 +509,46 @@ async function executeBinaryOfflineDownloadCache(track) {
         const res = await fetch(url);
         const buffer = await res.arrayBuffer();
         
-        let tx = idb.transaction("audio_files", "readwrite");
-        let store = tx.objectStore("audio_files");
-        
-        store.put({
-            id: track.id,
-            name: track.name,
-            albumName: track.album?.name || track.albumName || 'Single Track',
-            artUrl: track.image?.[track.image.length - 1]?.url || track.artUrl || '',
-            buffer: buffer
-        });
-        
-        tx.oncomplete = () => {
-            if (typeof updateFloatingDockInterfaceUI === 'function') updateFloatingDockInterfaceUI();
-            refreshOfflineViewList();
-            updateProfileStats();
-            calculateCacheStorageSize();
-        };
+        // 1. Save into IndexedDB for offline PWA playback
+        if (idb) {
+            let tx = idb.transaction("audio_files", "readwrite");
+            let store = tx.objectStore("audio_files");
+            
+            store.put({
+                id: track.id,
+                name: track.name,
+                albumName: track.album?.name || track.albumName || 'Single Track',
+                artUrl: track.image?.[track.image.length - 1]?.url || track.artUrl || '',
+                buffer: buffer
+            });
+            
+            tx.oncomplete = () => {
+                if (typeof updateFloatingDockInterfaceUI === 'function') updateFloatingDockInterfaceUI();
+                refreshOfflineViewList();
+                updateProfileStats();
+                calculateCacheStorageSize();
+            };
+        }
+
+        // 2. Trigger direct file download to user's device downloads folder
+        const blob = new Blob([buffer], { type: "audio/mp4" });
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.href = URL.createObjectURL(blob);
+        const safeFileName = (track.name || "track").replace(/[^a-zA-Z0-9_-]/g, "_");
+        downloadAnchor.download = `${safeFileName}.m4a`;
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        document.body.removeChild(downloadAnchor);
+        setTimeout(() => URL.revokeObjectURL(downloadAnchor.href), 10000);
+
     } catch(e) {
-        alert("Caching streams requires active connection access.");
+        // Fallback: direct anchor download if arrayBuffer fetch fails cross-origin
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.href = url;
+        downloadAnchor.target = "_blank";
+        downloadAnchor.download = `${(track.name || "track")}.m4a`;
+        downloadAnchor.click();
+    } finally {
         if (typeof updateFloatingDockInterfaceUI === 'function') updateFloatingDockInterfaceUI();
     }
 }

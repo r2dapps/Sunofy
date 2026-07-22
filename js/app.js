@@ -5,7 +5,19 @@ const AppState = {
     tagline: "dive into musical world",
     pin: localStorage.getItem('ok_pin') || "0908",
     lockType: localStorage.getItem('ok_lock_type') || 'pin', // 'pin', 'biometric', 'disabled'
-    apiEndpoint: "https://saavn.sumit.co/api/search/songs",
+    // Dynamic API Mirrors: uses localhost when on PC, and cloud endpoints when on mobile / GitHub Pages
+    apiMirrors: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? [
+            "http://localhost:3000/api/search/songs",
+            "./api/search/songs",
+            "https://saavn.sumit.co/api/search/songs"
+          ]
+        : [
+            "./api/search/songs",
+            "https://saavn.sumit.co/api/search/songs",
+            "https://jiosaavn-api-v3.vercel.app/api/search/songs"
+          ],
+    apiEndpoint: "./api/search/songs",
     currentTrack: null,
     queue: [],
     queueIndex: -1,
@@ -26,6 +38,9 @@ const AppState = {
     ],
     favorites: JSON.parse(localStorage.getItem('ok_favs')) || [],
     playlists: JSON.parse(localStorage.getItem('ok_lists')) || [],
+    musicProvider: localStorage.getItem('ok_music_provider') || 'jiosaavn', // 'jiosaavn', 'ytmusic'
+    syncRoomId: null,
+    isSyncHost: false,
     profile: JSON.parse(localStorage.getItem('ok_profile')) || {
         name: "Music Curator",
         handle: "@sunofy_music",
@@ -37,6 +52,70 @@ const AppState = {
 let appAuthenticated = false;
 let deferredPwaPrompt = null;
 let idb = null;
+
+// ─── API RESILIENCE LAYER ──────────────────────────────────────────────────
+// In-memory response cache: key → { data, ts }
+const _apiCache = new Map();
+const API_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Tries each mirror in AppState.apiMirrors in order.
+ * Returns parsed JSON from the first mirror that responds with 2xx.
+ * Results are cached to avoid hammering any single endpoint.
+ */
+async function apiFetch(path, params = {}) {
+    const queryStr = new URLSearchParams(params).toString();
+    const cacheKey = `${path}?${queryStr}`;
+
+    // Return cached result if still fresh (0 network requests made!)
+    const cached = _apiCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < API_CACHE_TTL) {
+        return cached.data;
+    }
+
+    const mirrors = AppState.apiMirrors;
+    let lastError;
+    const startTime = Date.now();
+
+    for (let i = 0; i < mirrors.length; i++) {
+        const base = mirrors[i];
+        const url = `${base}?${queryStr}`;
+        try {
+            const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            if (!res.ok) {
+                if (res.status === 429) {
+                    console.warn(`[API] 429 on mirror ${i}: ${base}`);
+                    continue;
+                }
+                throw new Error(`HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            
+            // Increment request count & update live metrics UI
+            AppState.requestCount = (AppState.requestCount || 0) + 1;
+            localStorage.setItem('ok_req_count', AppState.requestCount.toString());
+            const latency = Date.now() - startTime;
+            updateApiMetricsBadge(latency);
+
+            _apiCache.set(cacheKey, { data, ts: Date.now() });
+            AppState.apiEndpoint = base; // remember active mirror
+            return data;
+        } catch (err) {
+            lastError = err;
+            console.warn(`[API] Mirror ${i} failed (${base}):`, err.message);
+        }
+    }
+
+    throw lastError || new Error('All API mirrors failed');
+}
+
+function updateApiMetricsBadge(latencyMs = 24) {
+    const reqCountEl = document.getElementById('api-req-count-val');
+    const latencyEl = document.getElementById('api-latency-val');
+    if (reqCountEl) reqCountEl.innerText = `${AppState.requestCount || 0} made`;
+    if (latencyEl) latencyEl.innerText = `${latencyMs}ms`;
+}
+// ──────────────────────────────────────────────────────────────────────────
 
 // INDEXEDDB BINARY CACHE DATABASE SETUP
 function initIndexedDB() {

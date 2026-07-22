@@ -1,12 +1,22 @@
 // SEARCH ENGINE MODULE WITH RICH MUSIC FILTERS (LANGUAGES, ARTISTS, DIRECTORS & GENRES)
 
+let _searchDebounceTimer = null;
+
 function getActiveLanguageFilterQuery() {
     let selected = [];
     document.querySelectorAll('.lang-opt:checked').forEach(el => selected.push(el.value));
     return selected.length > 0 ? selected.join(',') : 'telugu,hindi,tamil,english';
 }
 
-async function triggerLiveQuerySearch(query) {
+async function triggerLiveQuerySearch(query, debounceMs = 0) {
+    // Debounce: cancel any pending search before scheduling a new one
+    if (_searchDebounceTimer) clearTimeout(_searchDebounceTimer);
+    if (debounceMs > 0) {
+        return new Promise(resolve => {
+            _searchDebounceTimer = setTimeout(() => resolve(triggerLiveQuerySearch(query, 0)), debounceMs);
+        });
+    }
+
     const spinner = document.getElementById('loading-spinner');
     const targetOutput = document.getElementById('search-output-list');
     if (spinner) spinner.classList.remove('hidden');
@@ -19,9 +29,8 @@ async function triggerLiveQuerySearch(query) {
 
     try {
         const activeLangs = getActiveLanguageFilterQuery();
-        const queryEndpoint = `${AppState.apiEndpoint}?query=${encodeURIComponent(query)}&language=${activeLangs}`;
-        const response = await fetch(queryEndpoint);
-        const payload = await response.json();
+        // Use the multi-mirror apiFetch helper (defined in app.js)
+        const payload = await apiFetch('search/songs', { query, language: activeLangs });
 
         if (payload.success && payload.data?.results?.length > 0) {
             renderSearchOutputsFeed(payload.data.results);
@@ -29,7 +38,8 @@ async function triggerLiveQuerySearch(query) {
             if (targetOutput) targetOutput.innerHTML = `<p class="text-xs text-muted text-center py-12">No songs found matching "${query}". Try selecting different filters or language options.</p>`;
         }
     } catch (e) {
-        if (targetOutput) targetOutput.innerHTML = `<p class="text-xs text-red-400 text-center py-12"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Data interface streaming failure.</p>`;
+        console.error('[Search] All mirrors failed:', e);
+        if (targetOutput) targetOutput.innerHTML = `<p class="text-xs text-red-400 text-center py-12"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Could not reach any music server. Check your connection and try again.</p>`;
     } finally {
         if (spinner) spinner.classList.add('hidden');
     }
