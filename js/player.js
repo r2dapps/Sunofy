@@ -46,6 +46,10 @@ function setupAudioHardwareEngineControls() {
                 if (lblMax) lblMax.innerText = timeMaxStr;
                 if (fsLblNow) fsLblNow.innerText = timeNowStr;
                 if (fsLblMax) fsLblMax.innerText = timeMaxStr;
+
+                if (Math.floor(audioNode.currentTime) % 2 === 0) {
+                    localStorage.setItem('ok_last_time', audioNode.currentTime.toString());
+                }
             }
         });
 
@@ -124,6 +128,46 @@ function setupAudioHardwareEngineControls() {
                 executeBinaryOfflineDownloadCache(AppState.queue[AppState.queueIndex]);
             }
         };
+    }
+
+    restoreLastSessionPlaybackState();
+}
+
+function restoreLastSessionPlaybackState() {
+    if (!AppState.currentTrack) return;
+    
+    const track = AppState.currentTrack;
+    const artUrl = track.image?.[track.image.length - 1]?.url || track.artUrl || track.art || 'images/icon-512.png';
+    const albumName = track.album?.name || track.albumName || 'Single Track';
+
+    const dTitle = document.getElementById('dock-title');
+    const dSub = document.getElementById('dock-subtitle');
+    const dArt = document.getElementById('dock-art');
+
+    if (dTitle) dTitle.innerText = track.name || track.title;
+    if (dSub) dSub.innerText = albumName;
+    if (dArt) dArt.src = artUrl;
+
+    const fsTitle = document.getElementById('fs-title');
+    const fsSub = document.getElementById('fs-subtitle');
+    const fsArt = document.getElementById('fs-art');
+    const fsAlbum = document.getElementById('fs-album-title');
+
+    if (fsTitle) fsTitle.innerText = track.name || track.title;
+    if (fsSub) fsSub.innerText = albumName;
+    if (fsArt) fsArt.src = artUrl;
+    if (fsAlbum) fsAlbum.innerText = albumName;
+
+    const dock = document.getElementById('playback-dock');
+    if (dock) dock.classList.remove('translate-y-full');
+
+    const audioNode = document.getElementById('audio-node');
+    const url = track.downloadUrl?.[track.downloadUrl.length - 1]?.url || track.audioUrl || track.url || '';
+    if (audioNode && url) {
+        audioNode.src = url;
+        if (AppState.lastTime > 0) {
+            audioNode.currentTime = AppState.lastTime;
+        }
     }
 }
 
@@ -272,6 +316,10 @@ async function initializeTrackTargetPlayback(index) {
     AppState.queueIndex = index;
     const track = AppState.queue[AppState.queueIndex];
     AppState.currentTrack = track;
+
+    localStorage.setItem('ok_last_track', JSON.stringify(track));
+    localStorage.setItem('ok_last_queue', JSON.stringify(AppState.queue));
+    localStorage.setItem('ok_last_index', index.toString());
 
     const artUrl = track.image?.[track.image.length - 1]?.url || track.artUrl || 'images/icon-512.png';
     const albumName = track.album?.name || track.albumName || 'Single Track';

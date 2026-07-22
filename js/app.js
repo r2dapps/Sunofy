@@ -18,9 +18,10 @@ const AppState = {
             "https://jiosaavn-api-v3.vercel.app/api/search/songs"
           ],
     apiEndpoint: "./api/search/songs",
-    currentTrack: null,
-    queue: [],
-    queueIndex: -1,
+    currentTrack: JSON.parse(localStorage.getItem('ok_last_track')) || null,
+    queue: JSON.parse(localStorage.getItem('ok_last_queue')) || [],
+    queueIndex: parseInt(localStorage.getItem('ok_last_index') || "-1"),
+    lastTime: parseFloat(localStorage.getItem('ok_last_time') || "0"),
     repeatMode: 0, // 0: Off, 1: Loop Track, 2: Loop Queue
     shuffle: false,
     theme: localStorage.getItem('ok_theme') || 'dark',
