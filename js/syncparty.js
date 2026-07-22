@@ -285,13 +285,25 @@ function updateJoinedListenersCountUI() {
         }
     }
 
-    // 2. Update Room Management Console Members Grid
-    if (membersListContainer) {
-        membersListContainer.innerHTML = '';
+    // 2. Update Room Management Console Members Grid (Modal & Page View)
+    const pageCountEl = document.getElementById('sync-page-member-count');
+    const pageMembersContainer = document.getElementById('sync-page-members-list');
+    const statusBadge = document.getElementById('sync-view-status-badge');
+
+    if (pageCountEl) pageCountEl.innerText = activeCount.toString();
+    if (statusBadge) {
+        statusBadge.innerText = AppState.syncRoomId 
+            ? (AppState.isSyncHost ? `Host - Room #${AppState.syncRoomId}` : `Listener - Room #${AppState.syncRoomId}`) 
+            : "Offline / Ready";
+    }
+
+    [membersListContainer, pageMembersContainer].forEach(container => {
+        if (!container) return;
+        container.innerHTML = '';
         
         // Always include Host entry
         const hostRow = document.createElement('div');
-        hostRow.className = "flex items-center justify-between p-2 bg-purple-950/40 border border-purple-500/30 rounded-xl";
+        hostRow.className = "flex items-center justify-between p-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl";
         hostRow.innerHTML = `
             <div class="flex items-center gap-2.5 min-w-0">
                 <img src="${AppState.profile?.avatar || 'images/icon-512.png'}" class="w-8 h-8 rounded-full object-cover border border-purple-400/50">
@@ -302,18 +314,18 @@ function updateJoinedListenersCountUI() {
             </div>
             <span class="text-[9px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded font-bold uppercase">HOST</span>
         `;
-        membersListContainer.appendChild(hostRow);
+        container.appendChild(hostRow);
 
         if (activeConnections.length === 0 && AppState.isSyncHost) {
             const emptyNotice = document.createElement('p');
-            emptyNotice.className = "text-[11px] text-muted text-center py-4 italic";
+            emptyNotice.className = "text-[11px] text-muted text-center py-4 italic col-span-full";
             emptyNotice.innerText = "No listeners joined yet. Share Room Code #" + AppState.syncRoomId;
-            membersListContainer.appendChild(emptyNotice);
+            container.appendChild(emptyNotice);
         } else {
             activeConnections.forEach(conn => {
                 const info = conn._userInfo || { name: "Listener", handle: "@user", avatar: "images/icon-512.png" };
                 const row = document.createElement('div');
-                row.className = "flex items-center justify-between p-2 bg-app-body border border-app rounded-xl group hover:border-accent transition-colors";
+                row.className = "flex items-center justify-between p-2.5 bg-app-body border border-app rounded-xl group hover:border-accent transition-colors";
                 row.innerHTML = `
                     <div class="flex items-center gap-2.5 min-w-0">
                         <img src="${info.avatar}" class="w-8 h-8 rounded-full object-cover border border-app">
@@ -335,10 +347,10 @@ function updateJoinedListenersCountUI() {
                     }
                 }
 
-                membersListContainer.appendChild(row);
+                container.appendChild(row);
             });
         }
-    }
+    });
 }
 
 function copySyncRoomCodeToClipboard() {
@@ -359,6 +371,7 @@ function leaveSyncPartyRoom() {
     AppState.syncRoomId = null;
     AppState.isSyncHost = false;
     updateSyncPartyDockUI();
+    updateJoinedListenersCountUI();
     if (typeof showToastNotification === 'function') showToastNotification("Left Sync Room.", 'info');
 }
 
@@ -400,12 +413,8 @@ function updateSyncPartyDockUI() {
 }
 
 function openSyncPartyNavigationTarget() {
-    if (AppState.syncRoomId) {
-        openSyncRoomManageConsole();
-    } else {
-        if (typeof switchActiveAppView === 'function') switchActiveAppView('profile');
-        const hostBtn = document.getElementById('host-sync-btn');
-        if (hostBtn) hostBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof switchAppView === 'function') {
+        switchAppView('syncparty');
     }
 }
 
