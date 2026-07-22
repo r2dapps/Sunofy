@@ -351,6 +351,9 @@ function broadcastMembersListToAllListeners() {
 function broadcastHostSyncState(command, extra = {}) {
     if (!AppState.syncRoomId || !AppState.isSyncHost) return;
     
+    broadcastMembersListToAllListeners();
+
+    const activeConns = _peerConnections.filter(c => c.open);
     const audioNode = document.getElementById('audio-node');
     const payload = {
         type: 'STATE_SYNC',
@@ -358,6 +361,17 @@ function broadcastHostSyncState(command, extra = {}) {
         track: AppState.currentTrack,
         currentTime: audioNode ? audioNode.currentTime : 0,
         isPlaying: audioNode ? !audioNode.paused : false,
+        hostProfile: {
+            name: AppState.profile?.name || 'Room Host',
+            handle: AppState.profile?.handle || '@host',
+            avatar: AppState.profile?.avatar || 'images/icon-512.png'
+        },
+        members: activeConns.map(c => ({
+            peerId: c.peer,
+            name: c._userInfo?.name || 'Listener',
+            handle: c._userInfo?.handle || '@user',
+            avatar: c._userInfo?.avatar || 'images/icon-512.png'
+        })),
         ...extra
     };
 
@@ -368,7 +382,7 @@ function broadcastHostSyncState(command, extra = {}) {
     });
 
     if (command === 'MANUAL_SYNC' && typeof showToastNotification === 'function') {
-        showToastNotification(`Broadcasted track playback to ${_peerConnections.length} listeners!`, 'success');
+        showToastNotification(`Broadcasted track & ${activeConns.length} listeners to all members!`, 'success');
     }
     updateWatchPartyStageTrackUI();
 }
@@ -378,8 +392,11 @@ function handleIncomingHostStateCommand(data) {
 
     if (data.hostProfile) {
         _listenerRoomHost = data.hostProfile;
-        updateJoinedListenersCountUI();
     }
+    if (data.members) {
+        _listenerRoomMembers = data.members;
+    }
+    updateJoinedListenersCountUI();
 
     const audioNode = document.getElementById('audio-node');
     const unmuteBanner = document.getElementById('sync-unmute-banner');
