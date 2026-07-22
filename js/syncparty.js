@@ -4,8 +4,9 @@ let _peerConnections = []; // Host's active connected peers
 let _activeHostConnection = null; // Listener's connection to host
 let _listenerRoomMembers = []; // Listener's copy of synced room members
 let _listenerRoomHost = null; // Listener's copy of host profile
+let _heartbeatTimer = null;
 
-// Optimized High-Speed STUN Servers for Zero-Latency P2P & NAT Traversal
+// Optimized High-Speed STUN & TURN Servers for Zero-Latency P2P & Mobile CGNAT Traversal
 const PEER_CONFIG = {
     debug: 1,
     config: {
@@ -16,7 +17,23 @@ const PEER_CONFIG = {
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun4.l.google.com:19302' },
             { urls: 'stun:stun.cloudflare.com:3478' },
-            { urls: 'stun:stun.services.mozilla.com' }
+            { urls: 'stun:stun.services.mozilla.com' },
+            { urls: 'stun:global.stun.twilio.com:3478' },
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelay',
+                credential: 'openrelay'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelay',
+                credential: 'openrelay'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelay',
+                credential: 'openrelay'
+            }
         ]
     }
 };
@@ -94,6 +111,19 @@ function setupSyncPartyControls() {
     }
 }
 
+function startPeerHeartbeat() {
+    if (_heartbeatTimer) clearInterval(_heartbeatTimer);
+    _heartbeatTimer = setInterval(() => {
+        if (_peerInstance && !_peerInstance.disconnected && !_peerInstance.destroyed) {
+            try {
+                if (_peerInstance.socket && _peerInstance.socket._socket && _peerInstance.socket._socket.readyState === WebSocket.OPEN) {
+                    _peerInstance.socket._socket.send(JSON.stringify({ type: 'HEARTBEAT' }));
+                }
+            } catch(e) {}
+        }
+    }, 10000);
+}
+
 function createSyncPartyRoom() {
     if (typeof Peer === 'undefined') {
         if (typeof showToastNotification === 'function') showToastNotification("Loading WebRTC engine...", 'error');
@@ -112,8 +142,16 @@ function createSyncPartyRoom() {
         AppState.isSyncHost = true;
         updateSyncPartyDockUI();
         openSyncRoomManageConsole();
+        startPeerHeartbeat();
         if (typeof showToastNotification === 'function') {
             showToastNotification(`Room #${roomId} created! Share this code with friends.`, 'success');
+        }
+    });
+
+    _peerInstance.on('disconnected', () => {
+        console.warn("[SyncParty] Host disconnected from signaling server. Reconnecting...");
+        if (_peerInstance && !_peerInstance.destroyed) {
+            _peerInstance.reconnect();
         }
     });
 
@@ -233,24 +271,32 @@ function joinSyncPartyRoom(roomId) {
 
         _activeHostConnection.on('error', (err) => {
             console.warn("[SyncParty] Connection attempt error:", err);
-            if (retryCount < 3) {
+            if (retryCount < 5) {
                 retryCount++;
-                setTimeout(attemptConnectionToHost, 1200);
+                setTimeout(attemptConnectionToHost, 1500);
             }
         });
     }
 
     _peerInstance.on('open', () => {
+        startPeerHeartbeat();
         attemptConnectionToHost();
+    });
+
+    _peerInstance.on('disconnected', () => {
+        console.warn("[SyncParty] Listener disconnected from signaling server. Reconnecting...");
+        if (_peerInstance && !_peerInstance.destroyed) {
+            _peerInstance.reconnect();
+        }
     });
 
     _peerInstance.on('error', (err) => {
         console.warn("[SyncParty] Listener peer error:", err);
-        if (err.type === 'peer-unavailable' && retryCount < 3) {
+        if (err.type === 'peer-unavailable' && retryCount < 5) {
             retryCount++;
             setTimeout(attemptConnectionToHost, 1500);
         } else {
-            if (typeof showToastNotification === 'function') showToastNotification(`Room #${roomId} not found or starting up. Retrying...`, 'info');
+            if (typeof showToastNotification === 'function') showToastNotification(`Room #${roomId} connecting... Retrying`, 'info');
         }
     });
 }
@@ -558,6 +604,7 @@ function copySyncRoomCodeToClipboard() {
 }
 
 function leaveSyncPartyRoom() {
+    if (_heartbeatTimer) clearInterval(_heartbeatTimer);
     if (_peerInstance) _peerInstance.destroy();
     _peerInstance = null;
     _peerConnections = [];
