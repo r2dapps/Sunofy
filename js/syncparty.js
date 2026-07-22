@@ -156,6 +156,12 @@ function createSyncPartyRoom() {
     });
 
     _peerInstance.on('connection', (conn) => {
+        conn._userInfo = {
+            peerId: conn.peer,
+            name: "Listener",
+            handle: "@listener",
+            avatar: "images/icon-512.png"
+        };
         _peerConnections.push(conn);
         
         conn.on('open', () => {
@@ -324,7 +330,12 @@ function broadcastMembersListToAllListeners() {
         handle: AppState.profile?.handle || '@host',
         avatar: AppState.profile?.avatar || 'images/icon-512.png'
     };
-    const membersList = activeConns.map(c => c._userInfo || { name: 'Listener', handle: '@user', avatar: 'images/icon-512.png' });
+    const membersList = activeConns.map(c => ({
+        peerId: c.peer,
+        name: c._userInfo?.name || 'Listener',
+        handle: c._userInfo?.handle || '@user',
+        avatar: c._userInfo?.avatar || 'images/icon-512.png'
+    }));
 
     activeConns.forEach(conn => {
         if (conn && conn.open) {
@@ -510,7 +521,12 @@ function updateJoinedListenersCountUI() {
             avatar: AppState.profile?.avatar || 'images/icon-512.png',
             isHost: true
         };
-        memberList = activeConns.map(c => c._userInfo || { name: 'Listener', handle: '@user', avatar: 'images/icon-512.png' });
+        memberList = activeConns.map(c => ({
+            peerId: c.peer,
+            name: c._userInfo?.name || 'Listener',
+            handle: c._userInfo?.handle || '@user',
+            avatar: c._userInfo?.avatar || 'images/icon-512.png'
+        }));
     } else {
         memberList = _listenerRoomMembers || [];
         activeCount = memberList.length;
@@ -581,10 +597,10 @@ function updateJoinedListenersCountUI() {
                     </button>` : `<span class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold uppercase">MEMBER</span>`}
                 `;
 
-                if (AppState.isSyncHost && info.peerId) {
+                if (AppState.isSyncHost && (info.peerId || m.peerId)) {
                     const kickBtn = row.querySelector('.action-kick-user');
                     if (kickBtn) {
-                        kickBtn.onclick = () => kickListenerFromRoom(info.peerId);
+                        kickBtn.onclick = () => kickListenerFromRoom(info.peerId || m.peerId);
                     }
                 }
 
