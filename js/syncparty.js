@@ -3,6 +3,38 @@ let _peerInstance = null;
 let _peerConnections = []; // Host's active connected peers
 let _activeHostConnection = null; // Listener's connection to host
 
+// Cross-Network NAT & Cellular Firewall Traversal STUN/TURN Servers
+const PEER_CONFIG = {
+    debug: 1,
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            { urls: 'stun:stun.services.mozilla.com' },
+            { urls: 'stun:global.stun.twilio.com:3478' },
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelay',
+                credential: 'openrelay'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelay',
+                credential: 'openrelay'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelay',
+                credential: 'openrelay'
+            }
+        ]
+    }
+};
+
 function initSyncPartyEngine() {
     setupSyncPartyControls();
 }
@@ -66,7 +98,7 @@ function createSyncPartyRoom() {
     const peerId = `sunofy_vibe_${roomId}`;
 
     if (_peerInstance) _peerInstance.destroy();
-    _peerInstance = new Peer(peerId);
+    _peerInstance = new Peer(peerId, PEER_CONFIG);
     _peerConnections = [];
 
     _peerInstance.on('open', (id) => {
@@ -137,10 +169,10 @@ function joinSyncPartyRoom(roomId) {
 
     const targetPeerId = `sunofy_vibe_${roomId}`;
     if (_peerInstance) _peerInstance.destroy();
-    _peerInstance = new Peer();
+    _peerInstance = new Peer(PEER_CONFIG);
 
     _peerInstance.on('open', () => {
-        _activeHostConnection = _peerInstance.connect(targetPeerId);
+        _activeHostConnection = _peerInstance.connect(targetPeerId, { reliable: true });
 
         _activeHostConnection.on('open', () => {
             AppState.syncRoomId = roomId;
