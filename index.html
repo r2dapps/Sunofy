@@ -145,6 +145,7 @@
                 <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="playlists"><i class="fa-solid fa-folder-tree text-sm"></i> My Playlist</button>
                 <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="favorites"><i class="fa-solid fa-heart text-sm"></i> Favorites</button>
                 <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="offline"><i class="fa-solid fa-cloud-arrow-down text-sm"></i> Local Offline</button>
+                <button class="w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-purple-950/40 border border-purple-500/20 text-purple-300 font-bold" onclick="if(typeof openSyncPartyNavigationTarget==='function') openSyncPartyNavigationTarget()"><i class="fa-solid fa-users-rays text-sm text-purple-400"></i> Sync Party (VibeSync)</button>
                 <button class="nav-btn w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 transition-all cursor-pointer hover:bg-app-card hover:text-main" data-target="profile"><i class="fa-solid fa-user-gear text-sm"></i> Profile & Settings</button>
                 
                 <p class="text-[10px] text-muted font-black tracking-widest px-2 pt-6 mb-2 opacity-60">Quick Music Filters</p>
@@ -608,11 +609,15 @@
             <i class="fa-solid fa-heart text-sm"></i>
             <span class="text-[9px] font-bold">Favorites</span>
         </button>
-        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-3 cursor-pointer transition-all" data-target="offline">
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-2 cursor-pointer transition-all" data-target="offline">
             <i class="fa-solid fa-circle-down text-sm"></i>
             <span class="text-[9px] font-bold">Offline</span>
         </button>
-        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-3 cursor-pointer transition-all" data-target="profile">
+        <button class="flex flex-col items-center gap-0.5 text-purple-300 hover:text-purple-200 p-1 px-2 cursor-pointer transition-all" onclick="if(typeof openSyncPartyNavigationTarget==='function') openSyncPartyNavigationTarget()">
+            <i class="fa-solid fa-users-rays text-sm text-purple-400"></i>
+            <span class="text-[9px] font-bold">Sync Party</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center gap-0.5 text-muted hover:text-main p-1 px-2 cursor-pointer transition-all" data-target="profile">
             <i class="fa-solid fa-sliders text-sm"></i>
             <span class="text-[9px] font-bold">Profile</span>
         </button>

@@ -399,4 +399,14 @@ function updateSyncPartyDockUI() {
     }
 }
 
+function openSyncPartyNavigationTarget() {
+    if (AppState.syncRoomId) {
+        openSyncRoomManageConsole();
+    } else {
+        if (typeof switchActiveAppView === 'function') switchActiveAppView('profile');
+        const hostBtn = document.getElementById('host-sync-btn');
+        if (hostBtn) hostBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', initSyncPartyEngine);
