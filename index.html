@@ -615,7 +615,30 @@
             <i class="fa-solid fa-sliders text-sm"></i>
             <span class="text-[9px] font-bold">Profile</span>
         </button>
-    </nav>
+    <!-- DEDICATED SYNC PARTY FLOATING BOTTOM BAR -->
+    <div id="sync-party-bottom-bar" class="fixed bottom-[115px] md:bottom-[70px] left-2 right-2 md:left-auto md:right-4 md:w-[480px] bg-purple-950/95 border border-purple-500/50 backdrop-blur-xl rounded-2xl p-2.5 px-3.5 shadow-2xl z-[510] flex items-center justify-between gap-2 transition-all duration-300 transform translate-y-full opacity-0 hidden">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-400/40 text-purple-300 flex items-center justify-center text-sm shrink-0 shadow-md">
+                <i class="fa-solid fa-users-rays animate-pulse"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-black text-white tracking-wide">ROOM: <strong id="sync-dock-room-code" class="text-purple-300">4821</strong></span>
+                    <span id="sync-dock-role-badge" class="text-[9px] bg-purple-500/30 text-purple-200 border border-purple-400/30 px-1.5 py-0.2 rounded font-bold uppercase">HOST</span>
+                </div>
+                <p id="sync-dock-listeners-info" class="text-[10px] text-purple-200/80 truncate">👥 0 Listeners connected</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button id="sync-dock-force-sync-btn" onclick="if(typeof broadcastHostSyncState==='function') broadcastHostSyncState('MANUAL_SYNC')" class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm cursor-pointer" title="Broadcast current song to all listeners">
+                <i class="fa-solid fa-rotate text-[10px]"></i> Sync Now
+            </button>
+            <button id="sync-dock-leave-btn" onclick="if(typeof leaveSyncPartyRoom==='function') leaveSyncPartyRoom()" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all cursor-pointer" title="Leave Sync Room">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
 
     <!-- DOCK CONSOLE MINI PLAYER FOOTER - FLOATING OVERNAV WITH GAP FIX -->
     <footer id="playback-dock" class="fixed bottom-[64px] md:bottom-0 left-2 right-2 md:left-0 md:right-0 bg-app-nav/95 backdrop-blur-md border border-app rounded-2xl md:rounded-none shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-[500] transition-transform duration-300 flex flex-col cursor-pointer overflow-hidden">
@@ -907,6 +930,7 @@
     <script src="js/app.js"></script>
     <script src="js/themes.js"></script>
     <script src="js/player.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="js/syncparty.js"></script>
     <script src="js/localfolder.js"></script>
     <script src="js/queue.js"></script>

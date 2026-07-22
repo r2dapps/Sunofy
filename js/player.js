@@ -164,6 +164,10 @@ function toggleAudioPlayPause() {
         if (fsPBtn) fsPBtn.innerHTML = `<i class="fa-solid fa-play pl-1"></i>`;
         toggleRotationAnimation(false);
     }
+
+    if (AppState.isSyncHost && typeof broadcastHostSyncState === 'function') {
+        broadcastHostSyncState(audioNode.paused ? 'PAUSE' : 'RESUME');
+    }
 }
 
 function toggleRotationAnimation(shouldSpin) {
@@ -301,7 +305,9 @@ async function initializeTrackTargetPlayback(index) {
     updateFloatingDockInterfaceUI();
     updateNativeMediaSession(track);
     toggleRotationAnimation(true);
-    if (typeof broadcastSyncCommand === 'function') broadcastSyncCommand('PLAY_TRACK', { track });
+    if (AppState.isSyncHost && typeof broadcastHostSyncState === 'function') {
+        broadcastHostSyncState('PLAY_TRACK');
+    }
 
     const audioNode = document.getElementById('audio-node');
 
