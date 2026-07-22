@@ -6,7 +6,7 @@ let _listenerRoomMembers = []; // Listener's copy of synced room members
 let _listenerRoomHost = null; // Listener's copy of host profile
 let _heartbeatTimer = null;
 
-// Optimized High-Speed STUN & TURN Servers for Zero-Latency P2P & Mobile CGNAT Traversal
+// Optimized High-Speed STUN Pool for Instant PeerJS Registration & Zero-Latency P2P
 const PEER_CONFIG = {
     debug: 1,
     config: {
@@ -17,23 +17,7 @@ const PEER_CONFIG = {
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun4.l.google.com:19302' },
             { urls: 'stun:stun.cloudflare.com:3478' },
-            { urls: 'stun:stun.services.mozilla.com' },
-            { urls: 'stun:global.stun.twilio.com:3478' },
-            {
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelay',
-                credential: 'openrelay'
-            },
-            {
-                urls: 'turn:openrelay.metered.ca:443',
-                username: 'openrelay',
-                credential: 'openrelay'
-            },
-            {
-                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                username: 'openrelay',
-                credential: 'openrelay'
-            }
+            { urls: 'stun:stun.services.mozilla.com' }
         ]
     }
 };
