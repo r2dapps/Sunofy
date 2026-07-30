@@ -2,6 +2,24 @@
 
 const SUNOFY_FIREBASE_DB_URL = 'https://walkietalkie-c0f03-default-rtdb.asia-southeast1.firebasedatabase.app';
 
+// Optimized High-Speed STUN Pool for PeerJS local P2P & same Wi-Fi connectivity
+const PEER_CONFIG = {
+    debug: 1,
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            { urls: 'stun:stun.services.mozilla.com' }
+        ]
+    }
+};
+
+let _peerInstance = null;
+let _peerConnections = [];
 let _firebaseDb = null;
 let _currentRoomRef = null;
 let _myMemberRef = null;
