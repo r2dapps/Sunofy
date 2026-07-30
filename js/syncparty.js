@@ -1,29 +1,31 @@
-// SUNOFY VIBESYNC™ - MULTI-DEVICE WEBRTC LISTEN TOGETHER & MEMBER MANAGEMENT ENGINE
-let _peerInstance = null;
-let _peerConnections = []; // Host's active connected peers
-let _activeHostConnection = null; // Listener's connection to host
-let _listenerRoomMembers = []; // Listener's copy of synced room members
-let _listenerRoomHost = null; // Listener's copy of host profile
-let _heartbeatTimer = null;
+// SUNOFY VIBESYNC™ - MULTI-DEVICE REALTIME FIREBASE LISTEN TOGETHER & MEMBER MANAGEMENT ENGINE
 
-// Optimized High-Speed STUN Pool for Instant PeerJS Registration & Zero-Latency P2P
-const PEER_CONFIG = {
-    debug: 1,
-    config: {
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' },
-            { urls: 'stun:stun.cloudflare.com:3478' },
-            { urls: 'stun:stun.services.mozilla.com' }
-        ]
-    }
-};
+const SUNOFY_FIREBASE_DB_URL = 'https://walkietalkie-c0f03-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+let _firebaseDb = null;
+let _currentRoomRef = null;
+let _myMemberRef = null;
+let _listenerRoomMembers = [];
+let _listenerRoomHost = null;
+let _myPeerId = '';
+let _isSyncingPlayback = false;
 
 function initSyncPartyEngine() {
+    initFirebase();
     setupSyncPartyControls();
+}
+
+function initFirebase() {
+    try {
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp({ databaseURL: SUNOFY_FIREBASE_DB_URL });
+        }
+        if (typeof firebase !== 'undefined') {
+            _firebaseDb = firebase.database();
+        }
+    } catch (e) {
+        console.warn("Sunofy Firebase Init Warning:", e);
+    }
 }
 
 function getTrackAudioUrl(track) {
@@ -95,408 +97,236 @@ function setupSyncPartyControls() {
     }
 }
 
-function startPeerHeartbeat() {
-    if (_heartbeatTimer) clearInterval(_heartbeatTimer);
-    _heartbeatTimer = setInterval(() => {
-        if (_peerInstance && !_peerInstance.disconnected && !_peerInstance.destroyed) {
-            try {
-                if (_peerInstance.socket && _peerInstance.socket._socket && _peerInstance.socket._socket.readyState === WebSocket.OPEN) {
-                    _peerInstance.socket._socket.send(JSON.stringify({ type: 'HEARTBEAT' }));
-                }
-            } catch(e) {}
-        }
-    }, 10000);
-}
-
+// CREATE SYNC PARTY ROOM (HOST)
 function createSyncPartyRoom() {
-    if (typeof Peer === 'undefined') {
-        if (typeof showToastNotification === 'function') showToastNotification("Loading WebRTC engine...", 'error');
+    if (!_firebaseDb) initFirebase();
+    if (!_firebaseDb) {
+        if (typeof showToastNotification === 'function') showToastNotification("Firebase connection failed.", 'error');
         return;
     }
 
     const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-    const peerId = `sunofy_vibe_${roomId}`;
+    _myPeerId = `host_${Date.now()}`;
+    
+    AppState.syncRoomId = roomId;
+    AppState.isSyncHost = true;
 
-    if (_peerInstance) _peerInstance.destroy();
-    _peerInstance = new Peer(peerId, PEER_CONFIG);
-    _peerConnections = [];
+    _currentRoomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${roomId}`);
+    
+    // Auto cleanup room on disconnect
+    _currentRoomRef.onDisconnect().remove();
 
-    _peerInstance.on('open', (id) => {
-        AppState.syncRoomId = roomId;
-        AppState.isSyncHost = true;
-        updateSyncPartyDockUI();
-        openSyncRoomManageConsole();
-        startPeerHeartbeat();
-        if (typeof showToastNotification === 'function') {
-            showToastNotification(`Room #${roomId} created! Share this code with friends.`, 'success');
-        }
-    });
-
-    _peerInstance.on('disconnected', () => {
-        console.warn("[SyncParty] Host disconnected from signaling server. Reconnecting...");
-        if (_peerInstance && !_peerInstance.destroyed) {
-            _peerInstance.reconnect();
-        }
-    });
-
-    _peerInstance.on('connection', (conn) => {
-        conn._userInfo = {
-            peerId: conn.peer,
-            name: "Listener",
-            handle: "@listener",
-            avatar: "images/icon-512.png"
-        };
-        _peerConnections.push(conn);
-        
-        conn.on('open', () => {
-            updateJoinedListenersCountUI();
-            broadcastMembersListToAllListeners();
-            // Send initial sync state to new listener
-            const audioNode = document.getElementById('audio-node');
-            conn.send({
-                type: 'STATE_SYNC',
-                track: AppState.currentTrack,
-                currentTime: audioNode ? audioNode.currentTime : 0,
-                isPlaying: audioNode ? !audioNode.paused : false,
-                hostProfile: {
-                    name: AppState.profile?.name || 'Host',
-                    handle: AppState.profile?.handle || '@host',
-                    avatar: AppState.profile?.avatar || 'images/icon-512.png'
-                }
-            });
-        });
-
-        conn.on('data', (data) => {
-            if (data.type === 'LISTENER_JOIN') {
-                conn._userInfo = {
-                    peerId: conn.peer,
-                    name: data.name || "Listener",
-                    handle: data.handle || "@listener",
-                    avatar: data.avatar || "images/icon-512.png"
-                };
-                updateJoinedListenersCountUI();
-                broadcastMembersListToAllListeners();
-                if (typeof showToastNotification === 'function') {
-                    showToastNotification(`${conn._userInfo.name} joined room #${AppState.syncRoomId}`, 'success');
-                }
-            } else if (data.type === 'EMOJI_REACTION') {
-                createFloatingEmojiAnimation(data.emoji);
-                // Broadcast reaction to other listeners
-                _peerConnections.forEach(c => {
-                    if (c && c.open && c !== conn) c.send({ type: 'EMOJI_REACTION', emoji: data.emoji });
-                });
-            }
-        });
-
-        conn.on('close', () => {
-            const userName = conn._userInfo?.name || "A listener";
-            _peerConnections = _peerConnections.filter(c => c !== conn);
-            updateJoinedListenersCountUI();
-            broadcastMembersListToAllListeners();
-            if (typeof showToastNotification === 'function') {
-                showToastNotification(`${userName} left room #${AppState.syncRoomId}`, 'info');
-            }
-        });
-    });
-
-    _peerInstance.on('error', (err) => {
-        console.warn("[SyncParty] Host peer error:", err);
-        if (typeof showToastNotification === 'function') showToastNotification("Could not host room. Try again.", 'error');
-    });
-}
-
-function joinSyncPartyRoom(roomId) {
-    if (typeof Peer === 'undefined') {
-        if (typeof showToastNotification === 'function') showToastNotification("Loading WebRTC engine...", 'error');
-        return;
-    }
-
-    const targetPeerId = `sunofy_vibe_${roomId}`;
-    if (_peerInstance) _peerInstance.destroy();
-    _peerInstance = new Peer(PEER_CONFIG);
-
-    let retryCount = 0;
-
-    function attemptConnectionToHost() {
-        if (!_peerInstance || _peerInstance.destroyed) return;
-        
-        _activeHostConnection = _peerInstance.connect(targetPeerId, { reliable: true });
-
-        _activeHostConnection.on('open', () => {
-            AppState.syncRoomId = roomId;
-            AppState.isSyncHost = false;
-            updateSyncPartyDockUI();
-            
-            _activeHostConnection.send({
-                type: 'LISTENER_JOIN',
-                name: AppState.profile?.name || 'Music Curator',
-                handle: AppState.profile?.handle || '@sunofy_user',
-                avatar: AppState.profile?.avatar || 'images/icon-512.png'
-            });
-
-            if (typeof showToastNotification === 'function') {
-                showToastNotification(`Joined Room #${roomId}! Synced with Host.`, 'success');
-            }
-        });
-
-        _activeHostConnection.on('data', (data) => {
-            if (data.type === 'KICK') {
-                leaveSyncPartyRoom();
-                if (typeof showToastNotification === 'function') showToastNotification("You were removed from the room by the Host.", 'error');
-            } else if (data.type === 'MEMBERS_LIST_SYNC') {
-                _listenerRoomHost = data.host;
-                _listenerRoomMembers = data.members || [];
-                updateJoinedListenersCountUI();
-            } else if (data.type === 'EMOJI_REACTION') {
-                createFloatingEmojiAnimation(data.emoji);
-            } else {
-                handleIncomingHostStateCommand(data);
-            }
-        });
-
-        _activeHostConnection.on('close', () => {
-            leaveSyncPartyRoom();
-            if (typeof showToastNotification === 'function') showToastNotification("Host ended the session.", 'info');
-        });
-
-        _activeHostConnection.on('error', (err) => {
-            console.warn("[SyncParty] Connection attempt error:", err);
-            if (retryCount < 5) {
-                retryCount++;
-                setTimeout(attemptConnectionToHost, 1500);
-            }
-        });
-    }
-
-    _peerInstance.on('open', () => {
-        startPeerHeartbeat();
-        attemptConnectionToHost();
-    });
-
-    _peerInstance.on('disconnected', () => {
-        console.warn("[SyncParty] Listener disconnected from signaling server. Reconnecting...");
-        if (_peerInstance && !_peerInstance.destroyed) {
-            _peerInstance.reconnect();
-        }
-    });
-
-    _peerInstance.on('error', (err) => {
-        console.warn("[SyncParty] Listener peer error:", err);
-        if (err.type === 'peer-unavailable' && retryCount < 5) {
-            retryCount++;
-            setTimeout(attemptConnectionToHost, 1500);
-        } else {
-            if (typeof showToastNotification === 'function') showToastNotification(`Room #${roomId} connecting... Retrying`, 'info');
-        }
-    });
-}
-
-function kickListenerFromRoom(peerId) {
-    if (!AppState.isSyncHost) return;
-    const conn = _peerConnections.find(c => c.peer === peerId);
-    if (conn) {
-        conn.send({ type: 'KICK' });
-        setTimeout(() => conn.close(), 200);
-        _peerConnections = _peerConnections.filter(c => c.peer !== peerId);
-        updateJoinedListenersCountUI();
-        broadcastMembersListToAllListeners();
-        if (typeof showToastNotification === 'function') {
-            showToastNotification(`Removed user from room.`, 'info');
-        }
-    }
-}
-
-function broadcastMembersListToAllListeners() {
-    if (!AppState.isSyncHost) return;
-    const activeConns = _peerConnections.filter(c => c.open);
     const hostProfile = {
         name: AppState.profile?.name || 'Room Host',
         handle: AppState.profile?.handle || '@host',
-        avatar: AppState.profile?.avatar || 'images/icon-512.png'
+        avatar: AppState.profile?.avatar || 'images/icon-512.png',
+        peerId: _myPeerId
     };
-    const membersList = activeConns.map(c => ({
-        peerId: c.peer,
-        name: c._userInfo?.name || 'Listener',
-        handle: c._userInfo?.handle || '@user',
-        avatar: c._userInfo?.avatar || 'images/icon-512.png'
-    }));
 
-    activeConns.forEach(conn => {
-        if (conn && conn.open) {
-            conn.send({
-                type: 'MEMBERS_LIST_SYNC',
-                host: hostProfile,
-                members: membersList
-            });
-        }
+    _currentRoomRef.set({
+        roomId: roomId,
+        host: hostProfile,
+        state: getHostPlaybackState(),
+        timestamp: Date.now()
     });
+
+    // Listen for Joined Members
+    const membersRef = _currentRoomRef.child('members');
+    membersRef.on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        _listenerRoomMembers = Object.values(data).filter(m => m.peerId !== _myPeerId && !m.kicked);
+        updateJoinedListenersCountUI();
+    });
+
+    // Attach Host Audio Playback Watcher
+    attachHostAudioEvents();
+
+    updateSyncPartyDockUI();
+    openSyncRoomManageConsole();
+    if (typeof showToastNotification === 'function') {
+        showToastNotification(`Room #${roomId} created! Share this code with friends.`, 'success');
+    }
 }
 
-function broadcastHostSyncState(command, extra = {}) {
-    if (!AppState.syncRoomId || !AppState.isSyncHost) return;
-    
-    broadcastMembersListToAllListeners();
-
-    const activeConns = _peerConnections.filter(c => c.open);
+function getHostPlaybackState() {
     const audioNode = document.getElementById('audio-node');
-    const payload = {
-        type: 'STATE_SYNC',
-        command: command,
-        track: AppState.currentTrack,
+    const track = (AppState.queueIndex > -1 && AppState.queue[AppState.queueIndex]) 
+        ? AppState.queue[AppState.queueIndex] 
+        : null;
+
+    return {
+        track: track,
         currentTime: audioNode ? audioNode.currentTime : 0,
         isPlaying: audioNode ? !audioNode.paused : false,
-        hostProfile: {
-            name: AppState.profile?.name || 'Room Host',
-            handle: AppState.profile?.handle || '@host',
-            avatar: AppState.profile?.avatar || 'images/icon-512.png'
-        },
-        members: activeConns.map(c => ({
-            peerId: c.peer,
-            name: c._userInfo?.name || 'Listener',
-            handle: c._userInfo?.handle || '@user',
-            avatar: c._userInfo?.avatar || 'images/icon-512.png'
-        })),
-        ...extra
+        timestamp: Date.now()
     };
-
-    _peerConnections.forEach(conn => {
-        if (conn && conn.open) {
-            conn.send(payload);
-        }
-    });
-
-    if (command === 'MANUAL_SYNC' && typeof showToastNotification === 'function') {
-        showToastNotification(`Broadcasted track & ${activeConns.length} listeners to all members!`, 'success');
-    }
-    updateWatchPartyStageTrackUI();
 }
 
-function handleIncomingHostStateCommand(data) {
-    if (!data || AppState.isSyncHost) return;
-
-    if (data.hostProfile) {
-        _listenerRoomHost = data.hostProfile;
-    }
-    if (data.members) {
-        _listenerRoomMembers = data.members;
-    }
-    updateJoinedListenersCountUI();
-
+function attachHostAudioEvents() {
     const audioNode = document.getElementById('audio-node');
-    const unmuteBanner = document.getElementById('sync-unmute-banner');
+    if (!audioNode) return;
 
-    if (data.track) {
-        const url = getTrackAudioUrl(data.track);
-
-        if (!AppState.currentTrack || AppState.currentTrack.id !== data.track.id) {
-            AppState.currentTrack = data.track;
-            AppState.queue = [data.track];
-            AppState.queueIndex = 0;
-            if (typeof updateFloatingDockInterfaceUI === 'function') updateFloatingDockInterfaceUI();
-        }
-
-        if (audioNode) {
-            if (url && audioNode.src !== url) {
-                audioNode.src = url;
+    const syncEvents = ['play', 'pause', 'seeked'];
+    syncEvents.forEach(evt => {
+        audioNode.addEventListener(evt, () => {
+            if (AppState.isSyncHost && _currentRoomRef) {
+                _currentRoomRef.child('state').set(getHostPlaybackState());
             }
-            if (Math.abs(audioNode.currentTime - (data.currentTime || 0)) > 1.5) {
-                audioNode.currentTime = data.currentTime || 0;
-            }
-            if (data.isPlaying) {
-                audioNode.play().then(() => {
-                    if (unmuteBanner) unmuteBanner.classList.add('hidden');
-                }).catch((err) => {
-                    console.warn("[SyncParty] Autoplay blocked by browser policy:", err);
-                    if (unmuteBanner) unmuteBanner.classList.remove('hidden');
-                    if (typeof showToastNotification === 'function') {
-                        showToastNotification("Tap 'TAP HERE TO UNMUTE' banner to start audio!", 'info');
-                    }
-                });
-            } else {
-                if (!audioNode.paused) audioNode.pause();
-            }
-        }
-    }
-    updateWatchPartyStageTrackUI();
-}
-
-function sendPartyEmojiReaction(emoji) {
-    createFloatingEmojiAnimation(emoji);
-    if (AppState.syncRoomId) {
-        if (AppState.isSyncHost) {
-            _peerConnections.forEach(conn => {
-                if (conn && conn.open) conn.send({ type: 'EMOJI_REACTION', emoji: emoji });
-            });
-        } else if (_activeHostConnection && _activeHostConnection.open) {
-            _activeHostConnection.send({ type: 'EMOJI_REACTION', emoji: emoji });
-        }
-    }
-}
-
-function createFloatingEmojiAnimation(emoji) {
-    const el = document.createElement('div');
-    el.innerText = emoji;
-    el.className = "fixed bottom-28 text-3xl pointer-events-none z-[990] transition-all duration-1000 transform opacity-100";
-    el.style.left = `${Math.floor(30 + Math.random() * 40)}%`;
-    document.body.appendChild(el);
-    setTimeout(() => {
-        el.style.transform = `translateY(-140px) scale(1.6)`;
-        el.style.opacity = '0';
-    }, 50);
-    setTimeout(() => el.remove(), 1000);
-}
-
-function updateWatchPartyStageTrackUI() {
-    const titleEl = document.getElementById('stage-track-title');
-    const artistEl = document.getElementById('stage-track-artist');
-    const artEl = document.getElementById('stage-track-art');
-    const copyBtn = document.getElementById('copy-stage-code-btn');
-    const audioNode = document.getElementById('audio-node');
-
-    if (AppState.currentTrack) {
-        if (titleEl) titleEl.innerText = AppState.currentTrack.name || AppState.currentTrack.title || 'Live Track';
-        if (artistEl) artistEl.innerText = AppState.currentTrack.primaryArtists || AppState.currentTrack.artist || 'Playing Live';
-        const img = AppState.currentTrack.image?.[AppState.currentTrack.image.length - 1]?.url || AppState.currentTrack.art || 'images/icon-512.png';
-        if (artEl) {
-            artEl.src = img;
-            if (audioNode && !audioNode.paused) {
-                artEl.classList.add('vinyl-spin');
-            } else {
-                artEl.classList.remove('vinyl-spin');
-            }
-        }
-    }
-
-    if (copyBtn) {
-        if (AppState.syncRoomId) copyBtn.classList.remove('hidden');
-        else copyBtn.classList.add('hidden');
-    }
-}
-
-function forceUnlockSyncAudio() {
-    const audioNode = document.getElementById('audio-node');
-    const unmuteBanner = document.getElementById('sync-unmute-banner');
-    if (audioNode) {
-        audioNode.play().then(() => {
-            if (unmuteBanner) unmuteBanner.classList.add('hidden');
-            if (typeof showToastNotification === 'function') {
-                showToastNotification("Live sync audio unmuted and playing!", 'success');
-            }
-        }).catch((err) => {
-            console.error("Audio unlock error:", err);
         });
+    });
+}
+
+function forceBroadcastSyncHostState() {
+    if (AppState.isSyncHost && _currentRoomRef) {
+        _currentRoomRef.child('state').set(getHostPlaybackState());
+        if (typeof showToastNotification === 'function') showToastNotification("Broadcasted live playback sync!", 'success');
     }
+}
+
+// JOIN SYNC PARTY ROOM (LISTENER)
+function joinSyncPartyRoom(roomId) {
+    if (!_firebaseDb) initFirebase();
+    if (!_firebaseDb) {
+        if (typeof showToastNotification === 'function') showToastNotification("Firebase connection failed.", 'error');
+        return;
+    }
+
+    _myPeerId = `member_${Date.now()}`;
+    const roomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${roomId}`);
+
+    roomRef.once('value', (snapshot) => {
+        const roomData = snapshot.val();
+        if (!roomData || !roomData.host) {
+            if (typeof showToastNotification === 'function') showToastNotification(`Room #${roomId} not found or offline.`, 'error');
+            return;
+        }
+
+        AppState.syncRoomId = roomId;
+        AppState.isSyncHost = false;
+        _currentRoomRef = roomRef;
+
+        _listenerRoomHost = roomData.host;
+
+        // Register Member Presence
+        _myMemberRef = roomRef.child(`members/${_myPeerId}`);
+        const memberInfo = {
+            peerId: _myPeerId,
+            name: AppState.profile?.name || 'Listener',
+            handle: AppState.profile?.handle || '@listener',
+            avatar: AppState.profile?.avatar || 'images/icon-512.png',
+            joinedAt: Date.now()
+        };
+
+        _myMemberRef.set(memberInfo);
+        _myMemberRef.onDisconnect().remove();
+
+        // Listen for Kick or Room Termination
+        _myMemberRef.on('value', (memberSnap) => {
+            const mData = memberSnap.val();
+            if (mData && mData.kicked) {
+                leaveSyncPartyRoom();
+                if (typeof showToastNotification === 'function') showToastNotification("You were removed from the room by the Host.", 'error');
+            }
+        });
+
+        // Listen for Live Playback State from Host
+        roomRef.child('state').on('value', (stateSnap) => {
+            const stateData = stateSnap.val();
+            if (stateData) {
+                syncPlaybackToListener(stateData);
+            }
+        });
+
+        // Listen for Members List updates
+        roomRef.child('members').on('value', (membersSnap) => {
+            const data = membersSnap.val() || {};
+            _listenerRoomMembers = Object.values(data).filter(m => !m.kicked);
+            updateJoinedListenersCountUI();
+        });
+
+        updateSyncPartyDockUI();
+        openSyncRoomManageConsole();
+        if (typeof showToastNotification === 'function') showToastNotification(`Joined Room #${roomId}! Music will sync live.`, 'success');
+    });
+}
+
+// SYNC LISTENER PLAYBACK TO HOST
+function syncPlaybackToListener(data) {
+    if (AppState.isSyncHost || _isSyncingPlayback) return;
+    _isSyncingPlayback = true;
+
+    const audioNode = document.getElementById('audio-node');
+    if (!audioNode || !data.track) {
+        _isSyncingPlayback = false;
+        return;
+    }
+
+    const currentTrack = (AppState.queueIndex > -1 && AppState.queue[AppState.queueIndex])
+        ? AppState.queue[AppState.queueIndex]
+        : null;
+
+    // 1. If track changed, load track
+    if (!currentTrack || currentTrack.id !== data.track.id || currentTrack.name !== data.track.name) {
+        if (typeof initializeTrackTargetPlayback === 'function') {
+            if (!AppState.queue) AppState.queue = [];
+            const idx = AppState.queue.findIndex(t => t.id === data.track.id || t.name === data.track.name);
+            if (idx > -1) {
+                initializeTrackTargetPlayback(idx);
+            } else {
+                AppState.queue.push(data.track);
+                initializeTrackTargetPlayback(AppState.queue.length - 1);
+            }
+        }
+    }
+
+    // 2. Sync seek position if drift > 1.5 seconds
+    if (Math.abs(audioNode.currentTime - data.currentTime) > 1.5) {
+        audioNode.currentTime = data.currentTime;
+    }
+
+    // 3. Sync play/pause
+    if (data.isPlaying && audioNode.paused) {
+        audioNode.play().catch(e => console.log("Autoplay policy:", e));
+    } else if (!data.isPlaying && !audioNode.paused) {
+        audioNode.pause();
+    }
+
+    setTimeout(() => { _isSyncingPlayback = false; }, 300);
+}
+
+// KICK LISTENER FROM ROOM (HOST ACTION)
+function kickListenerFromRoom(peerId) {
+    if (!AppState.isSyncHost || !_currentRoomRef || !peerId) return;
+    _currentRoomRef.child(`members/${peerId}`).update({ kicked: true });
+    if (typeof showToastNotification === 'function') showToastNotification("Listener removed from room.", 'info');
+}
+
+// LEAVE ROOM
+function leaveSyncPartyRoom() {
+    if (_myMemberRef) {
+        _myMemberRef.remove();
+        _myMemberRef.off();
+    }
+    if (_currentRoomRef) {
+        if (AppState.isSyncHost) _currentRoomRef.remove();
+        _currentRoomRef.off();
+    }
+
+    _currentRoomRef = null;
+    _myMemberRef = null;
+    _listenerRoomMembers = [];
+    _listenerRoomHost = null;
+
+    AppState.syncRoomId = null;
+    AppState.isSyncHost = false;
+
+    updateSyncPartyDockUI();
+    updateJoinedListenersCountUI();
+    if (typeof showToastNotification === 'function') showToastNotification("Left Sync Room.", 'info');
 }
 
 function openSyncRoomManageConsole() {
-    if (!AppState.syncRoomId) return;
     const modal = document.getElementById('sync-room-manage-modal');
-    const codeEl = document.getElementById('sync-modal-room-code');
-    const roleEl = document.getElementById('sync-modal-role-badge');
-
-    if (codeEl) codeEl.innerText = AppState.syncRoomId;
-    if (roleEl) roleEl.innerText = AppState.isSyncHost ? 'HOST' : 'LISTENER';
-    
     updateJoinedListenersCountUI();
     if (modal) modal.classList.remove('hidden');
 }
@@ -514,20 +344,14 @@ function updateJoinedListenersCountUI() {
     let memberList = [];
 
     if (AppState.isSyncHost) {
-        const activeConns = _peerConnections.filter(c => c.open);
-        activeCount = activeConns.length;
+        memberList = _listenerRoomMembers || [];
+        activeCount = memberList.length;
         hostInfo = {
             name: AppState.profile?.name || 'Room Host',
             handle: AppState.profile?.handle || '@host',
             avatar: AppState.profile?.avatar || 'images/icon-512.png',
             isHost: true
         };
-        memberList = activeConns.map(c => ({
-            peerId: c.peer,
-            name: c._userInfo?.name || 'Listener',
-            handle: c._userInfo?.handle || '@user',
-            avatar: c._userInfo?.avatar || 'images/icon-512.png'
-        }));
     } else {
         memberList = _listenerRoomMembers || [];
         activeCount = memberList.length;
@@ -542,7 +366,6 @@ function updateJoinedListenersCountUI() {
             : "Offline / Ready";
     }
 
-    // 1. Update Bottom Dock Text
     if (infoEl) {
         if (activeCount > 0) {
             const names = memberList.map(m => m.name || 'Listener').join(', ');
@@ -554,12 +377,10 @@ function updateJoinedListenersCountUI() {
         }
     }
 
-    // 2. Update Members Grid (Modal & Page View)
     [membersListContainer, pageMembersContainer].forEach(container => {
         if (!container) return;
         container.innerHTML = '';
         
-        // Always include Host entry
         const hostRow = document.createElement('div');
         hostRow.className = "flex items-center justify-between p-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl";
         hostRow.innerHTML = `
@@ -598,10 +419,10 @@ function updateJoinedListenersCountUI() {
                     </button>` : `<span class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold uppercase">MEMBER</span>`}
                 `;
 
-                if (AppState.isSyncHost && (info.peerId || m.peerId)) {
+                if (AppState.isSyncHost && info.peerId) {
                     const kickBtn = row.querySelector('.action-kick-user');
                     if (kickBtn) {
-                        kickBtn.onclick = () => kickListenerFromRoom(info.peerId || m.peerId);
+                        kickBtn.onclick = () => kickListenerFromRoom(info.peerId);
                     }
                 }
 
@@ -618,22 +439,6 @@ function copySyncRoomCodeToClipboard() {
             showToastNotification(`Room Code #${AppState.syncRoomId} copied!`, 'success');
         }
     }
-}
-
-function leaveSyncPartyRoom() {
-    if (_heartbeatTimer) clearInterval(_heartbeatTimer);
-    if (_peerInstance) _peerInstance.destroy();
-    _peerInstance = null;
-    _peerConnections = [];
-    _activeHostConnection = null;
-    _listenerRoomMembers = [];
-    _listenerRoomHost = null;
-
-    AppState.syncRoomId = null;
-    AppState.isSyncHost = false;
-    updateSyncPartyDockUI();
-    updateJoinedListenersCountUI();
-    if (typeof showToastNotification === 'function') showToastNotification("Left Sync Room.", 'info');
 }
 
 function updateSyncPartyDockUI() {
@@ -675,6 +480,28 @@ function updateSyncPartyDockUI() {
         if (setupCard) setupCard.classList.remove('hidden');
     }
     updateWatchPartyStageTrackUI();
+}
+
+function updateWatchPartyStageTrackUI() {
+    const stageTitle = document.getElementById('sync-stage-track-title');
+    const stageArt = document.getElementById('sync-stage-track-art');
+    const stageArtist = document.getElementById('sync-stage-track-artist');
+
+    const currentTrack = (AppState.queueIndex > -1 && AppState.queue[AppState.queueIndex])
+        ? AppState.queue[AppState.queueIndex]
+        : null;
+
+    if (currentTrack) {
+        if (stageTitle) stageTitle.innerText = currentTrack.name || 'No Track Selected';
+        if (stageArtist) stageArtist.innerText = currentTrack.artist || 'Unknown Artist';
+        if (stageArt) stageArt.src = currentTrack.image || currentTrack.art || 'images/icon-512.png';
+    }
+}
+
+function sendPartyEmojiReaction(emoji) {
+    if (!_currentRoomRef) return;
+    if (typeof createFloatingEmojiAnimation === 'function') createFloatingEmojiAnimation(emoji);
+    _currentRoomRef.child('reactions').push({ emoji, timestamp: Date.now() });
 }
 
 function openSyncPartyNavigationTarget() {
