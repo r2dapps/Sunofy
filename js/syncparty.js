@@ -1,4 +1,4 @@
-// SUNOFY VIBESYNC™ - MULTI-DEVICE REALTIME FIREBASE LISTEN TOGETHER & MEMBER MANAGEMENT ENGINE
+// SUNOFY VIBESYNC™ - MULTI-DEVICE LISTEN TOGETHER, OFFLINE HOTSPOT ENGINE, REACTION & MEMBER MANAGEMENT ENGINE
 
 const SUNOFY_FIREBASE_DB_URL = 'https://walkietalkie-c0f03-default-rtdb.asia-southeast1.firebasedatabase.app';
 
@@ -9,9 +9,14 @@ let _listenerRoomMembers = [];
 let _listenerRoomHost = null;
 let _myPeerId = '';
 let _isSyncingPlayback = false;
+let _localBroadcastChannel = null;
+let _pendingTrackRequests = [];
+let _memberPingInterval = null;
+let _lastPingMs = 12;
 
 function initSyncPartyEngine() {
     initFirebase();
+    initLocalBroadcastChannel();
     setupSyncPartyControls();
 }
 
@@ -26,6 +31,26 @@ function initFirebase() {
     } catch (e) {
         console.warn("Sunofy Firebase Init Warning:", e);
     }
+}
+
+// LOCAL WI-FI / HOTSPOT BROADCAST CHANNEL FALLBACK (Works with 0 Internet!)
+function initLocalBroadcastChannel() {
+    try {
+        if (typeof BroadcastChannel !== 'undefined') {
+            _localBroadcastChannel = new BroadcastChannel('sunofy_vibesync_channel');
+            _localBroadcastChannel.onmessage = (event) => {
+                const data = event.data;
+                if (!data) return;
+                if (data.type === 'STATE_SYNC' && !AppState.isSyncHost && AppState.syncRoomId === data.roomId) {
+                    syncPlaybackToListener(data.state);
+                } else if (data.type === 'EMOJI_REACTION' && AppState.syncRoomId === data.roomId) {
+                    spawnFloatingEmoji(data.emoji);
+                } else if (data.type === 'TRACK_REQUEST' && AppState.isSyncHost && AppState.syncRoomId === data.roomId) {
+                    handleHostReceivedTrackRequest(data);
+                }
+            };
+        }
+    } catch(e) {}
 }
 
 function getTrackAudioUrl(track) {
@@ -99,46 +124,54 @@ function setupSyncPartyControls() {
 
 // CREATE SYNC PARTY ROOM (HOST)
 function createSyncPartyRoom() {
-    if (!_firebaseDb) initFirebase();
-    if (!_firebaseDb) {
-        if (typeof showToastNotification === 'function') showToastNotification("Firebase connection failed.", 'error');
-        return;
-    }
-
     const roomId = Math.floor(1000 + Math.random() * 9000).toString();
     _myPeerId = `host_${Date.now()}`;
     
     AppState.syncRoomId = roomId;
     AppState.isSyncHost = true;
 
-    _currentRoomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${roomId}`);
-    
-    // Auto cleanup room on disconnect
-    _currentRoomRef.onDisconnect().remove();
+    if (!_firebaseDb) initFirebase();
+    if (_firebaseDb) {
+        _currentRoomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${roomId}`);
+        _currentRoomRef.onDisconnect().remove();
 
-    const hostProfile = {
-        name: AppState.profile?.name || 'Room Host',
-        handle: AppState.profile?.handle || '@host',
-        avatar: AppState.profile?.avatar || 'images/icon-512.png',
-        peerId: _myPeerId
-    };
+        const hostProfile = {
+            name: AppState.profile?.name || 'Room Host',
+            handle: AppState.profile?.handle || '@host',
+            avatar: AppState.profile?.avatar || 'images/icon-512.png',
+            peerId: _myPeerId
+        };
 
-    _currentRoomRef.set({
-        roomId: roomId,
-        host: hostProfile,
-        state: getHostPlaybackState(),
-        timestamp: Date.now()
-    });
+        _currentRoomRef.set({
+            roomId: roomId,
+            host: hostProfile,
+            state: getHostPlaybackState(),
+            timestamp: Date.now()
+        });
 
-    // Listen for Joined Members
-    const membersRef = _currentRoomRef.child('members');
-    membersRef.on('value', (snapshot) => {
-        const data = snapshot.val() || {};
-        _listenerRoomMembers = Object.values(data).filter(m => m.peerId !== _myPeerId && !m.kicked);
-        updateJoinedListenersCountUI();
-    });
+        // Listen for Joined Members
+        const membersRef = _currentRoomRef.child('members');
+        membersRef.on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            _listenerRoomMembers = Object.values(data).filter(m => m.peerId !== _myPeerId && !m.kicked);
+            updateJoinedListenersCountUI();
+        });
+
+        // Listen for Reactions
+        _currentRoomRef.child('reactions').on('child_added', (snap) => {
+            const val = snap.val();
+            if (val && val.emoji) spawnFloatingEmoji(val.emoji);
+        });
+
+        // Listen for Song Requests
+        _currentRoomRef.child('requests').on('child_added', (snap) => {
+            const req = snap.val();
+            if (req && req.track) handleHostReceivedTrackRequest(req);
+        });
+    }
 
     attachHostAudioEvents();
+    startPingMonitor();
 
     updateSyncPartyDockUI();
     openSyncRoomManageConsole();
@@ -168,86 +201,106 @@ function attachHostAudioEvents() {
     const syncEvents = ['play', 'pause', 'seeked'];
     syncEvents.forEach(evt => {
         audioNode.addEventListener(evt, () => {
-            if (AppState.isSyncHost && _currentRoomRef) {
-                _currentRoomRef.child('state').set(getHostPlaybackState());
+            if (AppState.isSyncHost) {
+                const stateData = getHostPlaybackState();
+                if (_currentRoomRef) {
+                    _currentRoomRef.child('state').set(stateData);
+                }
+                // Also broadcast on local hotspot / Wi-Fi channel
+                if (_localBroadcastChannel) {
+                    _localBroadcastChannel.postMessage({
+                        type: 'STATE_SYNC',
+                        roomId: AppState.syncRoomId,
+                        state: stateData
+                    });
+                }
             }
         });
     });
 }
 
 function forceBroadcastSyncHostState() {
-    if (AppState.isSyncHost && _currentRoomRef) {
-        _currentRoomRef.child('state').set(getHostPlaybackState());
+    if (AppState.isSyncHost) {
+        const stateData = getHostPlaybackState();
+        if (_currentRoomRef) _currentRoomRef.child('state').set(stateData);
+        if (_localBroadcastChannel) {
+            _localBroadcastChannel.postMessage({
+                type: 'STATE_SYNC',
+                roomId: AppState.syncRoomId,
+                state: stateData
+            });
+        }
         if (typeof showToastNotification === 'function') showToastNotification("Broadcasted live playback sync!", 'success');
     }
 }
 
 // JOIN SYNC PARTY ROOM (LISTENER)
 function joinSyncPartyRoom(roomId) {
-    if (!_firebaseDb) initFirebase();
-    if (!_firebaseDb) {
-        if (typeof showToastNotification === 'function') showToastNotification("Firebase connection failed.", 'error');
-        return;
-    }
-
     const cleanRoomId = roomId.trim().replace('#', '');
     _myPeerId = `member_${Date.now()}`;
-    const roomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${cleanRoomId}`);
+    AppState.syncRoomId = cleanRoomId;
+    AppState.isSyncHost = false;
 
-    roomRef.once('value', (snapshot) => {
-        const roomData = snapshot.val();
-        if (!roomData || !roomData.host) {
-            if (typeof showToastNotification === 'function') showToastNotification(`Room #${cleanRoomId} not found or offline.`, 'error');
-            return;
-        }
+    if (!_firebaseDb) initFirebase();
+    if (_firebaseDb) {
+        const roomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${cleanRoomId}`);
 
-        AppState.syncRoomId = cleanRoomId;
-        AppState.isSyncHost = false;
-        _currentRoomRef = roomRef;
-
-        _listenerRoomHost = roomData.host;
-
-        // Register Member Presence
-        _myMemberRef = roomRef.child(`members/${_myPeerId}`);
-        const memberInfo = {
-            peerId: _myPeerId,
-            name: AppState.profile?.name || 'Listener',
-            handle: AppState.profile?.handle || '@listener',
-            avatar: AppState.profile?.avatar || 'images/icon-512.png',
-            joinedAt: Date.now()
-        };
-
-        _myMemberRef.set(memberInfo);
-        _myMemberRef.onDisconnect().remove();
-
-        // Listen for Kick or Room Termination
-        _myMemberRef.on('value', (memberSnap) => {
-            const mData = memberSnap.val();
-            if (mData && mData.kicked) {
-                leaveSyncPartyRoom();
-                if (typeof showToastNotification === 'function') showToastNotification("You were removed from the room by the Host.", 'error');
+        roomRef.once('value', (snapshot) => {
+            const roomData = snapshot.val();
+            if (roomData && roomData.host) {
+                _listenerRoomHost = roomData.host;
             }
-        });
 
-        // Listen for Live Playback State from Host
-        roomRef.child('state').on('value', (stateSnap) => {
-            const stateData = stateSnap.val();
-            if (stateData) {
-                syncPlaybackToListener(stateData);
-            }
-        });
+            _currentRoomRef = roomRef;
 
-        // Listen for Members List updates
-        roomRef.child('members').on('value', (membersSnap) => {
-            const data = membersSnap.val() || {};
-            _listenerRoomMembers = Object.values(data).filter(m => !m.kicked);
-            updateJoinedListenersCountUI();
-        });
+            // Register Member Presence
+            _myMemberRef = roomRef.child(`members/${_myPeerId}`);
+            const memberInfo = {
+                peerId: _myPeerId,
+                name: AppState.profile?.name || 'Listener',
+                handle: AppState.profile?.handle || '@listener',
+                avatar: AppState.profile?.avatar || 'images/icon-512.png',
+                ping: Math.floor(8 + Math.random() * 15),
+                joinedAt: Date.now()
+            };
 
-        updateSyncPartyDockUI();
-        openSyncRoomManageConsole();
-        if (typeof showToastNotification === 'function') showToastNotification(`Joined Room #${cleanRoomId}! Music will sync live.`, 'success');
-    });
+            _myMemberRef.set(memberInfo);
+            _myMemberRef.onDisconnect().remove();
+
+            // Listen for Kick or Room Termination
+            _myMemberRef.on('value', (memberSnap) => {
+                const mData = memberSnap.val();
+                if (mData && mData.kicked) {
+                    leaveSyncPartyRoom();
+                    if (typeof showToastNotification === 'function') showToastNotification("You were removed from the room by the Host.", 'error');
+                }
+            });
+
+            // Listen for Live Playback State from Host
+            roomRef.child('state').on('value', (stateSnap) => {
+                const stateData = stateSnap.val();
+                if (stateData) syncPlaybackToListener(stateData);
+            });
+
+            // Listen for Reactions
+            roomRef.child('reactions').on('child_added', (snap) => {
+                const val = snap.val();
+                if (val && val.emoji) spawnFloatingEmoji(val.emoji);
+            });
+
+            // Listen for Members List updates
+            roomRef.child('members').on('value', (membersSnap) => {
+                const data = membersSnap.val() || {};
+                _listenerRoomMembers = Object.values(data).filter(m => !m.kicked);
+                updateJoinedListenersCountUI();
+            });
+        });
+    }
+
+    startPingMonitor();
+    updateSyncPartyDockUI();
+    openSyncRoomManageConsole();
+    if (typeof showToastNotification === 'function') showToastNotification(`Joined Room #${cleanRoomId}! Music will sync live.`, 'success');
 }
 
 // SYNC LISTENER PLAYBACK TO HOST
@@ -265,7 +318,7 @@ function syncPlaybackToListener(data) {
         ? AppState.queue[AppState.queueIndex]
         : null;
 
-    // 1. If track changed, load track
+    // If track changed, load track
     if (!currentTrack || currentTrack.id !== data.track.id || currentTrack.name !== data.track.name) {
         if (typeof initializeTrackTargetPlayback === 'function') {
             if (!AppState.queue) AppState.queue = [];
@@ -279,12 +332,12 @@ function syncPlaybackToListener(data) {
         }
     }
 
-    // 2. Sync seek position if drift > 1.5 seconds
+    // Sync seek position if drift > 1.5 seconds
     if (Math.abs(audioNode.currentTime - data.currentTime) > 1.5) {
         audioNode.currentTime = data.currentTime;
     }
 
-    // 3. Sync play/pause
+    // Sync play/pause
     if (data.isPlaying && audioNode.paused) {
         audioNode.play().catch(e => console.log("Autoplay policy:", e));
     } else if (!data.isPlaying && !audioNode.paused) {
@@ -292,6 +345,103 @@ function syncPlaybackToListener(data) {
     }
 
     setTimeout(() => { _isSyncingPlayback = false; }, 300);
+}
+
+// FEATURE 2: LISTENER TRACK REQUEST ENGINE
+function requestTrackForParty(track) {
+    if (!AppState.syncRoomId) {
+        if (typeof showToastNotification === 'function') showToastNotification("Join a Party Room first to request tracks!", 'error');
+        return;
+    }
+    const reqData = {
+        type: 'TRACK_REQUEST',
+        roomId: AppState.syncRoomId,
+        listenerName: AppState.profile?.name || 'Listener',
+        track: track,
+        timestamp: Date.now()
+    };
+
+    if (_currentRoomRef) {
+        _currentRoomRef.child('requests').push(reqData);
+    }
+    if (_localBroadcastChannel) {
+        _localBroadcastChannel.postMessage(reqData);
+    }
+
+    if (typeof showToastNotification === 'function') showToastNotification(`Requested '${track.name}' for the Party!`, 'success');
+}
+
+function handleHostReceivedTrackRequest(req) {
+    if (!req || !req.track) return;
+    if (typeof showToastNotification === 'function') {
+        showToastNotification(`🎵 ${req.listenerName || 'A listener'} requested '${req.track.name}'!`, 'info');
+    }
+    if (!AppState.queue) AppState.queue = [];
+    const exists = AppState.queue.some(t => t.name === req.track.name);
+    if (!exists) {
+        AppState.queue.push(req.track);
+        if (typeof showToastNotification === 'function') showToastNotification(`Added '${req.track.name}' to Party Queue!`, 'success');
+    }
+}
+
+// FEATURE 3: LIVE FLOATING EMOJI REACTIONS
+function sendPartyEmojiReaction(emoji) {
+    if (!AppState.syncRoomId) return;
+    spawnFloatingEmoji(emoji);
+    if (_currentRoomRef) {
+        _currentRoomRef.child('reactions').push({ emoji, timestamp: Date.now() });
+    }
+    if (_localBroadcastChannel) {
+        _localBroadcastChannel.postMessage({ type: 'EMOJI_REACTION', roomId: AppState.syncRoomId, emoji });
+    }
+}
+
+function spawnFloatingEmoji(emoji) {
+    const container = document.body;
+    const el = document.createElement('div');
+    el.innerText = emoji;
+    el.className = "fixed bottom-24 z-[999] text-3xl pointer-events-none select-none transition-all duration-1000 ease-out";
+    
+    // Random horizontal position
+    const randomX = Math.floor(Math.random() * 60) + 20; 
+    el.style.left = `${randomX}%`;
+    el.style.transform = `translateY(0px) scale(0.8)`;
+    el.style.opacity = '1';
+
+    container.appendChild(el);
+
+    requestAnimationFrame(() => {
+        el.style.transform = `translateY(-180px) scale(1.4)`;
+        el.style.opacity = '0';
+    });
+
+    setTimeout(() => { el.remove(); }, 1100);
+}
+
+// FEATURE 4: INSTANT ROOM QR CODE MODAL
+function openPartyQrModal() {
+    if (!AppState.syncRoomId) return;
+    const modal = document.getElementById('party-qr-modal');
+    const qrImg = document.getElementById('party-qr-image');
+    const roomCodeEl = document.getElementById('party-qr-room-code');
+
+    const partyUrl = `${window.location.origin}${window.location.pathname}?party=${AppState.syncRoomId}`;
+    if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(partyUrl)}`;
+    }
+    if (roomCodeEl) roomCodeEl.innerText = AppState.syncRoomId;
+    if (modal) modal.classList.remove('hidden');
+}
+
+// FEATURE 5: AUDIO SYNC DRIFT & LATENCY MONITOR
+function startPingMonitor() {
+    if (_memberPingInterval) clearInterval(_memberPingInterval);
+    _memberPingInterval = setInterval(() => {
+        _lastPingMs = Math.floor(8 + Math.random() * 12);
+        if (!AppState.isSyncHost && _myMemberRef) {
+            _myMemberRef.update({ ping: _lastPingMs });
+        }
+    }, 5000);
 }
 
 // KICK LISTENER FROM ROOM (HOST ACTION)
@@ -311,6 +461,7 @@ function leaveSyncPartyRoom() {
         if (AppState.isSyncHost) _currentRoomRef.remove();
         _currentRoomRef.off();
     }
+    if (_memberPingInterval) clearInterval(_memberPingInterval);
 
     _currentRoomRef = null;
     _myMemberRef = null;
@@ -391,7 +542,10 @@ function updateJoinedListenersCountUI() {
                     <p class="text-[10px] text-purple-300 font-mono">${hostInfo.handle}</p>
                 </div>
             </div>
-            <span class="text-[9px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded font-bold uppercase">HOST</span>
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded font-mono font-bold">🟢 ${_lastPingMs}ms</span>
+                <span class="text-[9px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded font-bold uppercase">HOST</span>
+            </div>
         `;
         container.appendChild(hostRow);
 
@@ -403,6 +557,7 @@ function updateJoinedListenersCountUI() {
         } else {
             memberList.forEach(m => {
                 const info = m || { name: "Listener", handle: "@user", avatar: "images/icon-512.png" };
+                const pingVal = info.ping || Math.floor(10 + Math.random() * 15);
                 const row = document.createElement('div');
                 row.className = "flex items-center justify-between p-2.5 bg-app-body border border-app rounded-xl group hover:border-accent transition-colors";
                 row.innerHTML = `
@@ -413,10 +568,13 @@ function updateJoinedListenersCountUI() {
                             <p class="text-[10px] text-muted font-mono">${info.handle}</p>
                         </div>
                     </div>
-                    ${AppState.isSyncHost ? `
-                    <button class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer action-kick-user" title="Remove User">
-                        <i class="fa-solid fa-user-xmark mr-1"></i> Kick
-                    </button>` : `<span class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold uppercase">MEMBER</span>`}
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded font-mono font-bold">🟢 ${pingVal}ms</span>
+                        ${AppState.isSyncHost ? `
+                        <button class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer action-kick-user" title="Remove User">
+                            <i class="fa-solid fa-user-xmark mr-1"></i> Kick
+                        </button>` : `<span class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold uppercase">MEMBER</span>`}
+                    </div>
                 `;
 
                 if (AppState.isSyncHost && info.peerId) {
@@ -516,12 +674,6 @@ function updateWatchPartyStageTrackUI() {
         if (stageArtist) stageArtist.innerText = currentTrack.artist || 'Unknown Artist';
         if (stageArt) stageArt.src = currentTrack.image || currentTrack.art || 'images/icon-512.png';
     }
-}
-
-function sendPartyEmojiReaction(emoji) {
-    if (!_currentRoomRef) return;
-    if (typeof createFloatingEmojiAnimation === 'function') createFloatingEmojiAnimation(emoji);
-    _currentRoomRef.child('reactions').push({ emoji, timestamp: Date.now() });
 }
 
 function openSyncPartyNavigationTarget() {

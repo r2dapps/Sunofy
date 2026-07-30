@@ -987,11 +987,22 @@
                         <span id="sync-modal-room-code">----</span>
                         <button id="copy-sync-code-btn" onclick="copySyncRoomCodeToClipboard()" class="text-xs text-muted hover:text-main p-1 cursor-pointer" title="Copy Code"><i class="fa-solid fa-copy"></i></button>
                         <button id="share-sync-link-btn" onclick="shareSyncRoomLink()" class="text-xs text-accent hover:text-white p-1 cursor-pointer" title="Share Room Link"><i class="fa-solid fa-share-nodes"></i></button>
+                        <button id="show-qr-code-btn" onclick="openPartyQrModal()" class="text-xs text-purple-300 hover:text-white p-1 cursor-pointer" title="Show QR Code"><i class="fa-solid fa-qrcode"></i></button>
                     </div>
                 </div>
                 <div class="text-right">
                     <span id="sync-modal-role-badge" class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold uppercase">HOST</span>
                 </div>
+            </div>
+
+            <!-- Floating Emoji Reaction Bar -->
+            <div class="bg-app-body border border-app rounded-xl p-2 flex gap-2 justify-center items-center">
+                <button onclick="sendPartyEmojiReaction('🔥')" class="w-8 h-8 rounded-full bg-app-card border border-app hover:border-accent text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer">🔥</button>
+                <button onclick="sendPartyEmojiReaction('❤️')" class="w-8 h-8 rounded-full bg-app-card border border-app hover:border-accent text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer">❤️</button>
+                <button onclick="sendPartyEmojiReaction('🎵')" class="w-8 h-8 rounded-full bg-app-card border border-app hover:border-accent text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer">🎵</button>
+                <button onclick="sendPartyEmojiReaction('🕺')" class="w-8 h-8 rounded-full bg-app-card border border-app hover:border-accent text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer">🕺</button>
+                <button onclick="sendPartyEmojiReaction('🎉')" class="w-8 h-8 rounded-full bg-app-card border border-app hover:border-accent text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer">🎉</button>
+                <button onclick="sendPartyEmojiReaction('👏')" class="w-8 h-8 rounded-full bg-app-card border border-app hover:border-accent text-sm flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer">👏</button>
             </div>
 
             <!-- Members List Header -->
@@ -1114,6 +1125,23 @@
             <div><h3 class="text-xs font-bold uppercase tracking-wider text-main">Add Track to Playlist</h3><p class="text-[10px] text-muted mt-0.5">Select target playlist</p></div>
             <div id="modal-playlists-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll"></div>
             <div class="flex justify-end pt-2"><button type="button" id="close-modal-btn" class="bg-app-body border border-app px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-app-card tracking-wide uppercase transition-colors cursor-pointer text-main">Dismiss</button></div>
+        </div>
+    </div>
+
+    <!-- PARTY QR CODE MODAL -->
+    <div id="party-qr-modal" class="fixed inset-0 bg-black/80 z-[950] flex items-center justify-center p-4 hidden">
+        <div class="bg-app-card border border-app rounded-2xl w-full max-w-xs p-5 space-y-4 text-center shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xs font-bold text-main">Scan to Join Party</h3>
+                <button onclick="document.getElementById('party-qr-modal').classList.add('hidden')" class="text-xs text-muted hover:text-main p-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="bg-white p-3 rounded-xl flex items-center justify-center border border-purple-500/30 shadow-lg">
+                <img id="party-qr-image" src="" alt="Party QR Code" class="w-48 h-48 rounded-md object-contain">
+            </div>
+            <div>
+                <p class="text-xs font-black text-purple-300 tracking-widest">ROOM CODE: <span id="party-qr-room-code">----</span></p>
+                <p class="text-[10px] text-muted mt-1">Scan with any phone camera to join instantly!</p>
+            </div>
         </div>
     </div>
 
