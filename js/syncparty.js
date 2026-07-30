@@ -679,18 +679,37 @@ function updateSyncPartyDockUI() {
 }
 
 function updateWatchPartyStageTrackUI() {
-    const stageTitle = document.getElementById('sync-stage-track-title');
-    const stageArt = document.getElementById('sync-stage-track-art');
-    const stageArtist = document.getElementById('sync-stage-track-artist');
+    const stageTitle = document.getElementById('stage-track-title') || document.getElementById('sync-stage-track-title');
+    const stageArt = document.getElementById('stage-track-art') || document.getElementById('sync-stage-track-art');
+    const stageArtist = document.getElementById('stage-track-artist') || document.getElementById('sync-stage-track-artist');
 
-    const currentTrack = (AppState.queueIndex > -1 && AppState.queue[AppState.queueIndex])
-        ? AppState.queue[AppState.queueIndex]
-        : null;
+    const currentTrack = AppState.currentTrack 
+        || (AppState.queueIndex > -1 && AppState.queue && AppState.queue[AppState.queueIndex])
+        || null;
 
     if (currentTrack) {
-        if (stageTitle) stageTitle.innerText = currentTrack.name || 'No Track Selected';
-        if (stageArtist) stageArtist.innerText = currentTrack.artist || 'Unknown Artist';
-        if (stageArt) stageArt.src = currentTrack.image || currentTrack.art || 'images/icon-512.png';
+        if (stageTitle) stageTitle.innerText = currentTrack.name || currentTrack.title || 'Playing Track';
+        if (stageArtist) stageArtist.innerText = currentTrack.artist || currentTrack.singers || 'Sunofy Audio';
+        if (stageArt) stageArt.src = currentTrack.image || currentTrack.art || currentTrack.albumArt || 'images/icon-512.png';
+    } else {
+        if (stageTitle) stageTitle.innerText = 'Select or Sync a Track';
+        if (stageArtist) stageArtist.innerText = 'Sunofy VibeSync™ Stage';
+        if (stageArt) stageArt.src = 'images/icon-512.png';
+    }
+}
+
+function promptListenerTrackRequest() {
+    if (!AppState.syncRoomId) {
+        if (typeof showToastNotification === 'function') showToastNotification("Join or Host a Party Room first!", 'error');
+        return;
+    }
+    const songName = prompt("Enter song name to request for the Party:");
+    if (songName && songName.trim().length > 1) {
+        requestTrackForParty({
+            name: songName.trim(),
+            artist: "Requested Track",
+            image: "images/icon-512.png"
+        });
     }
 }
 
