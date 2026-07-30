@@ -138,7 +138,6 @@ function createSyncPartyRoom() {
         updateJoinedListenersCountUI();
     });
 
-    // Attach Host Audio Playback Watcher
     attachHostAudioEvents();
 
     updateSyncPartyDockUI();
@@ -191,17 +190,18 @@ function joinSyncPartyRoom(roomId) {
         return;
     }
 
+    const cleanRoomId = roomId.trim().replace('#', '');
     _myPeerId = `member_${Date.now()}`;
-    const roomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${roomId}`);
+    const roomRef = _firebaseDb.ref(`sunofy_vibe_rooms/${cleanRoomId}`);
 
     roomRef.once('value', (snapshot) => {
         const roomData = snapshot.val();
         if (!roomData || !roomData.host) {
-            if (typeof showToastNotification === 'function') showToastNotification(`Room #${roomId} not found or offline.`, 'error');
+            if (typeof showToastNotification === 'function') showToastNotification(`Room #${cleanRoomId} not found or offline.`, 'error');
             return;
         }
 
-        AppState.syncRoomId = roomId;
+        AppState.syncRoomId = cleanRoomId;
         AppState.isSyncHost = false;
         _currentRoomRef = roomRef;
 
@@ -246,7 +246,7 @@ function joinSyncPartyRoom(roomId) {
 
         updateSyncPartyDockUI();
         openSyncRoomManageConsole();
-        if (typeof showToastNotification === 'function') showToastNotification(`Joined Room #${roomId}! Music will sync live.`, 'success');
+        if (typeof showToastNotification === 'function') showToastNotification(`Joined Room #${cleanRoomId}! Music will sync live.`, 'success');
     });
 }
 
@@ -441,9 +441,27 @@ function copySyncRoomCodeToClipboard() {
     }
 }
 
+function shareSyncRoomLink() {
+    if (!AppState.syncRoomId) return;
+    const shareableUrl = `${window.location.origin}${window.location.pathname}?party=${AppState.syncRoomId}`;
+    if (navigator.share) {
+        navigator.share({
+            title: 'Join Sunofy Party',
+            text: `Listen to music live with me on Sunofy! Room Code #${AppState.syncRoomId}`,
+            url: shareableUrl
+        }).catch(() => {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareableUrl);
+        if (typeof showToastNotification === 'function') {
+            showToastNotification(`Room Link copied to clipboard!`, 'success');
+        }
+    }
+}
+
 function updateSyncPartyDockUI() {
     const dockBar = document.getElementById('sync-party-bottom-bar');
     const roomCodeEl = document.getElementById('sync-dock-room-code');
+    const modalRoomCodeEl = document.getElementById('sync-modal-room-code');
     const roleBadgeEl = document.getElementById('sync-dock-role-badge');
     const syncBtn = document.getElementById('sync-dock-force-sync-btn');
     const badge = document.getElementById('sync-room-badge');
@@ -455,6 +473,8 @@ function updateSyncPartyDockUI() {
             dockBar.classList.add('translate-y-0', 'opacity-100');
         }
         if (roomCodeEl) roomCodeEl.innerText = AppState.syncRoomId;
+        if (modalRoomCodeEl) modalRoomCodeEl.innerText = AppState.syncRoomId;
+
         if (roleBadgeEl) {
             roleBadgeEl.innerText = AppState.isSyncHost ? 'HOST' : 'LISTENER';
             roleBadgeEl.className = AppState.isSyncHost 
@@ -510,4 +530,15 @@ function openSyncPartyNavigationTarget() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', initSyncPartyEngine);
+// Auto-Join from URL parameter ?party=7704 or ?room=7704
+document.addEventListener('DOMContentLoaded', () => {
+    initSyncPartyEngine();
+    const params = new URLSearchParams(window.location.search);
+    const partyCode = params.get('party') || params.get('room');
+    if (partyCode) {
+        console.log("🔗 Auto-joining Sunofy Party Room:", partyCode);
+        setTimeout(() => {
+            joinSyncPartyRoom(partyCode);
+        }, 500);
+    }
+});
