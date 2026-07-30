@@ -678,6 +678,19 @@ function updateSyncPartyDockUI() {
     updateWatchPartyStageTrackUI();
 }
 
+function getTrackImage(track) {
+    if (!track) return 'images/icon-512.png';
+    if (typeof track.image === 'string' && track.image.length > 5) return track.image;
+    if (Array.isArray(track.image) && track.image.length > 0) {
+        const last = track.image[track.image.length - 1];
+        if (typeof last === 'string') return last;
+        if (last && (last.link || last.url)) return last.link || last.url;
+    }
+    if (typeof track.art === 'string' && track.art.length > 5) return track.art;
+    if (typeof track.albumArt === 'string' && track.albumArt.length > 5) return track.albumArt;
+    return 'images/icon-512.png';
+}
+
 function updateWatchPartyStageTrackUI() {
     const stageTitle = document.getElementById('stage-track-title') || document.getElementById('sync-stage-track-title');
     const stageArt = document.getElementById('stage-track-art') || document.getElementById('sync-stage-track-art');
@@ -690,7 +703,7 @@ function updateWatchPartyStageTrackUI() {
     if (currentTrack) {
         if (stageTitle) stageTitle.innerText = currentTrack.name || currentTrack.title || 'Playing Track';
         if (stageArtist) stageArtist.innerText = currentTrack.artist || currentTrack.singers || 'Sunofy Audio';
-        if (stageArt) stageArt.src = currentTrack.image || currentTrack.art || currentTrack.albumArt || 'images/icon-512.png';
+        if (stageArt) stageArt.src = getTrackImage(currentTrack);
     } else {
         if (stageTitle) stageTitle.innerText = 'Select or Sync a Track';
         if (stageArtist) stageArtist.innerText = 'Sunofy VibeSync™ Stage';
