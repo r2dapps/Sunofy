@@ -33,36 +33,70 @@ import {
   Video,
   Film,
   Download,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import { SyncPartyState, Track, Playlist, Favorites } from '../../types';
 import { syncParty } from '../../services/syncPartySocket';
 import { musicApi } from '../../services/api';
 
+const playAudioFeedbackTone = (type: 'on' | 'off') => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+    if (type === 'on') {
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } else {
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(350, now + 0.15);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    }
+  } catch (e) {}
+};
+
 const spawnFloatingEmoji = (emoji: string) => {
+  if (navigator.vibrate) navigator.vibrate(25);
   const container = document.body;
   const el = document.createElement('div');
   el.innerText = emoji;
-  el.className = 'fixed bottom-24 z-[9999] text-4xl pointer-events-none select-none transition-all duration-1000 ease-out animate-fade';
-  
-  // Random horizontal position
-  const randomX = Math.floor(Math.random() * 60) + 20;
+
+  const randomX = Math.floor(Math.random() * 70) + 15;
+  const randomRotate = (Math.random() - 0.5) * 45;
+  const randomScale = 1.2 + Math.random() * 0.8;
+  const driftX = (Math.random() - 0.5) * 80;
+
+  el.className = 'fixed bottom-28 z-[99999] text-5xl pointer-events-none select-none drop-shadow-[0_0_20px_rgba(255,215,0,0.85)]';
   el.style.left = `${randomX}%`;
-  el.style.transform = `translateY(0px) scale(0.8)`;
+  el.style.transform = `translate3d(0px, 0px, 0px) scale(0.3) rotate(0deg)`;
   el.style.opacity = '1';
+  el.style.transition = 'transform 1.3s cubic-bezier(0.15, 0.85, 0.35, 1.2), opacity 1.3s ease-out';
 
   container.appendChild(el);
-
-  // Force reflow
   void el.offsetWidth;
 
   requestAnimationFrame(() => {
-    el.style.transform = `translateY(-260px) scale(1.6)`;
+    el.style.transform = `translate3d(${driftX}px, -320px, 0px) scale(${randomScale}) rotate(${randomRotate}deg)`;
     el.style.opacity = '0';
   });
 
   setTimeout(() => {
-    el.remove();
-  }, 1100);
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }, 1350);
 };
 
 const LiveAudioWave: React.FC<{ isPlaying: boolean }> = ({ isPlaying }) => {
@@ -134,6 +168,40 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [searchResults, setSearchResults] = useState<Track[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
+  const [isMicActive, setIsMicActive] = useState(false);
+  const micStreamRef = React.useRef<MediaStream | null>(null);
+
+  const toggleMic = async () => {
+    if (!isMicActive) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStreamRef.current = stream;
+        setIsMicActive(true);
+        playAudioFeedbackTone('on');
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+        onShowToast('🎙️ Live Voice Microphone ON - Transmitting to Room');
+      } catch (err) {
+        onShowToast('Microphone access denied or unavailable');
+      }
+    } else {
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((track) => track.stop());
+        micStreamRef.current = null;
+      }
+      setIsMicActive(false);
+      playAudioFeedbackTone('off');
+      if (navigator.vibrate) navigator.vibrate([60]);
+      onShowToast('🎙️ Microphone OFF - Muted & Track Released');
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
 
   // Ref to track last chat count for triggering floating emoji sync reactions
   const lastMessageCountRef = React.useRef(syncState.chat.length);
@@ -357,6 +425,20 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
         {/* Action Icons */}
         <div className="flex items-center space-x-2">
+          {/* Live Room Voice Microphone Toggle Button */}
+          <button
+            onClick={toggleMic}
+            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+              isMicActive
+                ? 'bg-red-500/20 text-red-400 border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.4)] animate-pulse'
+                : 'bg-[var(--border-sunofy)] text-[var(--text-sunofy)] border-transparent hover:border-[var(--accent-sunofy)]'
+            }`}
+            title={isMicActive ? "Mute Microphone" : "Unmute Microphone"}
+          >
+            {isMicActive ? <Mic className="w-3.5 h-3.5 text-red-400 animate-bounce" /> : <MicOff className="w-3.5 h-3.5 text-[var(--muted-sunofy)]" />}
+            <span className="hidden sm:inline text-[11px]">{isMicActive ? "Mic Live" : "Mic Off"}</span>
+          </button>
+
           <button
             onClick={() => setShowQrModal(true)}
             className="w-8 h-8 rounded-xl bg-[var(--border-sunofy)] flex items-center justify-center text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer"
@@ -1075,6 +1157,17 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   placeholder="Chat with party members..."
                   className="flex-1 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-2 text-xs text-[var(--text-sunofy)] focus:outline-none focus:border-[var(--accent-sunofy)]"
                 />
+                <button
+                  onClick={toggleMic}
+                  className={`p-2 rounded-xl border transition cursor-pointer flex items-center justify-center ${
+                    isMicActive
+                      ? 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse'
+                      : 'bg-[var(--bg-sunofy)] text-[var(--muted-sunofy)] border-[var(--border-sunofy)] hover:text-white'
+                  }`}
+                  title={isMicActive ? "Mute Microphone" : "Live Voice Microphone"}
+                >
+                  {isMicActive ? <Mic className="w-4 h-4 text-red-400" /> : <MicOff className="w-4 h-4" />}
+                </button>
                 <button
                   onClick={handleSendChat}
                   className="p-2 bg-[var(--accent-sunofy)] text-black rounded-xl hover:scale-105 transition cursor-pointer flex items-center justify-center"

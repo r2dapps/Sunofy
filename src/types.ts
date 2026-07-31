@@ -41,6 +41,7 @@ export interface SyncMember {
   customAvatarUrl?: string;
   isHost: boolean;
   pingMs?: number;
+  isMicSpeaking?: boolean;
 }
 
 export interface SyncChatMessage {
