@@ -104,10 +104,21 @@ class SyncPartyManager {
     this.roomRef = ref(db, `sunofy_vibe_rooms/${code}`);
     onDisconnect(this.roomRef).remove();
 
+    const profileStr = typeof localStorage !== 'undefined' ? localStorage.getItem('sunofy_user_profile') : null;
+    let hostName = 'Host';
+    let hostAvatar = '👑';
+    if (profileStr) {
+      try {
+        const parsed = JSON.parse(profileStr);
+        if (parsed.username) hostName = parsed.username;
+        if (parsed.avatarIcon) hostAvatar = parsed.avatarIcon;
+      } catch(e) {}
+    }
+
     const hostProfile = {
       id: this.myPeerId,
-      name: 'Room Host',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
+      name: hostName,
+      avatarIcon: hostAvatar,
       isHost: true,
       pingMs: 0
     };
@@ -149,24 +160,24 @@ class SyncPartyManager {
       }
     });
 
-    // Listen to pending song requests from members
+    // Listen to requests
     onValue(ref(db, `sunofy_vibe_rooms/${code}/requests`), (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        this.state.requests = Object.values(data);
-        this.notify();
-      } else {
-        this.state.requests = [];
-        this.notify();
-      }
+       const data = snapshot.val();
+       if (data) {
+         this.state.requests = Object.values(data);
+         this.notify();
+       } else {
+         this.state.requests = [];
+         this.notify();
+       }
     });
 
     this.notify();
   }
 
-  joinRoom(code: string) {
-    const cleanCode = code.trim().toUpperCase();
-    this.myPeerId = `listener_${Date.now()}`;
+  joinRoom(roomCode: string) {
+    const cleanCode = roomCode.trim().toUpperCase();
+    this.myPeerId = `member_${Date.now()}`;
     
     this.roomRef = ref(db, `sunofy_vibe_rooms/${cleanCode}`);
     
@@ -185,21 +196,21 @@ class SyncPartyManager {
         // Register Member Presence
         this.myMemberRef = ref(db, `sunofy_vibe_rooms/${cleanCode}/members/${this.myPeerId}`);
         
-        // Profile logic could go here - using dummy profile for now
-        const profile = localStorage.getItem('sunofy_profile');
+        const profileStr = typeof localStorage !== 'undefined' ? localStorage.getItem('sunofy_user_profile') : null;
         let userName = 'Listener';
-        let userAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop';
-        if (profile) {
+        let userAvatar = '🎧';
+        if (profileStr) {
           try {
-            const parsed = JSON.parse(profile);
+            const parsed = JSON.parse(profileStr);
             if (parsed.username) userName = parsed.username;
+            if (parsed.avatarIcon) userAvatar = parsed.avatarIcon;
           } catch(e) {}
         }
 
         const memberInfo = {
           id: this.myPeerId,
           name: userName,
-          avatar: userAvatar,
+          avatarIcon: userAvatar,
           isHost: false,
           pingMs: 15,
           joinedAt: Date.now()

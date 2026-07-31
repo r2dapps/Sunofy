@@ -1142,7 +1142,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     className="flex items-center justify-between p-2.5 bg-[var(--bg-sunofy)] rounded-xl border border-[var(--border-sunofy)]"
                   >
                     <div className="flex items-center space-x-2.5 min-w-0">
-                      <img src={m.avatar} alt={m.name} className="w-8 h-8 rounded-full object-cover border border-[var(--border-sunofy)]" />
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-purple-500/20 border border-[var(--border-sunofy)] flex items-center justify-center text-sm shadow-sm shrink-0">
+                        {m.avatarIcon || (m.isHost ? '👑' : '🎧')}
+                      </div>
                       <div>
                         <div className="flex items-center space-x-1">
                           <span className="text-xs font-bold text-[var(--text-sunofy)] truncate block">{m.name}</span>

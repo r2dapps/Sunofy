@@ -35,7 +35,8 @@ export interface DownloadTrack extends Track {
 export interface SyncMember {
   id: string;
   name: string;
-  avatar: string;
+  avatar?: string;
+  avatarIcon?: string;
   isHost: boolean;
   pingMs?: number;
 }
@@ -85,5 +86,6 @@ export interface UserProfile {
   apiSource: 'jiosaavn' | 'cobalt_yt' | 'custom_mirror';
   appLockEnabled: boolean;
   appLockPin: string;
+  avatarIcon?: string;
   lastBackupAt?: string;
 }

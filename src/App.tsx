@@ -388,18 +388,23 @@ export default function App() {
 
       if (syncState.isPlaying) {
         if (audio.paused) {
-          audio.play().catch((err) => console.warn('SyncParty audio play failed:', err));
+          audio.play().then(() => {
+            initEqualizerWebAudio();
+            if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+              audioCtxRef.current.resume();
+            }
+          }).catch((err) => console.warn('SyncParty audio play failed:', err));
         }
         setIsPlaying(true);
 
         // Drift correction for Listeners without hard seeking or 2-second repeat stutters
         if (!syncState.isHost && !isNewTrack && syncState.currentTime > 0) {
           const drift = Math.abs(audio.currentTime - syncState.currentTime);
-          if (drift > 3.0) {
+          if (drift > 4.0) {
             // Hard seek only if severely out of sync
             audio.currentTime = syncState.currentTime;
             audio.playbackRate = 1.0;
-          } else if (drift > 0.4) {
+          } else if (drift > 0.5) {
             // Minor drift: smoothly adjust playback speed to catch up silently
             audio.playbackRate = audio.currentTime < syncState.currentTime ? 1.02 : 0.98;
           } else {
@@ -416,15 +421,20 @@ export default function App() {
       audio.playbackRate = 1.0;
       setIsPlaying(false);
     }
-  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying, syncState.currentTime]);
+  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying]);
 
-  // Host Audio Timeupdate Sync Engine
+  // Host Audio Timeupdate Sync Engine (Throttled once per 2 seconds during playback)
   useEffect(() => {
     if (!syncState.inRoom || !syncState.isHost || !audioRef.current) return;
     const audio = audioRef.current;
 
+    let lastSync = 0;
     const handleTimeUpdate = () => {
-      syncParty.syncAudioState(audio.currentTime, !audio.paused);
+      const now = Date.now();
+      if (now - lastSync > 2000) {
+        lastSync = now;
+        syncParty.syncAudioState(audio.currentTime, !audio.paused);
+      }
       setCurrentTime(audio.currentTime);
     };
 
@@ -1320,7 +1330,7 @@ export default function App() {
       )}
 
       {/* Hidden Audio Tag */}
-      <audio ref={audioRef} preload="auto" />
+      <audio ref={audioRef} crossOrigin="anonymous" preload="auto" />
 
       {/* Top Header - Hidden when in active Sync Party room or Videos tab */}
       {!isSyncPartyInRoom && currentTab !== 'Videos' && (
