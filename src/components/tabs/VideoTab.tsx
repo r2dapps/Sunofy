@@ -728,236 +728,236 @@ export const VideoTab: React.FC<VideoTabProps> = ({
   );
 
   return (
-    <div className="space-y-5 p-4 pb-24 animate-fade text-[var(--text-sunofy)] select-none min-h-screen relative overflow-hidden" style={{ backgroundColor: 'var(--bg-sunofy)' }}>
+    <div className={`space-y-4 animate-fade text-[var(--text-sunofy)] select-none relative overflow-hidden ${isEmbeddedInSyncParty ? 'p-1' : 'p-4 pb-24 min-h-screen'}`} style={{ backgroundColor: isEmbeddedInSyncParty ? 'transparent' : 'var(--bg-sunofy)' }}>
       {/* Background Gradient Animation */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <div className="w-full h-full bg-gradient-to-br from-[var(--accent-sunofy)] to-blue-900 mix-blend-screen canvas-slow-ambient"></div>
-      </div>
-      
-      <div className="relative z-10 space-y-5">
-      {/* Top Header Bar & ProTip Popover Trigger */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-3">
-          {onMinimize && (
-            <button
-              onClick={onMinimize}
-              className="p-2 rounded-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] hover:bg-[var(--hover-sunofy)] hover:border-[var(--accent-sunofy)] transition cursor-pointer text-[var(--text-sunofy)] hover:text-[var(--accent-sunofy)]"
-              title="Minimize Video Player"
-            >
-              <ChevronDown className="w-5 h-5" />
-            </button>
-          )}
-          <div>
-            <h2 className="text-xl font-black tracking-tight text-[var(--text-sunofy)] flex items-center gap-2">
-              <Film className="w-5 h-5 text-[var(--accent-sunofy)]" /> Cinema Video Player
-            </h2>
-            <p className="text-[11px] font-semibold text-[var(--muted-sunofy)] mt-0.5">
-              Stream local files, Google Drive, YouTube, Dailymotion & Vimeo
-            </p>
-          </div>
+      {!isEmbeddedInSyncParty && (
+        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+          <div className="w-full h-full bg-gradient-to-br from-[var(--accent-sunofy)] to-blue-900 mix-blend-screen canvas-slow-ambient"></div>
         </div>
+      )}
+      
+      <div className="relative z-10 space-y-4">
+      {/* Top Header Bar & Video Player Frame - Hidden when embedded in SyncParty */}
+      {!isEmbeddedInSyncParty && (
+        <>
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-3">
+              {onMinimize && (
+                <button
+                  onClick={onMinimize}
+                  className="p-2 rounded-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] hover:bg-[var(--hover-sunofy)] hover:border-[var(--accent-sunofy)] transition cursor-pointer text-[var(--text-sunofy)] hover:text-[var(--accent-sunofy)]"
+                  title="Minimize Video Player"
+                >
+                  <ChevronDown className="w-5 h-5" />
+                </button>
+              )}
+              <div>
+                <h2 className="text-xl font-black tracking-tight text-[var(--text-sunofy)] flex items-center gap-2">
+                  <Film className="w-5 h-5 text-[var(--accent-sunofy)]" /> Cinema Video Player
+                </h2>
+                <p className="text-[11px] font-semibold text-[var(--muted-sunofy)] mt-0.5">
+                  Stream local files, Google Drive, YouTube, Dailymotion & Vimeo
+                </p>
+              </div>
+            </div>
 
-        {/* Compact Pro Tip Button */}
-        <button
-          onClick={() => setShowProTipModal(true)}
-          className="px-3 py-1.5 rounded-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)] text-xs font-bold text-[var(--accent-sunofy)] flex items-center gap-1.5 transition shadow-sm cursor-pointer hover:scale-105 active:scale-95 shrink-0"
-        >
-          <Info className="w-3.5 h-3.5" />
-          <span>Pro Tip</span>
-        </button>
-      </div>
+            <button
+              onClick={() => setShowProTipModal(true)}
+              className="px-3 py-1.5 rounded-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)] text-xs font-bold text-[var(--accent-sunofy)] flex items-center gap-1.5 transition shadow-sm cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>Pro Tip</span>
+            </button>
+          </div>
 
-      {/* Main Full-Screen Cinema Video Player Canvas */}
-      <div
-        ref={containerRef}
-        onMouseMove={triggerActivity}
-        onTouchStart={triggerActivity}
-        className="relative w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-sunofy)] group"
-      >
-        {videoSourceType !== 'mp4' && videoSourceType !== 'local' ? (
-          <iframe
-            src={embedUrl}
-            title="Video Player Stream"
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <video
-            ref={videoRef}
-            src={selectedVideoUrl}
-            loop={isLooping}
-            onClick={togglePlayPause}
-            className="w-full h-full object-contain cursor-pointer"
-            playsInline
-          />
-        )}
-
-        {/* HTML5 Native Video Controls Overlay */}
-        {(videoSourceType === 'mp4' || videoSourceType === 'local') && (
           <div
-            className={`absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/50 flex flex-col justify-between p-4 transition-opacity duration-300 ${
-              showControls || !isPlaying ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-            }`}
+            ref={containerRef}
+            onMouseMove={triggerActivity}
+            onTouchStart={triggerActivity}
+            className="relative w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-sunofy)] group"
           >
-            {/* Top Bar Info */}
-            <div className="flex items-center justify-between text-xs font-bold text-white">
-              <div className="flex items-center gap-2 truncate max-w-[70%]">
-                <span className="px-2.5 py-0.5 rounded-full bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)] text-[10px] font-black uppercase tracking-wider">
-                  {videoSourceType}
-                </span>
-                <span className="truncate">{videoTitle}</span>
-                {localFileSize && <span className="text-[10px] text-emerald-400 font-mono">({localFileSize})</span>}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={togglePiP}
-                  className="p-1.5 rounded-full bg-black/40 backdrop-blur-md hover:bg-black/80 transition cursor-pointer"
-                  title="Picture-in-Picture"
-                >
-                  <PictureInPicture className="w-4 h-4 text-white" />
-                </button>
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-1.5 rounded-full bg-black/40 backdrop-blur-md hover:bg-black/80 transition cursor-pointer"
-                  title="Fullscreen"
-                >
-                  {isFullscreen ? <Minimize className="w-4 h-4 text-white" /> : <Maximize className="w-4 h-4 text-white" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Center Play/Pause & Skip Buttons */}
-            <div className="flex items-center justify-center space-x-6">
-              <button
-                onClick={() => handleSkip(-10)}
-                className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20 flex items-center justify-center hover:scale-110 active:scale-90 transition cursor-pointer"
-                title="Rewind 10s"
-              >
-                <Rewind className="w-5 h-5 fill-white" />
-              </button>
-
-              <button
-                onClick={togglePlayPause}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)] flex items-center justify-center hover:scale-110 active:scale-95 transition shadow-2xl cursor-pointer"
-              >
-                {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
-              </button>
-
-              <button
-                onClick={() => handleSkip(10)}
-                className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20 flex items-center justify-center hover:scale-110 active:scale-90 transition cursor-pointer"
-                title="Forward 10s"
-              >
-                <FastForward className="w-5 h-5 fill-white" />
-              </button>
-            </div>
-
-            {/* Bottom Controls Bar */}
-            <div className="space-y-2">
-              <input
-                type="range"
-                min="0"
-                max={duration || 100}
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full accent-[var(--accent-sunofy)] cursor-pointer h-1.5 rounded-lg bg-white/20"
+            {videoSourceType !== 'mp4' && videoSourceType !== 'local' ? (
+              <iframe
+                src={embedUrl}
+                title="Video Player Stream"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
               />
+            ) : (
+              <video
+                ref={videoRef}
+                src={selectedVideoUrl}
+                loop={isLooping}
+                onClick={togglePlayPause}
+                className="w-full h-full object-contain cursor-pointer"
+                playsInline
+              />
+            )}
 
-              <div className="flex items-center justify-between text-xs font-mono font-bold text-white/80">
-                <div className="flex items-center space-x-3">
-                  <button onClick={togglePlayPause} className="hover:text-white cursor-pointer">
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  </button>
-                  <button onClick={() => handleSkip(-10)} className="hover:text-white cursor-pointer text-[10px]" title="-10s">
-                    -10s
-                  </button>
-                  <button onClick={() => handleSkip(10)} className="hover:text-white cursor-pointer text-[10px]" title="+10s">
-                    +10s
-                  </button>
-                  <span>
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
+            {(videoSourceType === 'mp4' || videoSourceType === 'local') && (
+              <div
+                className={`absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/50 flex flex-col justify-between p-4 transition-opacity duration-300 ${
+                  showControls || !isPlaying ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold text-white">
+                  <div className="flex items-center gap-2 truncate max-w-[70%]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)] text-[10px] font-black uppercase tracking-wider">
+                      {videoSourceType}
+                    </span>
+                    <span className="truncate">{videoTitle}</span>
+                    {localFileSize && <span className="text-[10px] text-emerald-400 font-mono">({localFileSize})</span>}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={togglePiP}
+                      className="p-1.5 rounded-full bg-black/40 backdrop-blur-md hover:bg-black/80 transition cursor-pointer"
+                      title="Picture-in-Picture"
+                    >
+                      <PictureInPicture className="w-4 h-4 text-white" />
+                    </button>
+                    <button
+                      onClick={toggleFullscreen}
+                      className="p-1.5 rounded-full bg-black/40 backdrop-blur-md hover:bg-black/80 transition cursor-pointer"
+                      title="Fullscreen"
+                    >
+                      {isFullscreen ? <Minimize className="w-4 h-4 text-white" /> : <Maximize className="w-4 h-4 text-white" />}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-3 relative">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowVolumeSlider(!showVolumeSlider)}
-                      className="p-1.5 hover:text-white cursor-pointer flex items-center gap-1"
-                      title="Volume"
-                    >
-                      {volume === 0 ? (
-                        <VolumeX className="w-4 h-4 text-red-400" />
-                      ) : volume < 0.5 ? (
-                        <Volume1 className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" />
-                      )}
-                    </button>
-
-                    {showVolumeSlider && (
-                      <div className="absolute right-0 bottom-8 z-50 bg-black/90 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-2xl flex items-center gap-2 animate-fade w-40">
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={volume}
-                          onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                          className="w-full accent-[var(--accent-sunofy)] cursor-pointer h-1.5 bg-white/20 rounded-lg"
-                        />
-                        <span className="text-[10px] text-[var(--accent-sunofy)] font-mono font-bold w-6">
-                          {Math.round(volume * 100)}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-                      className="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/80 text-[10px] font-bold border border-white/10 cursor-pointer"
-                    >
-                      {playbackSpeed}x
-                    </button>
-                    {showSpeedMenu && (
-                      <div className="absolute right-0 bottom-8 z-50 bg-black/90 backdrop-blur-xl border border-white/20 p-1.5 rounded-xl shadow-2xl flex flex-col gap-1 w-24">
-                        {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => (
-                          <button
-                            key={s}
-                            onClick={() => handleSpeedChange(s)}
-                            className={`px-2 py-1 text-[10px] font-bold rounded-lg text-left flex items-center justify-between cursor-pointer ${
-                              playbackSpeed === s
-                                ? 'bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)]'
-                                : 'text-white/80 hover:bg-white/10'
-                            }`}
-                          >
-                            <span>{s}x</span>
-                            {playbackSpeed === s && <Check className="w-3 h-3" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center justify-center space-x-6">
+                  <button
+                    onClick={() => handleSkip(-10)}
+                    className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20 flex items-center justify-center hover:scale-110 active:scale-90 transition cursor-pointer"
+                    title="Rewind 10s"
+                  >
+                    <Rewind className="w-5 h-5 fill-white" />
+                  </button>
 
                   <button
-                    onClick={() => {
-                      setIsLooping(!isLooping);
-                      onShowToast(isLooping ? 'Video Loop Off' : 'Video Loop On');
-                    }}
-                    className={`p-1.5 cursor-pointer ${isLooping ? 'text-[var(--accent-sunofy)]' : 'text-white/60 hover:text-white'}`}
-                    title="Loop Video"
+                    onClick={togglePlayPause}
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)] flex items-center justify-center hover:scale-110 active:scale-95 transition shadow-2xl cursor-pointer"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
+                  </button>
+
+                  <button
+                    onClick={() => handleSkip(10)}
+                    className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20 flex items-center justify-center hover:scale-110 active:scale-90 transition cursor-pointer"
+                    title="Forward 10s"
+                  >
+                    <FastForward className="w-5 h-5 fill-white" />
                   </button>
                 </div>
+
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="w-full accent-[var(--accent-sunofy)] cursor-pointer h-1.5 rounded-lg bg-white/20"
+                  />
+
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-white/80">
+                    <div className="flex items-center space-x-3">
+                      <button onClick={togglePlayPause} className="hover:text-white cursor-pointer">
+                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                      </button>
+                      <button onClick={() => handleSkip(-10)} className="hover:text-white cursor-pointer text-[10px]" title="-10s">
+                        -10s
+                      </button>
+                      <button onClick={() => handleSkip(10)} className="hover:text-white cursor-pointer text-[10px]" title="+10s">
+                        +10s
+                      </button>
+                      <span>
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-3 relative">
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                          className="p-1.5 hover:text-white cursor-pointer flex items-center gap-1"
+                          title="Volume"
+                        >
+                          {volume === 0 ? (
+                            <VolumeX className="w-4 h-4 text-red-400" />
+                          ) : volume < 0.5 ? (
+                            <Volume1 className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" />
+                          )}
+                        </button>
+
+                        {showVolumeSlider && (
+                          <div className="absolute right-0 bottom-8 z-50 bg-black/90 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-2xl flex items-center gap-2 animate-fade w-40">
+                            <input
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.01"
+                              value={volume}
+                              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                              className="w-full accent-[var(--accent-sunofy)] cursor-pointer h-1.5 bg-white/20 rounded-lg"
+                            />
+                            <span className="text-[10px] text-[var(--accent-sunofy)] font-mono font-bold w-6">
+                              {Math.round(volume * 100)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                          className="px-2 py-0.5 rounded-lg bg-black/40 hover:bg-black/80 text-[10px] font-bold border border-white/10 cursor-pointer"
+                        >
+                          {playbackSpeed}x
+                        </button>
+                        {showSpeedMenu && (
+                          <div className="absolute right-0 bottom-8 z-50 bg-black/90 backdrop-blur-xl border border-white/20 p-1.5 rounded-xl shadow-2xl flex flex-col gap-1 w-24">
+                            {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => handleSpeedChange(s)}
+                                className={`px-2 py-1 text-[10px] font-bold rounded-lg text-left flex items-center justify-between cursor-pointer ${
+                                  playbackSpeed === s
+                                    ? 'bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)]'
+                                    : 'text-white/80 hover:bg-white/10'
+                                }`}
+                              >
+                                <span>{s}x</span>
+                                {playbackSpeed === s && <Check className="w-3 h-3" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setIsLooping(!isLooping);
+                          onShowToast(isLooping ? 'Video Loop Off' : 'Video Loop On');
+                        }}
+                        className={`p-1.5 cursor-pointer ${isLooping ? 'text-[var(--accent-sunofy)]' : 'text-white/60 hover:text-white'}`}
+                        title="Loop Video"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Expandable Input Toolbar */}
       <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl shadow-sm overflow-hidden">
