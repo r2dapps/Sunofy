@@ -469,7 +469,7 @@ export default function App() {
                audioRef.current.pause();
                setIsPlaying(false);
             }
-            if (Math.abs(audioRef.current.currentTime - newState.currentTime) > 3) {
+            if (Math.abs(audioRef.current.currentTime - newState.currentTime) > 1.5) {
                audioRef.current.currentTime = newState.currentTime;
             }
          }

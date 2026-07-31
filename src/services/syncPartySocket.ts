@@ -235,6 +235,7 @@ class SyncPartyManager {
             this.state.currentTrack = stateData.track;
             this.state.currentTime = stateData.currentTime;
             this.state.isPlaying = stateData.isPlaying;
+            this.state.duration = stateData.duration || (stateData.track ? stateData.track.duration : 0);
             this.notify();
           }
         });

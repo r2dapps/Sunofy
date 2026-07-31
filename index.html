@@ -43,7 +43,19 @@
           const swPath = window.location.pathname.endsWith('/') 
             ? window.location.pathname + 'sw.js' 
             : window.location.pathname + '/sw.js';
-          navigator.serviceWorker.register(swPath).catch((err) => {
+          navigator.serviceWorker.register(swPath).then((reg) => {
+            reg.update();
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    window.location.reload();
+                  }
+                });
+              }
+            });
+          }).catch((err) => {
             console.log('SW registration failed: ', err);
           });
         });
