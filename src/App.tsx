@@ -894,7 +894,7 @@ export default function App() {
         title: cleanTitle,
         artist,
         album: 'Device Audio Folder',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 180,
         downloadUrl: objectUrl,
         hasOfflineAudio: true,

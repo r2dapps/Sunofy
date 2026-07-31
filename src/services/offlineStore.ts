@@ -114,8 +114,8 @@ class OfflineStore {
 
   private async getFallbackAudioBlob(): Promise<Blob> {
     try {
-      const sampleUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-      const proxyRes = await fetch(`/api/proxy-audio?url=${encodeURIComponent(sampleUrl)}`);
+      const sampleUrl = 'https://actions.google.com/sounds/v1/ambiences/outdoor_theme_park.ogg';
+      const proxyRes = await fetch(sampleUrl);
       if (proxyRes.ok) {
         return await proxyRes.blob();
       }

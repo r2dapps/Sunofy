@@ -317,7 +317,7 @@ class MusicAPI {
         album: 'Top Hits 2026',
         image: './icon-192.png',
         duration: 200,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/outdoor_theme_park.ogg',
       },
       {
         id: 'mock_2',
@@ -326,7 +326,7 @@ class MusicAPI {
         album: 'Mass Beats 2026',
         image: './icon-192.png',
         duration: 215,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
       },
       {
         id: 'mock_3',
@@ -335,7 +335,7 @@ class MusicAPI {
         album: 'Future Nostalgia',
         image: './icon-192.png',
         duration: 203,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/thunderstorm.ogg',
       },
       {
         id: 'mock_4',
@@ -344,7 +344,7 @@ class MusicAPI {
         album: 'After Hours',
         image: './icon-192.png',
         duration: 215,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg',
       },
       {
         id: 'mock_5',
@@ -353,7 +353,7 @@ class MusicAPI {
         album: "Harry's House",
         image: './icon-192.png',
         duration: 167,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/rain_heavy.ogg',
       },
       {
         id: 'mock_6',
@@ -362,7 +362,7 @@ class MusicAPI {
         album: 'Varsham',
         image: './icon-192.png',
         duration: 245,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/transportation/car_passing.ogg',
       },
       {
         id: 'mock_7',
@@ -371,7 +371,7 @@ class MusicAPI {
         album: 'Ala Vaikunthapurramuloo',
         image: './icon-192.png',
         duration: 220,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg',
       },
       {
         id: 'mock_8',
@@ -380,7 +380,7 @@ class MusicAPI {
         album: 'Brahmastra',
         image: './icon-192.png',
         duration: 268,
-        downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+        downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/forest.ogg',
       },
     ];
 

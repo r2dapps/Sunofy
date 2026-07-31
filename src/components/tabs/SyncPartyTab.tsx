@@ -563,53 +563,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           </div>
         </div>
 
-        {/* Dedicated 2-Column Audio & Microphone Mixer Console (ALWAYS VISIBLE) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-3 relative z-10">
-          {/* Column 1: Music Volume Slider */}
-          <div className="bg-black/60 border border-purple-500/30 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-inner">
-            <div className="flex items-center gap-1.5 text-xs font-extrabold text-purple-200 shrink-0">
-              <Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" />
-              <span>Music ({musicVolume}%)</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={musicVolume}
-              onChange={(e) => setMusicVolume(Number(e.target.value))}
-              className="flex-1 accent-[var(--accent-sunofy)] h-1.5 bg-purple-950 rounded-lg cursor-pointer"
-            />
-          </div>
-
-          {/* Column 2: Live Mic Voice Toggle & Voice Volume */}
-          <div className="bg-black/60 border border-purple-500/30 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-inner">
-            <button
-              onClick={toggleMic}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-black flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                isMicActive
-                  ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse'
-                  : 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30'
-              }`}
-              title={isMicActive ? "Mute Live Voice Microphone" : "Unmute Live Voice Microphone"}
-            >
-              {isMicActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-              <span>{isMicActive ? 'Mic Live' : 'Mic Muted'}</span>
-            </button>
-
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-xs font-bold text-purple-200 shrink-0">Voice ({micVolume}%)</span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={micVolume}
-                onChange={(e) => setMicVolume(Number(e.target.value))}
-                className="flex-1 accent-emerald-400 h-1.5 bg-purple-950 rounded-lg cursor-pointer"
-              />
-            </div>
-          </div>
-        </div>
-
         {curTrack ? (
           <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-between py-2">
             {/* Center Vanilla Rotating Vinyl Deck or Video Watch Stage */}

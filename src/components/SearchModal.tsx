@@ -148,13 +148,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       id: 'spl_1',
       name: `${query || 'Top'} Melodies Mix`,
       trackCount: `${results.length} tracks`,
-      image: results[0]?.image || '/icon-192.png',
+      image: results[0]?.image || './icon-192.png',
     },
     {
       id: 'spl_2',
       name: `${query || 'Best'} Essential Anthems`,
       trackCount: `${Math.min(15, results.length * 2)} tracks`,
-      image: results[1]?.image || results[0]?.image || '/icon-192.png',
+      image: results[1]?.image || results[0]?.image || './icon-192.png',
     }
   ] : [];
 
