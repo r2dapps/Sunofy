@@ -219,7 +219,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
     },
     {
       id: 'mv_8',
-      title: 'Blinding Lights - Official Video',
+      title: 'Tollywood Cinema Hits 2026',
       category: 'Global Hits',
       duration: '4:22',
       thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=350&fit=crop',

@@ -119,8 +119,8 @@ export default function App() {
     return saved
       ? JSON.parse(saved)
       : {
-          username: 'Alex Morgan',
-          email: 'alex.morgan@sunofy.io',
+          username: 'Sunofy User',
+          email: 'user@sunofy.app',
           subscription: 'Sunofy Duo Premium',
           preferredQuality: '320kbps',
           accentColor: '#1db954',
