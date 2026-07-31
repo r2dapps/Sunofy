@@ -337,13 +337,35 @@ export default function App() {
     }
   }, [currentTab]);
 
-  // Conflict Control 2: Pause music audio when joining SyncParty room
+  // SyncParty Audio Engine: Drives native <audio> element with room sync state
   useEffect(() => {
-    if (syncState.inRoom && isPlaying) {
-      audioRef.current?.pause();
+    if (!syncState.inRoom || !audioRef.current) return;
+
+    const track = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
+
+    if (track) {
+      const src = track.downloadUrl || track.url;
+      if (src && audioRef.current.src !== src) {
+        audioRef.current.src = src;
+        if (syncState.currentTime) {
+          try {
+            audioRef.current.currentTime = syncState.currentTime;
+          } catch (e) {}
+        }
+      }
+
+      if (syncState.isPlaying) {
+        audioRef.current.play().catch((err) => console.warn('SyncParty audio play failed:', err));
+        setIsPlaying(true);
+      } else {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    } else {
+      audioRef.current.pause();
       setIsPlaying(false);
     }
-  }, [syncState.inRoom]);
+  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying]);
 
   // Restore last played track & timestamp on startup
   useEffect(() => {

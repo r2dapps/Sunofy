@@ -28,7 +28,6 @@ class SyncPartyManager {
 
   constructor() {
     this.initBroadcastChannel();
-    this.checkLocalStorageSession();
   }
 
   private initBroadcastChannel() {
@@ -40,31 +39,14 @@ class SyncPartyManager {
           if (!data || data.roomId !== this.state.roomCode) return;
           
           if (data.type === 'STATE_SYNC' && !this.state.isHost) {
-             // Listener handles state sync (we apply it in UI layer usually, or update state here)
-             this.state.currentTrack = data.state.track;
+             this.state.currentTrack = data.state.currentTrack;
              this.state.currentTime = data.state.currentTime;
              this.state.isPlaying = data.state.isPlaying;
              this.notify();
-          } else if (data.type === 'EMOJI_REACTION') {
-             // Handled by UI
-          } else if (data.type === 'TRACK_REQUEST' && this.state.isHost) {
-             this.addTrackToQueue(data.track, data.listenerName);
           }
         };
       }
     } catch (e) {}
-  }
-
-  private checkLocalStorageSession() {
-    const savedCode = localStorage.getItem('sunofy_sync_room_code');
-    const isHost = localStorage.getItem('sunofy_sync_is_host') === 'true';
-    if (savedCode) {
-      if (isHost) {
-        this.createRoom(savedCode);
-      } else {
-        this.joinRoom(savedCode);
-      }
-    }
   }
 
   subscribe(listener: SyncListener) {
@@ -149,11 +131,23 @@ class SyncPartyManager {
        }
     });
 
-    // Listen to queue changes (if we want listeners to see it)
+    // Listen to queue changes
     onValue(ref(db, `sunofy_vibe_rooms/${code}/queue`), (snapshot) => {
       const data = snapshot.val();
       if (data) {
         this.state.queue = Object.values(data);
+        this.notify();
+      }
+    });
+
+    // Listen to pending song requests from members
+    onValue(ref(db, `sunofy_vibe_rooms/${code}/requests`), (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        this.state.requests = Object.values(data);
+        this.notify();
+      } else {
+        this.state.requests = [];
         this.notify();
       }
     });
@@ -341,16 +335,16 @@ class SyncPartyManager {
     if (!this.state.inRoom) return;
     
     if (!this.state.isHost) {
-      // Send request to host
-      if (this.localChannel) {
-         this.localChannel.postMessage({
-            type: 'TRACK_REQUEST',
-            roomId: this.state.roomCode,
-            listenerName: requesterName,
-            track: JSON.parse(JSON.stringify(track))
-         });
-      }
-      this.sendMessage(`${requesterName} requested "${track.title}"`);
+      // Non-host sends song request to host for approval
+      const reqRef = push(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/requests`));
+      const cleanTrack = JSON.parse(JSON.stringify(track));
+      set(reqRef, {
+        id: reqRef.key,
+        track: cleanTrack,
+        requesterName: requesterName || 'Member',
+        timestamp: Date.now()
+      });
+      this.sendMessage(`Requested "${track.title}" (Waiting for Host approval)`);
       return;
     }
 
@@ -369,6 +363,17 @@ class SyncPartyManager {
     const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
     set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
     this.notify();
+  }
+
+  acceptSongRequest(requestId: string, track: Track, requesterName: string) {
+    if (!this.state.isHost) return;
+    this.addTrackToQueue(track, requesterName);
+    remove(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/requests/${requestId}`));
+  }
+
+  declineSongRequest(requestId: string) {
+    if (!this.state.isHost) return;
+    remove(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/requests/${requestId}`));
   }
 
   playQueueTrack(index: number) {

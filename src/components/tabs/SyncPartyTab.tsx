@@ -21,9 +21,11 @@ import {
   Heart,
   Music2,
   QrCode,
-  X,
   ChevronDown,
   ChevronUp,
+  Check,
+  Clock,
+  X,
 } from 'lucide-react';
 import { SyncPartyState, Track, Playlist, Favorites } from '../../types';
 import { syncParty } from '../../services/syncPartySocket';
@@ -510,6 +512,58 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           {/* TAB 1: Party Queue */}
           {activeTab === 'queue' && (
             <div className="space-y-2 animate-fade">
+              {/* Host Song Request Approval Banner */}
+              {syncState.isHost && syncState.requests && syncState.requests.length > 0 && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 mb-3 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-amber-400">
+                    <span className="flex items-center space-x-1.5">
+                      <Clock className="w-3.5 h-3.5 animate-spin" />
+                      <span>Pending Member Requests ({syncState.requests.length})</span>
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider font-mono bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                      Host Approval
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-[140px] overflow-y-auto">
+                    {syncState.requests.map((req) => (
+                      <div key={req.id} className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)]">
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                          <img src={req.track.image} alt={req.track.title} className="w-7 h-7 rounded object-cover" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold truncate text-[var(--text-sunofy)]">{req.track.title}</p>
+                            <p className="text-[9px] text-[var(--muted-sunofy)] truncate">Requested by <span className="text-[var(--accent-sunofy)] font-semibold">{req.requesterName}</span></p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-1 shrink-0 ml-2">
+                          <button
+                            onClick={() => {
+                              syncParty.acceptSongRequest(req.id, req.track, req.requesterName);
+                              onShowToast(`Accepted "${req.track.title}" into queue!`);
+                            }}
+                            className="p-1.5 rounded-lg bg-emerald-500 text-black font-bold text-xs hover:scale-105 transition cursor-pointer flex items-center space-x-1"
+                            title="Accept Song to Queue"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              syncParty.declineSongRequest(req.id);
+                              onShowToast(`Declined request`);
+                            }}
+                            className="p-1.5 rounded-lg bg-red-500/20 text-red-400 font-bold text-xs hover:scale-105 transition cursor-pointer"
+                            title="Decline Request"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between text-xs text-[var(--muted-sunofy)] px-1 pb-1">
                 <button
                   onClick={() => setIsQueueCollapsed(!isQueueCollapsed)}
@@ -583,9 +637,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                             </div>
                           </div>
 
-                          {idx !== 0 && (
+                          {idx !== 0 && syncState.isHost && (
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 syncParty.removeTrackFromQueue(idx);
                                 onShowToast(`Removed "${song.title}" from queue`);
                               }}
@@ -651,12 +706,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       <button
                         onClick={() => {
                           syncParty.addTrackToQueue(s, syncState.isHost ? 'Host' : 'Member');
-                          onShowToast(`Added "${s.title}" to Party Queue!`);
+                          onShowToast(syncState.isHost ? `Added "${s.title}" to Party Queue!` : `Sent request for "${s.title}" to Host!`);
                         }}
                         className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer"
                       >
                         <Plus className="w-3 h-3" />
-                        <span>Add</span>
+                        <span>{syncState.isHost ? 'Add' : 'Request'}</span>
                       </button>
                     </div>
                   ))}
@@ -692,12 +747,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                             favorites.songs.forEach((song) => {
                               syncParty.addTrackToQueue(song, syncState.isHost ? 'Host' : 'Member');
                             });
-                            onShowToast(`Imported ${favorites.songs.length} favorite songs into Party!`);
+                            onShowToast(syncState.isHost ? `Imported ${favorites.songs.length} songs to Party!` : `Requested songs for Host approval!`);
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
-                          <span>Import All</span>
+                          <span>{syncState.isHost ? 'Import All' : 'Request All'}</span>
                         </button>
                       </div>
                     )}
@@ -722,7 +777,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                           className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
-                          <span>Import</span>
+                          <span>{syncState.isHost ? 'Import' : 'Request'}</span>
                         </button>
                       </div>
                     ))}
@@ -734,27 +789,34 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
           {/* TAB 3: Room Chat */}
           {activeTab === 'chat' && (
-            <div className="space-y-2 animate-fade flex flex-col h-[240px]">
+            <div className="space-y-2 animate-fade flex flex-col h-[250px]">
               {/* Message List */}
-              <div className="flex-1 space-y-1.5 overflow-y-auto pr-1">
+              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
                 {syncState.chat.length === 0 ? (
                   <div className="text-center py-10 text-xs text-[var(--muted-sunofy)]">No messages yet. Say hi to the room!</div>
                 ) : (
                   syncState.chat.map((c) => (
                     <div
                       key={c.id}
-                      className={`p-2 rounded-xl text-xs ${
+                      className={`p-2.5 rounded-2xl text-xs flex flex-col ${
                         c.isSystem
-                          ? 'text-[10px] text-[var(--muted-sunofy)] text-center py-0.5 font-medium'
-                          : c.sender === 'You'
-                          ? 'bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 text-[var(--text-sunofy)] ml-auto max-w-[85%]'
-                          : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] max-w-[85%]'
+                          ? 'text-[10px] text-[var(--muted-sunofy)] text-center py-1 font-medium bg-black/10 rounded-lg my-1'
+                          : c.sender === 'You' || c.sender === 'Host'
+                          ? 'bg-[var(--accent-sunofy)] text-black ml-auto max-w-[80%] rounded-br-xs shadow-md'
+                          : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] mr-auto max-w-[80%] rounded-bl-xs shadow-sm'
                       }`}
                     >
-                      {!c.isSystem && c.sender !== 'You' && (
-                        <p className="text-[9px] text-[var(--accent-sunofy)] font-bold mb-0.5">{c.sender}</p>
+                      {!c.isSystem && (
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className={`text-[10px] font-bold ${c.sender === 'You' || c.sender === 'Host' ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
+                            {c.sender}
+                          </span>
+                          <span className={`text-[8px] font-mono ${c.sender === 'You' || c.sender === 'Host' ? 'text-black/60' : 'text-[var(--muted-sunofy)]'}`}>
+                            {c.time}
+                          </span>
+                        </div>
                       )}
-                      <p>{c.text}</p>
+                      <p className="font-semibold leading-relaxed">{c.text}</p>
                     </div>
                   ))
                 )}
@@ -816,20 +878,24 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       <img src={m.avatar} alt={m.name} className="w-8 h-8 rounded-full object-cover border border-[var(--border-sunofy)]" />
                       <div>
                         <span className="text-xs font-bold text-[var(--text-sunofy)] truncate block">{m.name}</span>
-                        <span className="text-[9px] text-[var(--muted-sunofy)]">{m.id === 'u1' ? 'Host' : 'Listener'}</span>
+                        <span className="text-[9px] text-[var(--muted-sunofy)]">{m.isHost ? 'Host' : 'Listener'}</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold border border-emerald-500/30">
                         🟢 {m.pingMs || 15}ms
                       </span>
-                      {syncState.isHost && m.id !== 'u1' && (
+                      {syncState.isHost && !m.isHost && (
                         <button
-                          onClick={() => syncParty.kickMember(m.id)}
-                          className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
-                          title="Kick Listener"
+                          onClick={() => {
+                            syncParty.kickMember(m.id);
+                            onShowToast(`Removed ${m.name} from room`);
+                          }}
+                          className="px-2 py-1 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-lg transition cursor-pointer flex items-center space-x-1 text-[10px] font-bold"
+                          title="Remove Member"
                         >
                           <UserX className="w-3.5 h-3.5" />
+                          <span>Remove</span>
                         </button>
                       )}
                     </div>

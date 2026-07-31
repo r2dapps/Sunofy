@@ -48,6 +48,13 @@ export interface SyncChatMessage {
   isSystem?: boolean;
 }
 
+export interface SyncPartyRequest {
+  id: string;
+  track: Track;
+  requesterName: string;
+  timestamp: number;
+}
+
 export interface SyncPartyState {
   inRoom: boolean;
   roomCode: string;
@@ -59,6 +66,7 @@ export interface SyncPartyState {
   queue: Track[];
   members: SyncMember[];
   chat: SyncChatMessage[];
+  requests?: SyncPartyRequest[];
 }
 
 export interface EqualizerBand {
