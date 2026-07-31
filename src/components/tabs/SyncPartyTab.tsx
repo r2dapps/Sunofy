@@ -294,7 +294,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   }, [syncState.chat]);
 
   // Active sub-tab inside the consolidated Sync Party console
-  const [activeTab, setActiveTab] = useState<'queue' | 'search_music' | 'library' | 'video_search' | 'chat' | 'members'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'search_music' | 'library' | 'video_search' | 'chat' | 'members' | 'voice'>('queue');
   const [isConsoleMinimized, setIsConsoleMinimized] = useState(false);
   const [videoSearchQuery, setVideoSearchQuery] = useState('');
   const [videoSearchResults, setVideoSearchResults] = useState<any[]>([]);
@@ -563,6 +563,53 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           </div>
         </div>
 
+        {/* Dedicated 2-Column Audio & Microphone Mixer Console (ALWAYS VISIBLE) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-3 relative z-10">
+          {/* Column 1: Music Volume Slider */}
+          <div className="bg-black/60 border border-purple-500/30 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-inner">
+            <div className="flex items-center gap-1.5 text-xs font-extrabold text-purple-200 shrink-0">
+              <Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" />
+              <span>Music ({musicVolume}%)</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={musicVolume}
+              onChange={(e) => setMusicVolume(Number(e.target.value))}
+              className="flex-1 accent-[var(--accent-sunofy)] h-1.5 bg-purple-950 rounded-lg cursor-pointer"
+            />
+          </div>
+
+          {/* Column 2: Live Mic Voice Toggle & Voice Volume */}
+          <div className="bg-black/60 border border-purple-500/30 rounded-2xl p-3 flex items-center justify-between gap-2.5 shadow-inner">
+            <button
+              onClick={toggleMic}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-black flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
+                isMicActive
+                  ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse'
+                  : 'bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30'
+              }`}
+              title={isMicActive ? "Mute Live Voice Microphone" : "Unmute Live Voice Microphone"}
+            >
+              {isMicActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+              <span>{isMicActive ? 'Mic Live' : 'Mic Muted'}</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="text-xs font-bold text-purple-200 shrink-0">Voice ({micVolume}%)</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={micVolume}
+                onChange={(e) => setMicVolume(Number(e.target.value))}
+                className="flex-1 accent-emerald-400 h-1.5 bg-purple-950 rounded-lg cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+
         {curTrack ? (
           <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-between py-2">
             {/* Center Vanilla Rotating Vinyl Deck or Video Watch Stage */}
@@ -707,53 +754,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   </div>
                 );
               })()}
-
-              {/* Dedicated 2-Column Audio & Microphone Mixer Console */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-purple-500/20">
-                {/* Column 1: Music Volume Slider */}
-                <div className="bg-black/50 border border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between gap-2.5 shadow-inner">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-purple-200 shrink-0">
-                    <Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" />
-                    <span>Music ({musicVolume}%)</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={musicVolume}
-                    onChange={(e) => setMusicVolume(Number(e.target.value))}
-                    className="flex-1 accent-[var(--accent-sunofy)] h-1.5 bg-purple-950 rounded-lg cursor-pointer"
-                  />
-                </div>
-
-                {/* Column 2: Live Mic Voice Toggle & Voice Volume */}
-                <div className="bg-black/50 border border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between gap-2.5 shadow-inner">
-                  <button
-                    onClick={toggleMic}
-                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-black flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                      isMicActive
-                        ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)] animate-pulse'
-                        : 'bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/25'
-                    }`}
-                    title={isMicActive ? "Mute Live Voice Microphone" : "Unmute Live Voice Microphone"}
-                  >
-                    {isMicActive ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-                    <span>{isMicActive ? 'Mic Live' : 'Mic Muted'}</span>
-                  </button>
-
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <span className="text-[10px] font-bold text-purple-200 shrink-0">Voice ({micVolume}%)</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={micVolume}
-                      onChange={(e) => setMicVolume(Number(e.target.value))}
-                      className="flex-1 accent-emerald-400 h-1.5 bg-purple-950 rounded-lg cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         ) : (
@@ -857,6 +857,22 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'members' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
                 {syncState.members.length}
               </span>
+            </button>
+
+            {/* 7. Voice Chat & Mic Console */}
+            <button
+              onClick={() => setActiveTab('voice')}
+              title="Live Voice Chat & Microphone Mixer Console"
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
+                activeTab === 'voice'
+                  ? 'bg-emerald-500 text-black shadow-md font-bold'
+                  : isMicActive
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
+              }`}
+            >
+              {isMicActive ? <Mic className="w-4 h-4 text-emerald-400" /> : <MicOff className="w-4 h-4" />}
+              <span className="text-[10px] font-extrabold hidden sm:inline">Mic</span>
             </button>
           </div>
 
@@ -1330,6 +1346,66 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: Live Voice Chat & Microphone Mixer Console */}
+          {activeTab === 'voice' && (
+            <div className="space-y-3 animate-fade">
+              <div className="flex items-center justify-between text-[10px] font-bold text-[var(--muted-sunofy)] uppercase tracking-wider px-1">
+                <span>Dedicated Voice Chat & Microphone Mixer</span>
+                <span className={isMicActive ? 'text-emerald-400 font-bold' : 'text-red-400'}>
+                  {isMicActive ? '● Live Transmitting' : '○ Mic Muted'}
+                </span>
+              </div>
+
+              <div className="bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-4 space-y-4">
+                {/* Master Mic Toggle Button */}
+                <button
+                  onClick={toggleMic}
+                  className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center space-x-2 transition cursor-pointer shadow-lg ${
+                    isMicActive
+                      ? 'bg-emerald-500 text-black shadow-emerald-500/30 animate-pulse'
+                      : 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
+                  }`}
+                >
+                  {isMicActive ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                  <span>{isMicActive ? 'MICROPHONE LIVE (TAP TO MUTE)' : 'UNMUTE MICROPHONE (TRANSMIT VOICE)'}</span>
+                </button>
+
+                {/* 2-Column Mixer Sliders */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
+                      <span className="flex items-center gap-1.5"><Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" /> Room Music Volume</span>
+                      <span className="text-[var(--accent-sunofy)] font-mono">{musicVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={musicVolume}
+                      onChange={(e) => setMusicVolume(Number(e.target.value))}
+                      className="w-full accent-[var(--accent-sunofy)] h-1.5 bg-[var(--border-sunofy)] rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
+                      <span className="flex items-center gap-1.5"><Mic className="w-4 h-4 text-emerald-400" /> Voice Stream Volume</span>
+                      <span className="text-emerald-400 font-mono">{micVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={micVolume}
+                      onChange={(e) => setMicVolume(Number(e.target.value))}
+                      className="w-full accent-emerald-400 h-1.5 bg-[var(--border-sunofy)] rounded-lg cursor-pointer"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
