@@ -3,18 +3,20 @@
   "short_name": "Sunofy",
   "description": "High-fidelity music player with offline storage, Sync Party, and custom themes",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0a0a0c",
   "theme_color": "#1db954",
   "icons": [
     {
-      "src": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=192&h=192&fit=crop",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=512&h=512&fit=crop",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
