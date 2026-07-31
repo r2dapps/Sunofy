@@ -440,9 +440,15 @@ export default function App() {
     }
   };
 
-  // Load Offline Downloads on startup
+  // Load Offline Downloads on startup & Listen for PWA Updates
   useEffect(() => {
     offlineStore.getAllOfflineTracks().then((tracks) => setDownloads(tracks));
+
+    const handlePwaUpdate = () => {
+      showToast('✨ New Sunofy update ready! Tap Profile -> Check Updates to reload');
+    };
+    window.addEventListener('pwaUpdateAvailable', handlePwaUpdate);
+    return () => window.removeEventListener('pwaUpdateAvailable', handlePwaUpdate);
   }, []);
 
   // Sync Party socket subscription

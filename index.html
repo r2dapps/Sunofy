@@ -50,7 +50,8 @@
               if (newWorker) {
                 newWorker.addEventListener('statechange', () => {
                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    window.location.reload();
+                    (window as any).hasPwaUpdate = true;
+                    window.dispatchEvent(new CustomEvent('pwaUpdateAvailable'));
                   }
                 });
               }
