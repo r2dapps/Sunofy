@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import {
   Header,
   BottomNav,
@@ -1667,7 +1667,7 @@ export default function App() {
         <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[99999] pointer-events-none max-w-[90%] w-auto animate-fade">
           <div className="bg-[#0f111a]/95 text-white border border-[var(--accent-sunofy)]/40 px-4 py-2 rounded-full shadow-[0_12px_35px_rgba(0,0,0,0.7)] backdrop-blur-2xl flex items-center space-x-2.5 text-xs font-bold border-t-emerald-400/50">
             <div className="w-5 h-5 rounded-full bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/50 text-[var(--accent-sunofy)] flex items-center justify-center shrink-0">
-              <Sparkles className="w-3 h-3 animate-spin" style={{ animationDuration: '4s' }} />
+              <Heart className="w-3 h-3 text-[var(--accent-sunofy)] fill-[var(--accent-sunofy)] animate-pulse" />
             </div>
             <span className="truncate max-w-[280px] sm:max-w-md tracking-wide text-gray-100">{toastMsg}</span>
           </div>
