@@ -7,9 +7,39 @@ interface CacheItem<T> {
 
 class MusicAPI {
   public currentSource: 'jiosaavn' | 'youtube' | 'local' = 'jiosaavn';
-  private localApiUrl = '/api/search/songs';
-  private primaryUrl = 'https://saavn.dev/api';
-  private fallbackUrl = 'https://saavn.sumit.co/api';
+  
+  /**
+   * Cascading API mirrors for JioSaavn query execution with environment detection:
+   * - Localhost: tries local backend proxy first, then primary public CORS endpoints.
+   * - GitHub Pages: tries high-speed CORS-enabled saavn.dev & saavn.sumit.co endpoints, with fallback mirrors.
+   * - Other hosts: iterates through all available public & local endpoints.
+   */
+  private get apiMirrors(): string[] {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return [
+        'http://localhost:3000/api',             // Local Node/Express proxy
+        'https://saavn.dev/api',                 // Primary high-speed 320kbps CORS mirror
+        'https://saavn.sumit.co/api',             // Secondary public mirror
+        'https://jiosaavn-api-v3.vercel.app/api' // Fallback Vercel mirror
+      ];
+    } else if (hostname.includes('github.io')) {
+      return [
+        'https://saavn.dev/api',                 // Primary CORS-enabled mirror for GitHub Pages
+        'https://saavn.sumit.co/api',             // Secondary public mirror
+        'https://jiosaavn-api-v3.vercel.app/api' // Fallback Vercel mirror
+      ];
+    } else {
+      return [
+        'https://saavn.dev/api',
+        'https://saavn.sumit.co/api',
+        'https://jiosaavn-api-v3.vercel.app/api',
+        '/api'
+      ];
+    }
+  }
+
   private cacheTTLMs = 20 * 60 * 1000; // 20 minutes API cache
   private memoryCache = new Map<string, CacheItem<any>>();
 
@@ -58,42 +88,11 @@ class MusicAPI {
 
     const langQuery = language ? `&language=${encodeURIComponent(language)}` : '';
 
-    // 1. Try primary working mirror with extended limit of 50
-    try {
-      const res = await fetch(`${this.primaryUrl}/search/songs?query=${encodeURIComponent(query)}${langQuery}&limit=50`);
-      if (res.ok) {
-        const data = await res.json();
-        const results = data.data?.results || data.data || (Array.isArray(data) ? data : null);
-        if (results && Array.isArray(results) && results.length > 0) {
-          const formatted = results.map((s: any) => this.formatSong(s));
-          this.setCache(cacheKey, formatted);
-          return formatted;
-        }
-      }
-    } catch (e) {
-      console.debug('Primary saavn mirror failed, trying local proxy...');
-    }
-
-    // 2. Try secondary public mirror with extended limit of 50
-    try {
-      const res = await fetch(`${this.fallbackUrl}/search/songs?query=${encodeURIComponent(query)}${langQuery}&limit=50`);
-      if (res.ok) {
-        const data = await res.json();
-        const results = Array.isArray(data) ? data : (data.data?.results || data.data);
-        if (results && Array.isArray(results) && results.length > 0) {
-          const formatted = results.map((s: any) => this.formatSong(s));
-          this.setCache(cacheKey, formatted);
-          return formatted;
-        }
-      }
-    } catch (e) {
-      console.debug('Fallback saavn mirror failed...');
-    }
-
-    // 3. Try local express backend proxy (only on localhost)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // Iterate through configured apiMirrors until one returns valid song data
+    for (let i = 0; i < this.apiMirrors.length; i++) {
+      const base = this.apiMirrors[i];
       try {
-        const res = await fetch(`${this.localApiUrl}?query=${encodeURIComponent(query)}${langQuery}&limit=50`);
+        const res = await fetch(`${base}/search/songs?query=${encodeURIComponent(query)}${langQuery}&limit=50`);
         if (res.ok) {
           const data = await res.json();
           const results = data.data?.results || data.data || (Array.isArray(data) ? data : null);
@@ -103,10 +102,12 @@ class MusicAPI {
             return formatted;
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.debug(`[MusicAPI] Mirror ${base} failed, trying next fallback...`);
+      }
     }
 
-    // Placeholders are returned strictly if all APIs fail
+    console.warn('[MusicAPI] All live JioSaavn API mirrors failed, serving emergency mock catalog');
     return this.getLocalMockSongs(query);
   }
 
@@ -116,14 +117,11 @@ class MusicAPI {
     const cached = this.getCached<any[]>(cacheKey);
     if (cached) return cached;
 
-    const urls = [
-      `${this.primaryUrl}/search/playlists?query=${encodeURIComponent(query)}&limit=50`,
-      `${this.fallbackUrl}/search/playlists?query=${encodeURIComponent(query)}&limit=50`,
-    ];
-
-    for (const url of urls) {
+    // Iterate through configured apiMirrors for playlist search
+    for (let i = 0; i < this.apiMirrors.length; i++) {
+      const base = this.apiMirrors[i];
       try {
-        const res = await fetch(url);
+        const res = await fetch(`${base}/search/playlists?query=${encodeURIComponent(query)}&limit=50`);
         if (res.ok) {
           const json = await res.json();
           const results = json.data?.results || json.data || (Array.isArray(json) ? json : null);
@@ -132,7 +130,9 @@ class MusicAPI {
             return results;
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.debug(`[MusicAPI] Playlist mirror ${base} failed...`);
+      }
     }
     return [];
   }
@@ -143,14 +143,11 @@ class MusicAPI {
     const cached = this.getCached<any[]>(cacheKey);
     if (cached) return cached;
 
-    const urls = [
-      `${this.primaryUrl}/search/albums?query=${encodeURIComponent(query)}&limit=50`,
-      `${this.fallbackUrl}/search/albums?query=${encodeURIComponent(query)}&limit=50`,
-    ];
-
-    for (const url of urls) {
+    // Iterate through configured apiMirrors for album search
+    for (let i = 0; i < this.apiMirrors.length; i++) {
+      const base = this.apiMirrors[i];
       try {
-        const res = await fetch(url);
+        const res = await fetch(`${base}/search/albums?query=${encodeURIComponent(query)}&limit=50`);
         if (res.ok) {
           const json = await res.json();
           const results = json.data?.results || json.data || (Array.isArray(json) ? json : null);
@@ -159,7 +156,9 @@ class MusicAPI {
             return results;
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.debug(`[MusicAPI] Album mirror ${base} failed...`);
+      }
     }
     return [];
   }
@@ -170,14 +169,11 @@ class MusicAPI {
     const cached = this.getCached<{ name: string; songs: Track[] }>(cacheKey);
     if (cached) return cached;
 
-    const urls = [
-      `${this.primaryUrl}/playlists?id=${encodeURIComponent(id)}`,
-      `${this.fallbackUrl}/playlists?id=${encodeURIComponent(id)}`,
-    ];
-
-    for (const url of urls) {
+    // Iterate through configured apiMirrors for playlist details
+    for (let i = 0; i < this.apiMirrors.length; i++) {
+      const base = this.apiMirrors[i];
       try {
-        const res = await fetch(url);
+        const res = await fetch(`${base}/playlists?id=${encodeURIComponent(id)}`);
         if (res.ok) {
           const json = await res.json();
           const data = json.data || json;
@@ -191,7 +187,9 @@ class MusicAPI {
             return result;
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.debug(`[MusicAPI] Playlist details mirror ${base} failed...`);
+      }
     }
     return null;
   }
