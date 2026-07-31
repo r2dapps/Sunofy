@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Sunofy Music</title>
+    <link rel="manifest" href="/Sunofy/manifest.json" />
+    <meta name="theme-color" content="#1db954" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sunofy" />
+    <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=192&h=192&fit=crop" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script type="module" crossorigin src="/Sunofy/assets/index-D0y8vWza.js"></script>
+    <link rel="stylesheet" crossorigin href="/Sunofy/assets/index-CVVGZbvY.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPwaPrompt = e;
+      });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.log('SW registration failed: ', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
+
