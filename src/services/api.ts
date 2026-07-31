@@ -20,21 +20,21 @@ class MusicAPI {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return [
         'http://localhost:3000/api',             // Local Node/Express proxy
-        'https://saavn.sumit.co/api',             // Primary public mirror
-        'https://saavn.dev/api',                 // Secondary high-speed mirror
-        'https://jiosaavn-api-v3.vercel.app/api' // Fallback Vercel mirror
+        'https://saavn.sumit.co/api',             // Primary public Saavn API mirror
+        'https://saavn-api.vercel.app',          // Secondary Vercel API mirror
+        'https://jiosaavn-api.vercel.app/api'    // Fallback API mirror
       ];
     } else if (hostname.includes('github.io')) {
       return [
         'https://saavn.sumit.co/api',             // Primary public mirror for GitHub Pages
-        'https://saavn.dev/api',                 // Secondary high-speed mirror
-        'https://jiosaavn-api-v3.vercel.app/api' // Fallback Vercel mirror
+        'https://saavn-api.vercel.app',          // Secondary Vercel API mirror
+        'https://jiosaavn-api.vercel.app/api'    // Fallback API mirror
       ];
     } else {
       return [
         'https://saavn.sumit.co/api',
-        'https://saavn.dev/api',
-        'https://jiosaavn-api-v3.vercel.app/api',
+        'https://saavn-api.vercel.app',
+        'https://jiosaavn-api.vercel.app/api',
         '/api'
       ];
     }
@@ -102,12 +102,8 @@ class MusicAPI {
             return formatted;
           }
         }
-      } catch (e) {
-        console.debug(`[MusicAPI] Mirror ${base} failed, trying next fallback...`);
-      }
+      } catch (e) {}
     }
-
-    console.warn('[MusicAPI] All live JioSaavn API mirrors failed, serving emergency mock catalog');
     return this.getLocalMockSongs(query);
   }
 
@@ -130,9 +126,7 @@ class MusicAPI {
             return results;
           }
         }
-      } catch (e) {
-        console.debug(`[MusicAPI] Playlist mirror ${base} failed...`);
-      }
+      } catch (e) {}
     }
     return [];
   }
@@ -156,9 +150,7 @@ class MusicAPI {
             return results;
           }
         }
-      } catch (e) {
-        console.debug(`[MusicAPI] Album mirror ${base} failed...`);
-      }
+      } catch (e) {}
     }
     return [];
   }
@@ -187,16 +179,14 @@ class MusicAPI {
             return result;
           }
         }
-      } catch (e) {
-        console.debug(`[MusicAPI] Playlist details mirror ${base} failed...`);
-      }
+      } catch (e) {}
     }
     return null;
   }
 
   public formatSong(s: any): Track {
     // Extract best image link
-    let imgUrl = '/favicon.ico';
+    let imgUrl = './favicon.ico';
     if (Array.isArray(s.image) && s.image.length > 0) {
       const lastImg = s.image[s.image.length - 1];
       imgUrl = typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || imgUrl);
@@ -213,6 +203,13 @@ class MusicAPI {
       audioUrl = s.downloadUrl;
     } else if (s.url && typeof s.url === 'string') {
       audioUrl = s.url;
+    }
+
+    if (audioUrl.startsWith('http:')) {
+      audioUrl = audioUrl.replace('http:', 'https:');
+    }
+    if (imgUrl.startsWith('http:')) {
+      imgUrl = imgUrl.replace('http:', 'https:');
     }
 
     // Clean up title & artists
@@ -318,7 +315,7 @@ class MusicAPI {
         title: 'Blinding Lights',
         artist: 'The Weeknd',
         album: 'After Hours',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 200,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
       },
@@ -327,7 +324,7 @@ class MusicAPI {
         title: 'Save Your Tears',
         artist: 'The Weeknd',
         album: 'After Hours',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 215,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
       },
@@ -336,7 +333,7 @@ class MusicAPI {
         title: 'Levitating',
         artist: 'Dua Lipa',
         album: 'Future Nostalgia',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 203,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
       },
@@ -345,7 +342,7 @@ class MusicAPI {
         title: 'Save Your Tears',
         artist: 'The Weeknd',
         album: 'After Hours',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 215,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
       },
@@ -354,7 +351,7 @@ class MusicAPI {
         title: 'As It Was',
         artist: 'Harry Styles',
         album: "Harry's House",
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 167,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
       },
@@ -363,7 +360,7 @@ class MusicAPI {
         title: 'Nuvvosthanante Neneddantana',
         artist: 'Devi Sri Prasad, Chitra',
         album: 'Varsham',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 245,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
       },
@@ -372,7 +369,7 @@ class MusicAPI {
         title: 'Samajavaragamana',
         artist: 'Sid Sriram, Thaman S',
         album: 'Ala Vaikunthapurramuloo',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 220,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
       },
@@ -381,7 +378,7 @@ class MusicAPI {
         title: 'Kesariya',
         artist: 'Arijit Singh, Pritam',
         album: 'Brahmastra',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 268,
         downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
       },

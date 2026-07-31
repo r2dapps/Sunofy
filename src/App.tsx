@@ -329,6 +329,38 @@ export default function App() {
     return () => unsubscribe();
   }, [currentTrack]);
 
+  // Conflict Control 1: Pause audio when switching to Videos tab
+  useEffect(() => {
+    if (currentTab === 'Videos' && isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+    }
+  }, [currentTab]);
+
+  // Conflict Control 2: Pause music audio when joining SyncParty room
+  useEffect(() => {
+    if (syncState.inRoom && isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+    }
+  }, [syncState.inRoom]);
+
+  // Restore last played track & timestamp on startup
+  useEffect(() => {
+    if (audioRef.current && currentTrack) {
+      const offlineCopy = downloads.find((d) => d.id === currentTrack.id);
+      const src = offlineCopy?.offlineBlobUrl || currentTrack.downloadUrl;
+      if (src && audioRef.current.src !== src) {
+        audioRef.current.src = src;
+        if (savedPlayerState?.currentTime) {
+          try {
+            audioRef.current.currentTime = savedPlayerState.currentTime;
+          } catch (e) {}
+        }
+      }
+    }
+  }, [currentTrack, downloads]);
+
   // Save state changes to LocalStorage
   useEffect(() => {
     localStorage.setItem('sunofy_playlists', JSON.stringify(playlists));
@@ -624,7 +656,6 @@ export default function App() {
 
       audioRef.current.src = src;
       audioRef.current.play().then(() => {
-        initEqualizerWebAudio();
         if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
           audioCtxRef.current.resume();
         }
@@ -1200,7 +1231,7 @@ export default function App() {
       )}
 
       {/* Hidden Audio Tag */}
-      <audio ref={audioRef} crossOrigin="anonymous" preload="auto" />
+      <audio ref={audioRef} preload="auto" />
 
       {/* Top Header - Hidden when in active Sync Party room or Videos tab */}
       {!isSyncPartyInRoom && currentTab !== 'Videos' && (
@@ -1212,6 +1243,7 @@ export default function App() {
           onOpenCarMode={() => setIsCarModeOpen(true)}
           musicSource={musicSource}
           onMusicSourceChange={setMusicSource}
+          isPlaying={isPlaying}
         />
       )}
 

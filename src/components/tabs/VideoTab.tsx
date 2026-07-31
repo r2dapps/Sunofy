@@ -100,6 +100,16 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, is
   const [showControls, setShowControls] = useState(true);
   const [isLooping, setIsLooping] = useState(false);
 
+  // Pause video if main music audio player becomes active
+  useEffect(() => {
+    if (isAudioPlaying) {
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      setIsPlaying(false);
+    }
+  }, [isAudioPlaying]);
+
   // YouTube Search Query & Results State
   const [ytSearchQuery, setYtSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);

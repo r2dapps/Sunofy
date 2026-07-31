@@ -313,22 +313,26 @@ class SyncPartyManager {
     this.broadcastState();
   }
 
-  private broadcastState() {
-    if (!this.state.isHost || !this.roomRef) return;
+  private  broadcastState() {
+    if (!this.state.inRoom || !this.state.isHost) return;
     const stateData = {
-      track: this.state.currentTrack,
-      currentTime: this.state.currentTime,
+      currentTrack: this.state.currentTrack,
       isPlaying: this.state.isPlaying,
-      timestamp: Date.now()
+      currentTime: this.state.currentTime,
+      duration: this.state.duration,
+      updatedAt: Date.now()
     };
     
-    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/state`), stateData);
-    
+    // Clean any undefined properties for Firebase Realtime Database compatibility
+    const cleanState = JSON.parse(JSON.stringify(stateData));
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/state`), cleanState);
+
+    // Also broadcast over local BroadcastChannel if active
     if (this.localChannel) {
       this.localChannel.postMessage({
         type: 'STATE_SYNC',
         roomId: this.state.roomCode,
-        state: stateData
+        state: cleanState
       });
     }
   }
@@ -343,7 +347,7 @@ class SyncPartyManager {
             type: 'TRACK_REQUEST',
             roomId: this.state.roomCode,
             listenerName: requesterName,
-            track: track
+            track: JSON.parse(JSON.stringify(track))
          });
       }
       this.sendMessage(`${requesterName} requested "${track.title}"`);
@@ -353,7 +357,8 @@ class SyncPartyManager {
     const queueItem = { ...track, artist: `${track.artist} (Req by ${requesterName})` };
     this.state.queue.push(queueItem);
     
-    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), Object.assign({}, this.state.queue));
+    const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
     this.notify();
   }
 
@@ -361,7 +366,8 @@ class SyncPartyManager {
     if (!this.state.isHost) return;
     if (index >= 0 && index < this.state.queue.length) {
       this.state.queue.splice(index, 1);
-      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), Object.assign({}, this.state.queue));
+      const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
+      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
       this.notify();
     }
   }
@@ -374,7 +380,8 @@ class SyncPartyManager {
       this.state.currentTime = 0;
       this.state.duration = next.duration || 200;
       this.state.isPlaying = true;
-      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), Object.assign({}, this.state.queue));
+      const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
+      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
       this.broadcastState();
     }
     this.notify();

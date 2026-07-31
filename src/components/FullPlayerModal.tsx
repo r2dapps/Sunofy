@@ -195,24 +195,57 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
         {/* Tab Content Body */}
         {activeTab === 'player' && (
           <div className="flex-1 flex flex-col justify-around items-center my-2 min-h-0">
-            {/* Full Screen Apple Canvas Artwork Frame with Glowing Visualizer Aura */}
+            {/* Full Screen Canvas with Blended Banner & Rotating Vinyl Disc */}
             <div className="relative my-auto flex flex-col items-center justify-center">
               {/* Outer Glow Halo Ring */}
               <div
                 className={`absolute w-72 sm:w-80 h-72 sm:h-80 rounded-full blur-2xl transition-all duration-1000 ${
-                  isPlaying ? 'bg-[var(--accent-sunofy)]/30 scale-110 opacity-100 animate-pulse' : 'bg-transparent opacity-0 scale-90'
+                  isPlaying ? 'bg-[var(--accent-sunofy)]/35 scale-110 opacity-100 animate-pulse' : 'bg-transparent opacity-0 scale-90'
                 }`}
               />
 
-              <div className="relative w-64 sm:w-72 aspect-square max-h-[42vh] rounded-3xl overflow-hidden shadow-2xl border-2 border-[var(--border-sunofy)] group transition-transform duration-500">
-                <img
-                  src={currentTrack.image}
-                  alt={currentTrack.title}
-                  className={`w-full h-full object-cover transition-transform duration-700 ${
-                    isPlaying ? 'scale-105' : 'scale-100 grayscale-[15%]'
+              <div className="relative w-64 sm:w-72 aspect-square max-h-[42vh] rounded-3xl overflow-hidden shadow-2xl border-2 border-[var(--border-sunofy)] group transition-transform duration-500 bg-neutral-950 flex items-center justify-center">
+                {/* Blended Album Art Banner Background */}
+                {currentTrack.image && !currentTrack.image.includes('favicon.ico') ? (
+                  <div className="absolute inset-0">
+                    <img
+                      src={currentTrack.image}
+                      alt={currentTrack.title}
+                      className="w-full h-full object-cover filter blur-xs brightness-75 scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/50" />
+                  </div>
+                ) : null}
+
+                {/* Rotating Vinyl Disc Component */}
+                <div
+                  className={`relative z-10 w-44 sm:w-50 h-44 sm:h-50 rounded-full border-4 border-neutral-800/80 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-700 bg-black/90 ${
+                    isPlaying ? 'animate-[spin_6s_linear_infinite] shadow-emerald-500/20' : 'scale-95 opacity-90'
                   }`}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70" />
+                  style={{
+                    backgroundImage: 'radial-gradient(circle, #262626 15%, #171717 16%, #000 65%, #262626 66%, #171717 100%)'
+                  }}
+                >
+                  {/* Vinyl Grooves Effect */}
+                  <div className="absolute inset-2 rounded-full border border-neutral-700/30" />
+                  <div className="absolute inset-6 rounded-full border border-neutral-700/20" />
+                  <div className="absolute inset-10 rounded-full border border-neutral-700/20" />
+
+                  {/* Disc Center Label */}
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-neutral-600 bg-emerald-500/90 flex items-center justify-center overflow-hidden shadow-inner shrink-0 z-10">
+                    <img
+                      src={currentTrack.image || './favicon.ico'}
+                      alt="Disc Center"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLElement).setAttribute('src', './favicon.ico');
+                      }}
+                    />
+                  </div>
+
+                  {/* Center Spindle Hole */}
+                  <div className="absolute w-3 h-3 rounded-full bg-neutral-900 border border-neutral-400 shadow-inner z-20" />
+                </div>
               </div>
             </div>
 

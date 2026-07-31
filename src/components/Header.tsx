@@ -10,6 +10,7 @@ interface HeaderProps {
   userAvatar?: string;
   musicSource?: 'jiosaavn' | 'youtube' | 'local';
   onMusicSourceChange?: (source: 'jiosaavn' | 'youtube' | 'local') => void;
+  isPlaying?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   userAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
   musicSource = 'jiosaavn',
   onMusicSourceChange,
+  isPlaying = false,
 }) => {
   return (
     <header
@@ -35,8 +37,8 @@ export const Header: React.FC<HeaderProps> = ({
       }}
     >
       <div className="flex items-center space-x-2.5 min-w-0">
-        <div className="w-8 h-8 rounded-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] flex items-center justify-center shadow-md shrink-0 overflow-hidden select-none">
-          <img src="/favicon.ico" alt="Logo" className="w-5.5 h-5.5 object-contain" referrerPolicy="no-referrer" />
+        <div className={`w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shadow-md shrink-0 overflow-hidden select-none ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '4s' }}>
+          <img src="./favicon.ico" alt="Logo" className="w-5.5 h-5.5 object-contain" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-base font-bold tracking-tight text-[var(--text-sunofy)] truncate hidden xs:inline">{title}</h1>
       </div>

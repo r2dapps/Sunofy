@@ -22,6 +22,8 @@ import {
   Music2,
   QrCode,
   X,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { SyncPartyState, Track, Playlist, Favorites } from '../../types';
 import { syncParty } from '../../services/syncPartySocket';
@@ -127,6 +129,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
   // Active sub-tab inside the unified Sync Party card
   const [activeTab, setActiveTab] = useState<'queue' | 'add_music' | 'chat' | 'members'>('queue');
+  const [isQueueCollapsed, setIsQueueCollapsed] = useState(false);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -483,9 +486,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           {activeTab === 'queue' && (
             <div className="space-y-2 animate-fade">
               <div className="flex items-center justify-between text-xs text-[var(--muted-sunofy)] px-1 pb-1">
-                <span className="font-semibold uppercase tracking-wider text-[10px]">
-                  Party Playlist ({syncState.queue.length})
-                </span>
+                <button
+                  onClick={() => setIsQueueCollapsed(!isQueueCollapsed)}
+                  className="flex items-center space-x-1.5 font-semibold uppercase tracking-wider text-[10px] text-[var(--text-sunofy)] hover:text-[var(--accent-sunofy)] cursor-pointer"
+                >
+                  {isQueueCollapsed ? <ChevronDown className="w-3.5 h-3.5 text-[var(--accent-sunofy)]" /> : <ChevronUp className="w-3.5 h-3.5 text-[var(--accent-sunofy)]" />}
+                  <span>Party Playlist ({syncState.queue.length})</span>
+                  <span className="text-[9px] text-[var(--muted-sunofy)] font-normal lowercase">({isQueueCollapsed ? 'collapsed' : 'expanded'})</span>
+                </button>
+
                 {syncState.queue.length > 0 && (
                   <button
                     onClick={() => setActiveTab('add_music')}
@@ -497,65 +506,69 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 )}
               </div>
 
-              {syncState.queue.length === 0 ? (
-                <div className="text-center py-8 space-y-2">
-                  <ListMusic className="w-8 h-8 text-[var(--border-sunofy)] mx-auto" />
-                  <p className="text-xs text-[var(--muted-sunofy)]">Party queue is currently empty.</p>
-                  <button
-                    onClick={() => setActiveTab('add_music')}
-                    className="px-3.5 py-1.5 rounded-full bg-[var(--accent-sunofy)] text-black text-xs font-bold shadow hover:scale-105 transition cursor-pointer"
-                  >
-                    + Add Songs to Queue
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
-                  {syncState.queue.map((song, idx) => (
-                    <div
-                      key={song.id + '_' + idx}
-                      className={`flex items-center justify-between p-2 rounded-xl border transition ${
-                        idx === 0
-                          ? 'bg-[var(--accent-sunofy)]/10 border-[var(--accent-sunofy)]/40 shadow-sm'
-                          : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--hover-sunofy)]'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                        <div className="relative">
-                          <img src={song.image} alt={song.title} className="w-8 h-8 rounded-lg object-cover" />
-                          {idx === 0 && (
-                            <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
-                              <span className="w-2 h-2 rounded-full bg-[var(--accent-sunofy)] animate-ping" />
+              {!isQueueCollapsed && (
+                <>
+                  {syncState.queue.length === 0 ? (
+                    <div className="text-center py-8 space-y-2">
+                      <ListMusic className="w-8 h-8 text-[var(--border-sunofy)] mx-auto" />
+                      <p className="text-xs text-[var(--muted-sunofy)]">Party queue is currently empty.</p>
+                      <button
+                        onClick={() => setActiveTab('add_music')}
+                        className="px-3.5 py-1.5 rounded-full bg-[var(--accent-sunofy)] text-black text-xs font-bold shadow hover:scale-105 transition cursor-pointer"
+                      >
+                        + Add Songs to Queue
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+                      {syncState.queue.map((song, idx) => (
+                        <div
+                          key={song.id + '_' + idx}
+                          className={`flex items-center justify-between p-2 rounded-xl border transition ${
+                            idx === 0
+                              ? 'bg-[var(--accent-sunofy)]/10 border-[var(--accent-sunofy)]/40 shadow-sm'
+                              : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--hover-sunofy)]'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                            <div className="relative">
+                              <img src={song.image} alt={song.title} className="w-8 h-8 rounded-lg object-cover" />
+                              {idx === 0 && (
+                                <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+                                  <span className="w-2 h-2 rounded-full bg-[var(--accent-sunofy)] animate-ping" />
+                                </div>
+                              )}
                             </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center space-x-1.5">
+                                <h5 className="text-xs font-semibold truncate text-[var(--text-sunofy)]">{song.title}</h5>
+                                {idx === 0 && (
+                                  <span className="text-[9px] bg-[var(--accent-sunofy)] text-black font-bold px-1.5 py-0.2 rounded-full uppercase">
+                                    PLAYING
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{song.artist}</p>
+                            </div>
+                          </div>
+
+                          {idx !== 0 && (
+                            <button
+                              onClick={() => {
+                                syncParty.removeTrackFromQueue(idx);
+                                onShowToast(`Removed "${song.title}" from queue`);
+                              }}
+                              className="p-1.5 text-[var(--muted-sunofy)] hover:text-red-400 transition cursor-pointer"
+                              title="Remove Track"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center space-x-1.5">
-                            <h5 className="text-xs font-semibold truncate text-[var(--text-sunofy)]">{song.title}</h5>
-                            {idx === 0 && (
-                              <span className="text-[9px] bg-[var(--accent-sunofy)] text-black font-bold px-1.5 py-0.2 rounded-full uppercase">
-                                PLAYING
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{song.artist}</p>
-                        </div>
-                      </div>
-
-                      {idx !== 0 && (
-                        <button
-                          onClick={() => {
-                            syncParty.removeTrackFromQueue(idx);
-                            onShowToast(`Removed "${song.title}" from queue`);
-                          }}
-                          className="p-1.5 text-[var(--muted-sunofy)] hover:text-red-400 transition cursor-pointer"
-                          title="Remove Track"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           )}
