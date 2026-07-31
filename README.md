@@ -8,11 +8,15 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Android%20%7C%20iOS%20%7C%20Desktop-1DB954?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
----
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
 </div>
+
+> [!CAUTION]
+> **PROPRIETARY & INTELLECTUAL PROPERTY NOTICE**  
+> **STRICTLY PROHIBITED**: Copying, stealing, re-distributing, scraping, mirroring, or using any portion of this source code or design system without explicit written authorization is strictly forbidden and subject to copyright enforcement.
+
+---
 
 ## ✨ Key Features
 
