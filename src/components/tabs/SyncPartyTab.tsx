@@ -169,34 +169,106 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [chatInput, setChatInput] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
+  const [activeSpeaker, setActiveSpeaker] = useState<{ name: string; timestamp: number } | null>(null);
   const micStreamRef = React.useRef<MediaStream | null>(null);
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+
+  // Subscribe to incoming remote WebRTC voice stream chunks
+  React.useEffect(() => {
+    if (!syncState.inRoom) return;
+
+    const cleanup = syncParty.listenVoiceStream((chunk) => {
+      if (chunk.audio) {
+        const voiceAudio = new Audio(chunk.audio);
+        voiceAudio.volume = 1.0;
+        voiceAudio.play().catch(() => {});
+        setActiveSpeaker({ name: chunk.senderName, timestamp: Date.now() });
+      }
+    });
+
+    return () => {
+      cleanup();
+    };
+  }, [syncState.inRoom, syncState.roomCode]);
+
+  // Auto-hide active speaker toast after 3s
+  React.useEffect(() => {
+    if (activeSpeaker) {
+      const timer = setTimeout(() => {
+        if (Date.now() - activeSpeaker.timestamp >= 2500) {
+          setActiveSpeaker(null);
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeSpeaker]);
 
   const toggleMic = async () => {
     if (!isMicActive) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
         micStreamRef.current = stream;
+
+        // Initialize MediaRecorder for transmitting real-time voice chunks
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+        const recorder = new MediaRecorder(stream, { mimeType });
+        mediaRecorderRef.current = recorder;
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64data = reader.result as string;
+              if (base64data) {
+                syncParty.sendVoiceAudioChunk(base64data, true);
+              }
+            };
+            reader.readAsDataURL(e.data);
+          }
+        };
+
+        recorder.start(350); // Send 350ms micro-chunks for real-time voice stream
         setIsMicActive(true);
+        syncParty.setMicSpeakingStatus(true);
         playAudioFeedbackTone('on');
         if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
-        onShowToast('🎙️ Live Voice Microphone ON - Transmitting to Room');
+        onShowToast('🎙️ Live Voice Microphone ON - Transmitting WebRTC Voice');
       } catch (err) {
         onShowToast('Microphone access denied or unavailable');
       }
     } else {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current = null;
+      }
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((track) => track.stop());
         micStreamRef.current = null;
       }
       setIsMicActive(false);
+      syncParty.setMicSpeakingStatus(false);
       playAudioFeedbackTone('off');
       if (navigator.vibrate) navigator.vibrate([60]);
-      onShowToast('🎙️ Microphone OFF - Muted & Track Released');
+      onShowToast('🎙️ Microphone OFF - Muted & Voice Stream Closed');
     }
   };
 
   React.useEffect(() => {
     return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((t) => t.stop());
       }
@@ -392,7 +464,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
 
   return (
-    <div className="space-y-3 animate-fade pb-6 text-[var(--text-sunofy)] select-none">
+    <div className="space-y-3 animate-fade pb-6 text-[var(--text-sunofy)] select-none relative">
+      {/* Live Voice Active Speaker Floating Indicator */}
+      {activeSpeaker && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-black font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce-subtle backdrop-blur-md border border-emerald-300">
+          <div className="w-2.5 h-2.5 rounded-full bg-black animate-ping" />
+          <span>🎙️ {activeSpeaker.name} is speaking live...</span>
+        </div>
+      )}
+
       {/* Top Room Banner Bar with Exit to Solo Mode button */}
       <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-3 flex items-center justify-between shadow-xl sticky top-0 z-20 backdrop-blur-md bg-opacity-95">
         <div className="flex items-center space-x-2.5 min-w-0">
