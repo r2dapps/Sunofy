@@ -1,5 +1,5 @@
-const CACHE_NAME = 'sunofy-pwa-v1';
-const urlsToCache = ['/', '/index.html'];
+const CACHE_NAME = 'sunofy-pwa-v2';
+const urlsToCache = ['./', './index.html'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -17,7 +17,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-      return fetch(event.request).catch(() => caches.match('/index.html'));
+      return fetch(event.request).catch(() => caches.match('./index.html'));
     })
   );
 });
