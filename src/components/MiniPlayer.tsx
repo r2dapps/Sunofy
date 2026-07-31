@@ -38,11 +38,11 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
   return (
     <div
       onClick={onOpenFullPlayer}
-      className="absolute bottom-[72px] left-2 right-2 rounded-2xl bg-[#0f1026]/95 backdrop-blur-xl p-2 flex items-center justify-between shadow-2xl cursor-pointer transition transform active:scale-98 z-20 border border-[var(--accent-sunofy)]/20 mb-1"
+      className="fixed bottom-[72px] md:bottom-6 left-2 right-2 md:left-1/2 md:-translate-x-1/2 md:w-[600px] md:max-w-[90%] rounded-2xl bg-[#0f1026]/95 backdrop-blur-xl p-2 md:p-3 flex items-center justify-between shadow-2xl cursor-pointer transition transform active:scale-98 z-40 border border-[var(--accent-sunofy)]/20 mb-1"
     >
       {/* Artwork & Track Info */}
-      <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-        <div className="relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] shadow-md">
+      <div className="flex items-center space-x-2.5 md:space-x-4 min-w-0 flex-1">
+        <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] shadow-md">
           <img
             src={currentTrack.image}
             className={`w-full h-full object-cover spinning-art ${isPlaying ? 'playing' : ''}`}
@@ -50,13 +50,13 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
           />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-xs font-bold truncate text-white">{currentTrack.title}</h4>
-          <p className="text-[10px] font-medium text-gray-400 truncate">{currentTrack.artist}</p>
+          <h4 className="text-xs md:text-sm font-bold truncate text-white">{currentTrack.title}</h4>
+          <p className="text-[10px] md:text-xs font-medium text-gray-400 truncate">{currentTrack.artist}</p>
         </div>
       </div>
 
-      {/* Action Buttons as seen in reference app */}
-      <div className="flex items-center space-x-1 sm:space-x-1.5 pl-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+      {/* Action Buttons */}
+      <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-2 pl-1 shrink-0" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onOpenFullPlayer}
           className="p-1.5 text-gray-400 hover:text-white transition cursor-pointer"
@@ -114,4 +114,3 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
     </div>
   );
 };
-

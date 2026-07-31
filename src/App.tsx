@@ -1274,7 +1274,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden shadow-2xl border-x border-[var(--border-sunofy)] bg-[var(--bg-sunofy)]">
+    <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden shadow-2xl bg-[var(--bg-sunofy)] font-sans text-[var(--text-sunofy)]">
       <ThemeInjector themeId={userProfile.appTheme} />
       <PwaInstallBanner onShowToast={showToast} />
 
@@ -1304,7 +1304,7 @@ export default function App() {
             Booting Sunofy...
           </h2>
           <p className="text-[9px] text-neutral-500 mt-1.5 uppercase tracking-widest font-black">
-            Unified Audio Engine v2.6
+            Unified Audio Engine v2.0
           </p>
         </div>
       )}
@@ -1326,21 +1326,28 @@ export default function App() {
       {/* Hidden Audio Tag */}
       <audio ref={audioRef} crossOrigin="anonymous" preload="auto" />
 
-      {/* Top Header - Hidden when in active Sync Party room or Videos tab */}
-      {!isSyncPartyInRoom && currentTab !== 'Videos' && (
-        <Header
-          title={currentTab}
-          onOpenSearch={() => setIsSearchOpen(true)}
-          onOpenProfile={() => setCurrentTab('Profile')}
-          onOpenEqualizer={handleOpenEqualizer}
-          onOpenCarMode={() => setIsCarModeOpen(true)}
-          userAvatarIcon={userProfile.avatarIcon || '🎧'}
-          customAvatarUrl={userProfile.customAvatarUrl}
-          musicSource={musicSource}
-          onMusicSourceChange={setMusicSource}
-          isPlaying={isPlaying}
-        />
-      )}
+      {/* Left Navigation Sidebar for Tablet/PC/Laptop */}
+      <div className="hidden md:block shrink-0 h-full w-64 border-r border-[var(--border-sunofy)] bg-[var(--card-sunofy)] z-30">
+        <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col relative overflow-hidden h-full max-w-full">
+        {/* Top Header - Hidden when in active Sync Party room or Videos tab */}
+        {!isSyncPartyInRoom && currentTab !== 'Videos' && (
+          <Header
+            title={currentTab}
+            onOpenSearch={() => setIsSearchOpen(true)}
+            onOpenProfile={() => setCurrentTab('Profile')}
+            onOpenEqualizer={handleOpenEqualizer}
+            onOpenCarMode={() => setIsCarModeOpen(true)}
+            userAvatarIcon={userProfile.avatarIcon || '🎧'}
+            customAvatarUrl={userProfile.customAvatarUrl}
+            musicSource={musicSource}
+            onMusicSourceChange={setMusicSource}
+            isPlaying={isPlaying}
+          />
+        )}
 
       {/* Main Content Viewport */}
       <main className={`flex-1 overflow-y-auto no-scrollbar ${isSyncPartyInRoom ? 'p-3' : currentTab === 'Videos' ? 'p-0' : 'pb-36 px-4 pt-4'}`}>
@@ -1661,6 +1668,12 @@ export default function App() {
         onNextTrack={handleNextTrack}
         onPrevTrack={handlePrevTrack}
       />
+
+        {/* Mobile Bottom Navigation Bar */}
+        <div className="md:hidden">
+          <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+        </div>
+      </div>
 
       {/* Premium Glassmorphism Toast Notification Pill */}
       {toastMsg && (
