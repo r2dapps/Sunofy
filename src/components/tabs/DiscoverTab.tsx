@@ -179,7 +179,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
                 name: (p.name || p.title || 'Dynamic Playlist').replace(/&quot;/g, '"').replace(/&amp;/g, '&'),
                 query: (p.name || p.title || searchQuery),
                 image: getBestImage(p.image),
-                trackCount: `${p.songCount || p.shares || Math.floor(Math.random() * 20) + 12} tracks`
+                trackCount: p.songCount ? `${p.songCount} tracks` : 'Live Mix'
               }));
             }
 
@@ -190,7 +190,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
                 query: (a.name || a.title || searchQuery),
                 artist: (a.artist || a.music || a.primaryArtists || 'Tollywood Hits').replace(/&quot;/g, '"').replace(/&amp;/g, '&'),
                 image: getBestImage(a.image),
-                trackCount: `${a.songCount || Math.floor(Math.random() * 10) + 6} tracks`
+                trackCount: a.songCount ? `${a.songCount} tracks` : 'Album Mix'
               }));
             }
           } catch (e) {
