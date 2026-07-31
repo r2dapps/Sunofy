@@ -38,7 +38,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
   return (
     <div
       onClick={onOpenFullPlayer}
-      className="fixed bottom-[72px] md:bottom-6 left-2 right-2 md:left-1/2 md:-translate-x-1/2 md:w-[600px] md:max-w-[90%] rounded-2xl bg-[#0f1026]/95 backdrop-blur-xl p-2 md:p-3 flex items-center justify-between shadow-2xl cursor-pointer transition transform active:scale-98 z-40 border border-[var(--accent-sunofy)]/20 mb-1"
+      className="fixed bottom-[72px] md:bottom-5 left-2 right-2 md:left-[calc(50%+8rem)] md:-translate-x-1/2 md:w-[620px] md:max-w-[85%] rounded-2xl bg-[#0e101d]/95 backdrop-blur-xl p-2 md:p-3 flex items-center justify-between shadow-[0_15px_40px_rgba(0,0,0,0.8)] cursor-pointer transition transform active:scale-98 z-40 border border-[var(--accent-sunofy)]/30 mb-1"
     >
       {/* Artwork & Track Info */}
       <div className="flex items-center space-x-2.5 md:space-x-4 min-w-0 flex-1">

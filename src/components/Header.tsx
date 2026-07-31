@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
       }}
     >
       <div className="flex items-center space-x-2.5 min-w-0">
-        <div className={`w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shadow-md shrink-0 overflow-hidden select-none ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '4s' }}>
+        <div className={`w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shadow-md shrink-0 overflow-hidden select-none md:hidden ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '4s' }}>
           <img src="./favicon.ico" alt="Logo" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-base font-bold tracking-tight text-[var(--text-sunofy)] truncate hidden xs:inline">{title}</h1>

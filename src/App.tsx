@@ -1326,10 +1326,8 @@ export default function App() {
       {/* Hidden Audio Tag */}
       <audio ref={audioRef} crossOrigin="anonymous" preload="auto" />
 
-      {/* Left Navigation Sidebar for Tablet/PC/Laptop */}
-      <div className="hidden md:block shrink-0 h-full w-64 border-r border-[var(--border-sunofy)] bg-[var(--card-sunofy)] z-30">
-        <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
-      </div>
+      {/* Navigation (Sidebar on Desktop/Tablet, Bottom Bar on Mobile) */}
+      <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col relative overflow-hidden h-full max-w-full">
@@ -1537,11 +1535,6 @@ export default function App() {
         />
       )}
 
-      {/* Bottom Navigation - Hidden when in active Sync Party room or Videos tab */}
-      {!isSyncPartyInRoom && currentTab !== 'Videos' && (
-        <BottomNav currentTab={currentTab} onTabChange={(tab) => setCurrentTab(tab)} />
-      )}
-
       {/* Full Player Modal */}
       <FullPlayerModal
         isOpen={isFullPlayerOpen}
@@ -1669,10 +1662,6 @@ export default function App() {
         onPrevTrack={handlePrevTrack}
       />
 
-        {/* Mobile Bottom Navigation Bar */}
-        <div className="md:hidden">
-          <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
-        </div>
       </div>
 
       {/* Premium Glassmorphism Toast Notification Pill */}
