@@ -35,6 +35,7 @@ import {
   Download,
   Mic,
   MicOff,
+  Volume2,
 } from 'lucide-react';
 import { SyncPartyState, Track, Playlist, Favorites } from '../../types';
 import { syncParty } from '../../services/syncPartySocket';
@@ -169,6 +170,8 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [chatInput, setChatInput] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(100);
+  const [micVolume, setMicVolume] = useState(100);
   const [activeSpeaker, setActiveSpeaker] = useState<{ name: string; timestamp: number } | null>(null);
   const micStreamRef = React.useRef<MediaStream | null>(null);
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
@@ -180,7 +183,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     const cleanup = syncParty.listenVoiceStream((chunk) => {
       if (chunk.audio) {
         const voiceAudio = new Audio(chunk.audio);
-        voiceAudio.volume = 1.0;
+        voiceAudio.volume = (micVolume / 100);
         voiceAudio.play().catch(() => {});
         setActiveSpeaker({ name: chunk.senderName, timestamp: Date.now() });
       }
@@ -189,7 +192,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     return () => {
       cleanup();
     };
-  }, [syncState.inRoom, syncState.roomCode]);
+  }, [syncState.inRoom, syncState.roomCode, micVolume]);
 
   // Auto-hide active speaker toast after 3s
   React.useEffect(() => {
@@ -505,20 +508,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
         {/* Action Icons */}
         <div className="flex items-center space-x-2">
-          {/* Live Room Voice Microphone Toggle Button */}
-          <button
-            onClick={toggleMic}
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-              isMicActive
-                ? 'bg-red-500/20 text-red-400 border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.4)] animate-pulse'
-                : 'bg-[var(--border-sunofy)] text-[var(--text-sunofy)] border-transparent hover:border-[var(--accent-sunofy)]'
-            }`}
-            title={isMicActive ? "Mute Microphone" : "Unmute Microphone"}
-          >
-            {isMicActive ? <Mic className="w-3.5 h-3.5 text-red-400 animate-bounce" /> : <MicOff className="w-3.5 h-3.5 text-[var(--muted-sunofy)]" />}
-            <span className="hidden sm:inline text-[11px]">{isMicActive ? "Mic Live" : "Mic Off"}</span>
-          </button>
-
           <button
             onClick={() => setShowQrModal(true)}
             className="w-8 h-8 rounded-xl bg-[var(--border-sunofy)] flex items-center justify-center text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer"
@@ -718,6 +707,53 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   </div>
                 );
               })()}
+
+              {/* Dedicated 2-Column Audio & Microphone Mixer Console */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-purple-500/20">
+                {/* Column 1: Music Volume Slider */}
+                <div className="bg-black/50 border border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between gap-2.5 shadow-inner">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-purple-200 shrink-0">
+                    <Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" />
+                    <span>Music ({musicVolume}%)</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={musicVolume}
+                    onChange={(e) => setMusicVolume(Number(e.target.value))}
+                    className="flex-1 accent-[var(--accent-sunofy)] h-1.5 bg-purple-950 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                {/* Column 2: Live Mic Voice Toggle & Voice Volume */}
+                <div className="bg-black/50 border border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between gap-2.5 shadow-inner">
+                  <button
+                    onClick={toggleMic}
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-black flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
+                      isMicActive
+                        ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)] animate-pulse'
+                        : 'bg-red-500/15 text-red-400 border-red-500/30 hover:bg-red-500/25'
+                    }`}
+                    title={isMicActive ? "Mute Live Voice Microphone" : "Unmute Live Voice Microphone"}
+                  >
+                    {isMicActive ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                    <span>{isMicActive ? 'Mic Live' : 'Mic Muted'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span className="text-[10px] font-bold text-purple-200 shrink-0">Voice ({micVolume}%)</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={micVolume}
+                      onChange={(e) => setMicVolume(Number(e.target.value))}
+                      className="flex-1 accent-emerald-400 h-1.5 bg-purple-950 rounded-lg cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -1237,17 +1273,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   placeholder="Chat with party members..."
                   className="flex-1 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-2 text-xs text-[var(--text-sunofy)] focus:outline-none focus:border-[var(--accent-sunofy)]"
                 />
-                <button
-                  onClick={toggleMic}
-                  className={`p-2 rounded-xl border transition cursor-pointer flex items-center justify-center ${
-                    isMicActive
-                      ? 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse'
-                      : 'bg-[var(--bg-sunofy)] text-[var(--muted-sunofy)] border-[var(--border-sunofy)] hover:text-white'
-                  }`}
-                  title={isMicActive ? "Mute Microphone" : "Live Voice Microphone"}
-                >
-                  {isMicActive ? <Mic className="w-4 h-4 text-red-400" /> : <MicOff className="w-4 h-4" />}
-                </button>
                 <button
                   onClick={handleSendChat}
                   className="p-2 bg-[var(--accent-sunofy)] text-black rounded-xl hover:scale-105 transition cursor-pointer flex items-center justify-center"
