@@ -16,10 +16,14 @@ export const PwaInstallBanner: React.FC<PwaInstallBannerProps> = ({ onShowToast 
   const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   useEffect(() => {
-    // Check if app is running as standalone PWA
+    // Check if app is running as standalone or installed PWA
     const checkStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as any).standalone === true;
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      (navigator as any).standalone === true ||
+      document.referrer.includes('android-app://') ||
+      window.location.search.includes('mode=pwa');
     setIsStandalone(checkStandalone);
 
     const handleBeforeInstall = (e: Event) => {

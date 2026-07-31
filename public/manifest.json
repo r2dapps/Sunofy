@@ -6,7 +6,7 @@
   "scope": "./",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#0a0a0c",
   "theme_color": "#1db954",
   "icons": [

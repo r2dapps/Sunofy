@@ -118,61 +118,35 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const handleCheckForUpdates = async () => {
     setCheckingUpdates(true);
     try {
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          await registration.update();
-        }
+      // Check GitHub release or ServiceWorker update flag
+      const hasUpdate = (window as any).hasPwaUpdate === true;
+      const response = await fetch('https://api.github.com/repos/r2dapps/Sunofy/releases/latest').catch(() => null);
+      let latestTag = null;
+      if (response && response.ok) {
+        const data = await response.json();
+        latestTag = data.tag_name;
       }
 
-      let commitSha = '';
-      try {
-        const commitRes = await fetch('https://api.github.com/repos/r2dapps/Sunofy/commits?per_page=1', {
-          cache: 'no-store',
-        });
-        if (commitRes.ok) {
-          const commits = await commitRes.json();
-          commitSha = commits[0]?.sha?.substring(0, 7) || '';
-        }
-      } catch (e) {}
+      const currentVersion = 'v2.0.0';
 
-      let latestTag = '';
-      try {
-        const releaseRes = await fetch('https://api.github.com/repos/r2dapps/Sunofy/releases/latest', {
-          cache: 'no-store',
-        });
-        if (releaseRes.ok) {
-          const releaseData = await releaseRes.json();
-          latestTag = releaseData.tag_name || '';
-        }
-      } catch (e) {}
-
-      const currentVersion = '1.2.0';
-
-      if (latestTag && latestTag !== currentVersion) {
+      if (hasUpdate || (latestTag && latestTag !== currentVersion)) {
         setUpdateModal({
-          title: `🚀 New Release ${latestTag} Available!`,
-          msg: `A new official release tag is published on GitHub.`,
+          title: `🚀 Sunofy Update Ready! (${latestTag || 'v2.0.0'})`,
+          msg: `New build updates are available. Click below to reload and apply the latest UI & features instantly.`,
           canReload: true,
-        });
-      } else if (commitSha) {
-        setUpdateModal({
-          title: `✅ Sunofy ${currentVersion} is up to date!`,
-          msg: `Latest GitHub Build Commit: #${commitSha}\nApp shell cache is synchronized.`,
-          canReload: false,
         });
       } else {
         setUpdateModal({
-          title: `✅ Sunofy ${currentVersion} is up to date!`,
-          msg: `You are running the latest version build.`,
-          canReload: false,
+          title: `✅ Sunofy ${currentVersion} is Up to Date!`,
+          msg: `You are running the latest Sunofy release build.\nTap below if you wish to refresh the app shell UI.`,
+          canReload: true,
         });
       }
     } catch (err) {
       setUpdateModal({
-        title: `✅ Sunofy 1.2.0 is up to date!`,
-        msg: `App shell cache is synchronized.`,
-        canReload: false,
+        title: `✅ Sunofy v2.0.0 is Up to Date!`,
+        msg: `App shell UI is synchronized.`,
+        canReload: true,
       });
     } finally {
       setCheckingUpdates(false);

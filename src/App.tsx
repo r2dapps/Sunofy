@@ -1326,13 +1326,15 @@ export default function App() {
       {/* Hidden Audio Tag */}
       <audio ref={audioRef} crossOrigin="anonymous" preload="auto" />
 
-      {/* Navigation (Sidebar on Desktop/Tablet, Bottom Bar on Mobile) */}
-      <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+      {/* Navigation (Sidebar on Desktop/Tablet, Bottom Bar on Mobile) - Hidden in Full Screen Modes */}
+      {!isFullPlayerOpen && currentTab !== 'Videos' && currentTab !== 'Sync Party' && (
+        <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+      )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative overflow-hidden h-full max-w-full">
-        {/* Top Header - Hidden when in active Sync Party room or Videos tab */}
-        {!isSyncPartyInRoom && currentTab !== 'Videos' && (
+      <div className="flex-1 flex flex-col relative overflow-hidden h-full max-w-full bg-gradient-to-br from-[#0c0d18] via-[#141226] to-[#0a0d1a]">
+        {/* Top Header - Hidden in Full Screen Modes */}
+        {!isFullPlayerOpen && currentTab !== 'Videos' && currentTab !== 'Sync Party' && (
           <Header
             title={currentTab}
             onOpenSearch={() => setIsSearchOpen(true)}
@@ -1348,7 +1350,7 @@ export default function App() {
         )}
 
       {/* Main Content Viewport */}
-      <main className={`flex-1 overflow-y-auto no-scrollbar ${isSyncPartyInRoom ? 'p-3' : currentTab === 'Videos' ? 'p-0' : 'pb-36 px-4 pt-4'}`}>
+      <main className={`flex-1 overflow-y-auto no-scrollbar ${currentTab === 'Sync Party' || currentTab === 'Videos' ? 'p-0 m-0' : 'pb-36 px-4 pt-4'}`}>
         {currentTab === 'Discover' && (
           <DiscoverTab
             isAppLocked={isAppLocked}
@@ -1514,8 +1516,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Mini Player - Hidden when in Sync Party tab or Videos tab to give clean full canvas */}
-      {currentTab !== 'Sync Party' && currentTab !== 'Videos' && (
+      {/* Mini Player - Hidden when in Sync Party tab, Videos tab, or Full Player Modal */}
+      {currentTab !== 'Sync Party' && currentTab !== 'Videos' && !isFullPlayerOpen && (
         <MiniPlayer
           currentTrack={currentTrack}
           isPlaying={isPlaying}

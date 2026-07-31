@@ -107,17 +107,17 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[var(--bg-sunofy)] text-[var(--text-sunofy)] flex flex-col justify-between overflow-hidden animate-fade transition-all">
-      {/* Dynamic Apple Music Ambient Blur Canvas Background */}
+    <div className="fixed inset-0 z-50 bg-[#080912] text-[var(--text-sunofy)] flex flex-col justify-between overflow-hidden animate-fade transition-all w-screen h-screen">
+      {/* Dynamic Ambient Blur Canvas Background Takeover */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <img
           src={currentTrack.image}
           alt=""
-          className={`w-full h-full object-cover opacity-25 sm:opacity-35 canvas-slow-ambient transition-opacity duration-1000 ${
-            isPlaying ? 'opacity-40' : 'opacity-20'
+          className={`w-full h-full object-cover scale-150 blur-3xl transition-opacity duration-1000 ${
+            isPlaying ? 'opacity-45' : 'opacity-25'
           }`}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-sunofy)]/30 via-[var(--bg-sunofy)]/80 to-[var(--bg-sunofy)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#080912]/40 via-[#080912]/80 to-[#080912]" />
       </div>
 
       {/* Main Container */}
