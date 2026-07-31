@@ -7,3 +7,4 @@ export * from './EqualizerModal';
 export * from './SleepTimerModal';
 export * from './CarModeModal';
 export * from './OnboardingModal';
+export * from './PwaInstallBanner';

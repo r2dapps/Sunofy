@@ -10,6 +10,7 @@ import {
   SleepTimerModal,
   CarModeModal,
   OnboardingModal,
+  PwaInstallBanner,
 } from './components';
 import { AppLockOverlay } from './components/AppLockOverlay';
 import { DiscoverTab } from './components/tabs/DiscoverTab';
@@ -293,16 +294,23 @@ export default function App() {
 
   // Real-time EQ Band updates
   useEffect(() => {
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
     if (filtersRef.current.length > 0) {
-      eqBands.forEach((band) => {
-        const filter = filtersRef.current.find((f) => Math.round(f.frequency.value) === band.freq);
-        if (filter) filter.gain.setValueAtTime(band.gain, 0);
+      eqBands.forEach((band, idx) => {
+        if (filtersRef.current[idx]) {
+          filtersRef.current[idx].gain.setValueAtTime(band.gain, 0);
+        }
       });
     }
   }, [eqBands]);
 
   // Real-time Preamp updates
   useEffect(() => {
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
     if (preampRef.current) {
       preampRef.current.gain.setValueAtTime(Math.pow(10, preamp / 20), 0);
     }
@@ -310,6 +318,9 @@ export default function App() {
 
   // Real-time Bass Boost updates
   useEffect(() => {
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
     if (bassBoostRef.current) {
       bassBoostRef.current.gain.setValueAtTime(bassBoost, 0);
     }
@@ -317,6 +328,9 @@ export default function App() {
 
   // Real-time Spatial Panner updates
   useEffect(() => {
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
     if (pannerRef.current) {
       pannerRef.current.pan.setValueAtTime(spatialBalance, 0);
     }
@@ -1293,9 +1307,18 @@ export default function App() {
   const isCurrentDownloaded = currentTrack ? downloads.some((d) => d.id === currentTrack.id) : false;
   const isSyncPartyInRoom = currentTab === 'Sync Party' && syncState.inRoom;
 
+  const handleOpenEqualizer = () => {
+    initEqualizerWebAudio();
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+    setIsEqualizerOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden shadow-2xl border-x border-[var(--border-sunofy)] bg-[var(--bg-sunofy)]">
       <ThemeInjector themeId={userProfile.appTheme} />
+      <PwaInstallBanner onShowToast={showToast} />
 
       {/* Retro Disc Spinning App Loader */}
       {isBootLoading && (
@@ -1351,7 +1374,7 @@ export default function App() {
           title={currentTab}
           onOpenSearch={() => setIsSearchOpen(true)}
           onOpenProfile={() => setCurrentTab('Profile')}
-          onOpenEqualizer={() => setIsEqualizerOpen(true)}
+          onOpenEqualizer={handleOpenEqualizer}
           onOpenCarMode={() => setIsCarModeOpen(true)}
           userAvatarIcon={userProfile.avatarIcon || '🎧'}
           customAvatarUrl={userProfile.customAvatarUrl}
@@ -1517,7 +1540,7 @@ export default function App() {
             onRestoreBackup={handleRestoreBackup}
             onLockAppNow={() => setIsAppLocked(true)}
             onShowToast={showToast}
-            onOpenEqualizer={() => setIsEqualizerOpen(true)}
+            onOpenEqualizer={handleOpenEqualizer}
             onOpenSleepTimer={() => setIsSleepTimerOpen(true)}
             onImportLocalFiles={handleImportLocalFiles}
             onClearLocalFolderTracks={handleClearLocalFolderTracks}
@@ -1582,7 +1605,7 @@ export default function App() {
         onToggleRepeat={() =>
           setRepeatMode((prev) => (prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off'))
         }
-        onOpenEqualizer={() => setIsEqualizerOpen(true)}
+        onOpenEqualizer={handleOpenEqualizer}
         onOpenSleepTimer={() => setIsSleepTimerOpen(true)}
         onOpenCarMode={() => setIsCarModeOpen(true)}
         onClearQueue={() => setQueue([])}

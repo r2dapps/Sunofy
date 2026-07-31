@@ -679,6 +679,27 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         </button>
       </CollapsibleCard>
 
+      {/* PWA App Installation */}
+      <CollapsibleCard title="App Installation & PWA" icon={Download}>
+        <p className="text-[10px] text-[var(--muted-sunofy)]">Install Sunofy on Android, iPhone/iPad, or Desktop for offline access</p>
+        <button
+          onClick={() => {
+            const prompt = (window as any).deferredPwaPrompt;
+            if (prompt) {
+              prompt.prompt();
+            } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+              onShowToast('iOS Safari: Tap Share (⎋) -> "Add to Home Screen" (+)');
+            } else {
+              onShowToast('To install: Open browser menu (⋮) -> "Add to Home Screen"');
+            }
+          }}
+          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-bold text-xs flex items-center justify-center gap-2 cursor-pointer hover:scale-105 transition shadow-lg"
+        >
+          <Download className="w-4 h-4" />
+          <span>Install Sunofy App (Android / iOS / System)</span>
+        </button>
+      </CollapsibleCard>
+
       {/* App Updates & Synchronization */}
       <CollapsibleCard title="Updates & Build Reference" icon={RefreshCw}>
         <p className="text-[10px] text-[var(--muted-sunofy)]">Check and synchronize with latest official GitHub build</p>
