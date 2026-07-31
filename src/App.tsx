@@ -1167,7 +1167,7 @@ export default function App() {
                     <div className="w-16 h-16 rounded-full border border-neutral-600/20 flex items-center justify-center">
                       {/* Vinyl Label */}
                       <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center overflow-hidden">
-                        <img src="/favicon.ico" alt="Logo" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
+                        <img src="./favicon.ico" alt="Logo" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
                       </div>
                     </div>
                   </div>
@@ -1219,6 +1219,7 @@ export default function App() {
       <main className={`flex-1 overflow-y-auto no-scrollbar ${isSyncPartyInRoom ? 'p-3' : currentTab === 'Videos' ? 'p-0' : 'pb-36 px-4 pt-4'}`}>
         {currentTab === 'Discover' && (
           <DiscoverTab
+            isAppLocked={isAppLocked}
             onPlayTrack={handlePlayTrack}
             onSetQueue={(q) => {
               const uniqueQ = q.filter((track, index, self) =>

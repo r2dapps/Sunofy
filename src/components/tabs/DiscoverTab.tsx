@@ -79,19 +79,8 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     { id: 'cp_5', query: 'Anirudh Ravichander Telugu Hits', name: 'Anirudh High Energy Beats', image: '/icon-192.png', trackCount: '42 tracks' },
   ];
 
-  const curatedAlbums = [
-    { id: 'ca_1', query: 'Tollywood 90s Most Played', name: 'Most Played Telugu 90s', artist: 'Classic Cinema Hits', image: '/icon-192.png', trackCount: '18 tracks' },
-    { id: 'ca_2', query: 'Arijit Singh Telugu Hits', name: 'Arijit Singh Telugu Express', artist: 'Arijit Singh', image: '/icon-192.png', trackCount: '15 tracks' },
-    { id: 'ca_3', query: 'Devi Sri Prasad Mass Beats', name: 'DSP Mass Blockbusters', artist: 'Devi Sri Prasad', image: '/icon-192.png', trackCount: '30 tracks' },
-    { id: 'ca_4', query: 'S.S. Thaman Bass Busters', name: 'Thaman S Heavy Bass', artist: 'Thaman S', image: '/icon-192.png', trackCount: '22 tracks' },
-  ];
-
   const [dynamicPlaylists, setDynamicPlaylists] = useState<any[]>(curatedPlaylists);
   const [dynamicAlbums, setDynamicAlbums] = useState<any[]>(curatedAlbums);
-
-  const handleImageError = (id: string) => {
-    setImageErrors((prev) => ({ ...prev, [id]: true }));
-  };
   
   // Playlist Modal State
   const [playlistModalTrack, setPlaylistModalTrack] = useState<Track | null>(null);
@@ -100,6 +89,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
   const [showCreateInput, setShowCreateInput] = useState(false);
 
   useEffect(() => {
+    if (isAppLocked) return;
     let isMounted = true;
     async function loadTracks() {
       setLoading(true);
@@ -119,13 +109,13 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
 
         // Helper to get best image quality
         const getBestImage = (img: any): string => {
-          if (!img) return '/favicon.ico';
+          if (!img) return './favicon.ico';
           if (typeof img === 'string') return img;
           if (Array.isArray(img) && img.length > 0) {
             const lastImg = img[img.length - 1];
-            return typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || '/favicon.ico');
+            return typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || './favicon.ico');
           }
-          return img.link || img.url || '/favicon.ico';
+          return img.link || img.url || './favicon.ico';
         };
 
         // Fetch dynamic playlists and albums for the active tag/search query
@@ -138,34 +128,31 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
             {
               id: 'local_pl_1',
               name: 'Offline Cache Melodies',
-              query: 'local_offline',
-              image: '/icon-192.png',
-              trackCount: `${offlineList.length} tracks`,
-              isLocal: true,
+              query: 'Offline Cache Melodies',
+              image: './icon-192.png',
+              trackCount: `${offlineList.length} tracks`
             },
             {
               id: 'local_pl_2',
               name: 'Imported Device Tracks',
-              query: 'local_folder',
-              image: '/icon-192.png',
-              trackCount: `${folderList.length} tracks`,
-              isLocal: true,
+              query: 'Imported Device Tracks',
+              image: './icon-192.png',
+              trackCount: `${folderList.length} tracks`
             }
           ];
           alist = [
             {
               id: 'local_al_1',
-              name: 'All Local Audio Session',
-              artist: 'Local Engine Storage',
-              query: 'local_all',
-              image: '/icon-192.png',
-              trackCount: `${offlineList.length + folderList.length} tracks`,
-              isLocal: true,
+              name: 'Local Collection',
+              artist: 'Device Storage',
+              query: 'Local Collection',
+              image: './icon-192.png',
+              trackCount: `${tracks.length} tracks`
             }
           ];
         } else {
-          const searchQuery = selectedTag || 'Telugu Melodies';
           try {
+            const searchQuery = selectedTag ? `${selectedTag} Hits` : 'Telugu Top Hits';
             const [fetchedPlaylists, fetchedAlbums] = await Promise.all([
               musicApi.searchPlaylists(searchQuery).catch(() => []),
               musicApi.searchAlbums(searchQuery).catch(() => [])
@@ -215,43 +202,6 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
           } else {
             setDynamicAlbums(curatedAlbums);
           }
-
-          // Background resolve track counts so displayed numbers match queue counts exactly
-          if (musicSource !== 'local') {
-            const resolveCounts = async () => {
-              try {
-                const targetP = plist.length > 0 ? plist : curatedPlaylists;
-                const targetA = alist.length > 0 ? alist : curatedAlbums;
-
-                const resolvedP = await Promise.all(
-                  targetP.map(async (p) => {
-                    try {
-                      const t = await musicApi.searchSongs(p.query);
-                      const uniqueT = t.filter((track, idx, self) => self.findIndex(s => s.id === track.id) === idx);
-                      return { ...p, trackCount: `${uniqueT.length} tracks` };
-                    } catch (err) {
-                      return p;
-                    }
-                  })
-                );
-                if (isMounted) setDynamicPlaylists(resolvedP);
-
-                const resolvedA = await Promise.all(
-                  targetA.map(async (a) => {
-                    try {
-                      const t = await musicApi.searchSongs(a.query);
-                      const uniqueT = t.filter((track, idx, self) => self.findIndex(s => s.id === track.id) === idx);
-                      return { ...a, trackCount: `${uniqueT.length} tracks` };
-                    } catch (err) {
-                      return a;
-                    }
-                  })
-                );
-                if (isMounted) setDynamicAlbums(resolvedA);
-              } catch (e) {}
-            };
-            resolveCounts();
-          }
         }
       } catch (err) {
         console.error('Failed to load discover tracks', err);
@@ -261,8 +211,11 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     }
 
     loadTracks();
-    return () => { isMounted = false; };
-  }, [selectedTag, musicSource, downloads]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedTag, musicSource, downloads, localFolderTracks, isAppLocked]);
 
   const topTags = [
     { label: 'Telugu Melodies', icon: <Music className="w-3.5 h-3.5" />, query: 'Telugu Melodies' },
