@@ -8,6 +8,7 @@ export interface Track {
   downloadUrl?: string;
   lyrics?: string;
   hasOfflineAudio?: boolean;
+  mediaType?: 'audio' | 'video';
 }
 
 export interface Playlist {

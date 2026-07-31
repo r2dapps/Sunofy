@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { VideoTab } from './VideoTab';
 import {
   Radio,
   PlusCircle,
@@ -981,70 +982,26 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               </div>
             )}
 
-            {/* SUB-TAB 4: Search & Queue Videos */}
+            {/* SUB-TAB 4: Cinema Video Player & Watch Party Videos */}
             {activeTab === 'video_search' && (
-              <div className="space-y-3 animate-fade">
-                <div className="flex items-center justify-between text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
-                  <span>Search & Broadcast Watch Party Videos</span>
-                  <span className="text-purple-400 font-mono">Watch Party</span>
-                </div>
-
-                <div className="flex items-center bg-[var(--bg-sunofy)] border border-purple-500/30 rounded-xl px-3 py-2 space-x-2 focus-within:border-purple-400 transition">
-                  <Film className="w-4 h-4 text-purple-400" />
-                  <input
-                    type="text"
-                    value={videoSearchQuery}
-                    onChange={handleSyncVideoSearch}
-                    placeholder="Search videos (YouTube / MP4)..."
-                    className="w-full bg-transparent border-none text-xs text-[var(--text-sunofy)] focus:outline-none"
-                  />
-                  {videoSearchQuery && (
-                    <button
-                      onClick={() => {
-                        setVideoSearchQuery('');
-                        setVideoSearchResults([]);
-                      }}
-                      className="text-xs text-[var(--muted-sunofy)] hover:text-white"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                {videoSearchResults.length > 0 ? (
-                  <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
-                    {videoSearchResults.map((v) => (
-                      <div
-                        key={v.id}
-                        className="flex items-center justify-between p-2 bg-[var(--bg-sunofy)] rounded-xl border border-purple-500/30 hover:border-purple-400 transition"
-                      >
-                        <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                          <img src={v.image} alt={v.title} className="w-10 h-7 rounded object-cover border border-purple-500/30" />
-                          <div className="min-w-0 flex-1">
-                            <h5 className="text-xs font-semibold truncate text-white">{v.title}</h5>
-                            <p className="text-[10px] text-purple-300 truncate">{v.artist || 'Video Track'}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            syncParty.addTrackToQueue(v, syncState.isHost ? 'Host' : 'Member');
-                            onShowToast(syncState.isHost ? `Added Video "${v.title}" to Party!` : `Requested Video "${v.title}" for Host approval!`);
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] flex items-center space-x-1 transition cursor-pointer shrink-0 ml-1"
-                        >
-                          <Video className="w-3 h-3" />
-                          <span>{syncState.isHost ? 'Queue Video' : 'Request Video'}</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-6 text-center border border-dashed border-purple-500/30 rounded-xl bg-purple-950/20">
-                    <Film className="w-6 h-6 text-purple-400 mx-auto mb-1 animate-pulse" />
-                    <p className="text-xs text-purple-200 font-semibold">Watch Party Video Search</p>
-                    <p className="text-[10px] text-purple-300/70">Type video titles above to search and stream synchronized videos live with all party members!</p>
-                  </div>
-                )}
+              <div className="animate-fade rounded-2xl overflow-hidden border border-purple-500/30 shadow-xl bg-[var(--card-sunofy)] p-2">
+                <VideoTab
+                  onShowToast={onShowToast}
+                  onVideoSelect={(vid) => {
+                    const newTrack: Track = {
+                      id: 'vid_' + Date.now(),
+                      title: vid.title || 'Watch Party Video',
+                      artist: (vid.type ? vid.type.toUpperCase() : 'PARTY') + ' Video',
+                      album: 'Watch Party',
+                      duration: 0,
+                      downloadUrl: vid.url,
+                      image: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=350&fit=crop',
+                      mediaType: 'video'
+                    };
+                    syncParty.addTrackToQueue(newTrack, syncState.isHost ? 'Host' : 'Member');
+                    onShowToast(syncState.isHost ? `Broadcasting "${vid.title}" live to Party!` : `Requested "${vid.title}" for Host approval!`);
+                  }}
+                />
               </div>
             )}
 

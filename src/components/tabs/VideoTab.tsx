@@ -55,11 +55,12 @@ interface SampleVideo {
 interface VideoTabProps {
   onShowToast: (msg: string) => void;
   onVideoPlay?: () => void;
+  onVideoSelect?: (video: { url: string; title: string; type: string }) => void;
   isAudioPlaying?: boolean;
   onMinimize?: () => void;
 }
 
-export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, isAudioPlaying, onMinimize }) => {
+export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, onVideoSelect, isAudioPlaying, onMinimize }) => {
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string>(
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
   );
@@ -341,6 +342,9 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, is
     onVideoPlay?.();
     setVideoTitle(video.title);
     setLocalFileSize(null);
+
+    const vType = ('type' in video && video.type) ? video.type : 'mp4';
+    onVideoSelect?.({ url: video.videoUrl, title: video.title, type: vType });
 
     if ('type' in video && video.type === 'youtube' && ('embedId' in video || 'embedUrl' in video)) {
       const eUrl = 'embedUrl' in video && video.embedUrl 
