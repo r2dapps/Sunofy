@@ -9,7 +9,7 @@ class MusicAPI {
   public currentSource: 'jiosaavn' | 'youtube' | 'local' = 'jiosaavn';
   private localApiUrl = '/api/search/songs';
   private primaryUrl = 'https://saavn.sumit.co/api';
-  private fallbackUrl = 'https://saavn-api.vercel.app';
+  private fallbackUrl = 'https://jiosaavn-api-v3.vercel.app/api';
   private cacheTTLMs = 20 * 60 * 1000; // 20 minutes API cache
   private memoryCache = new Map<string, CacheItem<any>>();
 
