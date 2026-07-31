@@ -26,6 +26,9 @@ import {
   Check,
   Clock,
   X,
+  Crown,
+  Minimize2,
+  Maximize2,
 } from 'lucide-react';
 import { SyncPartyState, Track, Playlist, Favorites } from '../../types';
 import { syncParty } from '../../services/syncPartySocket';
@@ -132,6 +135,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   // Active sub-tab inside the unified Sync Party card
   const [activeTab, setActiveTab] = useState<'queue' | 'add_music' | 'chat' | 'members'>('queue');
   const [isQueueCollapsed, setIsQueueCollapsed] = useState(false);
+  const [isConsoleMinimized, setIsConsoleMinimized] = useState(false);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -273,9 +277,16 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           <div className="flex flex-col min-w-0">
             <div className="flex items-center space-x-1.5 text-xs font-bold text-[var(--text-sunofy)]">
               <span className="truncate">Sync Room</span>
-              <span className="text-[9px] bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] px-1.5 py-0.5 rounded-full border border-[var(--accent-sunofy)]/40 font-mono font-bold uppercase">
-                {syncState.isHost ? 'HOST' : 'LISTENER'}
-              </span>
+              {syncState.isHost ? (
+                <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 font-mono font-bold uppercase flex items-center gap-1">
+                  <span>HOST</span>
+                  <Crown className="w-3 h-3 text-amber-400 rotate-12" />
+                </span>
+              ) : (
+                <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/40 font-mono font-bold uppercase">
+                  LISTENER
+                </span>
+              )}
             </div>
             <button
               onClick={handleCopyCode}
@@ -317,201 +328,231 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       </div>
 
-      {/* Prominent Vibe Live Audio Stage with Rotating Vinyl Disc */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-4 space-y-3.5 shadow-xl relative overflow-hidden">
+      {/* Vertically Expanded Live Audio Stage Box */}
+      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl p-5 space-y-4 shadow-2xl relative overflow-hidden min-h-[380px] flex flex-col justify-between">
         {/* Blended Background Ambient Art Glow */}
         {curTrack?.image && (
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
-            <img src={curTrack.image} alt="Background Blur" className="w-full h-full object-cover filter blur-xl scale-125" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--card-sunofy)] via-transparent to-[var(--card-sunofy)]" />
+          <div className="absolute inset-0 opacity-25 pointer-events-none">
+            <img src={curTrack.image} alt="Background Blur" className="w-full h-full object-cover filter blur-2xl scale-150" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--card-sunofy)] via-[var(--card-sunofy)]/60 to-[var(--card-sunofy)]" />
           </div>
         )}
 
-        <div className="flex items-center justify-between border-b border-[var(--border-sunofy)] pb-2 relative z-10">
+        {/* Stage Header */}
+        <div className="flex items-center justify-between border-b border-[var(--border-sunofy)]/60 pb-3 relative z-10">
           <div className="flex items-center space-x-2">
             <Radio className="w-4 h-4 text-[var(--accent-sunofy)] animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-sunofy)]">Live Audio Stage</span>
+            <span className="text-xs font-black uppercase tracking-widest text-[var(--text-sunofy)]">Live Audio Stage</span>
           </div>
           <div className="flex items-center gap-2">
             <LiveAudioWave isPlaying={syncState.isPlaying} />
-            <span className="text-[9px] bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] px-2 py-0.5 rounded-full font-mono font-bold uppercase border border-[var(--accent-sunofy)]/30">
-              {syncState.isPlaying ? 'SYNC PLAYING' : 'PAUSED'}
+            <span className="text-[9px] bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] px-2.5 py-1 rounded-full font-mono font-bold uppercase border border-[var(--accent-sunofy)]/40 shadow-sm">
+              {syncState.isPlaying ? 'LISTENING LIVE' : 'PAUSED'}
             </span>
           </div>
         </div>
 
         {curTrack ? (
-          <div className="relative z-10 space-y-3">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              {/* Rotating Vinyl Disc Component */}
-              <div className="flex items-center space-x-3.5 min-w-0 flex-1 w-full sm:w-auto">
-                <div
-                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-neutral-700 bg-black flex items-center justify-center overflow-hidden shadow-2xl shrink-0 transition-transform duration-700 relative ${
-                    syncState.isPlaying ? 'animate-[spin_5s_linear_infinite] shadow-emerald-500/30 ring-2 ring-emerald-500/40' : 'scale-95 grayscale-[30%]'
-                  }`}
-                  style={{
-                    backgroundImage: 'radial-gradient(circle, #262626 15%, #171717 16%, #000 65%, #262626 66%, #171717 100%)'
-                  }}
-                >
-                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border border-neutral-600 overflow-hidden shadow-inner shrink-0 z-10">
-                    <img src={curTrack.image || './favicon.ico'} alt={curTrack.title} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="absolute w-2 h-2 rounded-full bg-neutral-900 border border-neutral-400 shadow-inner z-20" />
-                </div>
+          <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-between py-2">
+            {/* Center Realistic Spinning Vinyl Disc Stage View */}
+            <div className="flex flex-col items-center justify-center my-auto space-y-4 relative">
+              {/* Outer Glowing Visualizer Aura */}
+              <div
+                className={`absolute w-44 sm:w-56 h-44 sm:h-56 rounded-full blur-2xl transition-all duration-1000 pointer-events-none ${
+                  syncState.isPlaying ? 'bg-[var(--accent-sunofy)]/35 scale-110 opacity-100 animate-pulse' : 'bg-transparent opacity-0 scale-90'
+                }`}
+              />
 
-                <div className="min-w-0 flex-1">
-                  <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider inline-block mb-1 border border-emerald-500/30">
-                    Now Playing
-                  </span>
-                  <h4 className="text-sm font-bold truncate text-[var(--text-sunofy)]">{curTrack.title}</h4>
-                  <p className="text-xs text-[var(--muted-sunofy)] truncate mt-0.5">{curTrack.artist}</p>
+              <div
+                className={`w-36 sm:w-44 h-36 sm:h-44 rounded-full border-4 border-neutral-800/90 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-700 bg-black/90 relative z-10 ${
+                  syncState.isPlaying ? 'animate-[spin_6s_linear_infinite] shadow-emerald-500/30 ring-4 ring-emerald-500/30' : 'scale-95 grayscale-[30%] opacity-90'
+                }`}
+                style={{
+                  backgroundImage: 'radial-gradient(circle, #262626 15%, #171717 16%, #000 65%, #262626 66%, #171717 100%)'
+                }}
+              >
+                {/* Grooves */}
+                <div className="absolute inset-2 rounded-full border border-neutral-700/30 pointer-events-none" />
+                <div className="absolute inset-5 rounded-full border border-neutral-700/20 pointer-events-none" />
+                <div className="absolute inset-8 rounded-full border border-neutral-700/20 pointer-events-none" />
+
+                {/* Center Label */}
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-neutral-600 bg-emerald-500 flex items-center justify-center overflow-hidden shadow-inner shrink-0 z-10">
+                  <img src={curTrack.image || './favicon.ico'} alt={curTrack.title} className="w-full h-full object-cover" />
                 </div>
+                <div className="absolute w-2.5 h-2.5 rounded-full bg-neutral-950 border border-neutral-400 shadow-inner z-20" />
               </div>
 
-              {/* Host Controls */}
-              <div className="flex items-center space-x-2 shrink-0 bg-[var(--bg-sunofy)]/70 px-3 py-1.5 rounded-2xl border border-[var(--border-sunofy)] shadow-inner">
-                <button
-                  onClick={() => syncParty.prevTrack()}
-                  className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
-                  title="Previous Track"
-                >
-                  <SkipBack className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={() => syncParty.togglePlayPause()}
-                  className="w-10 h-10 rounded-xl bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
-                  title={syncState.isPlaying ? 'Pause' : 'Play'}
-                >
-                  {syncState.isPlaying ? (
-                    <Pause className="w-5 h-5 fill-black" />
-                  ) : (
-                    <Play className="w-5 h-5 fill-black ml-0.5" />
-                  )}
-                </button>
-
-                <button
-                  onClick={() => syncParty.nextTrackInQueue()}
-                  className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
-                  title="Next Track"
-                >
-                  <SkipForward className="w-4 h-4" />
-                </button>
+              {/* Track Info Banner */}
+              <div className="text-center max-w-xs space-y-1">
+                <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block border border-emerald-500/30">
+                  Now Playing
+                </span>
+                <h3 className="text-base font-black truncate text-[var(--text-sunofy)]">{curTrack.title}</h3>
+                <p className="text-xs text-[var(--muted-sunofy)] truncate font-medium">{curTrack.artist}</p>
               </div>
             </div>
 
-            {/* Timeline Progress Bar */}
-            <div className="flex items-center space-x-2 text-[10px] text-[var(--muted-sunofy)] font-mono">
-              <span>{formatTime(syncState.currentTime)}</span>
-              <div
-                className="flex-1 h-2 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-full overflow-hidden cursor-pointer relative"
-                onClick={(e) => {
-                  if (!syncState.isHost) return;
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const pos = (e.clientX - rect.left) / rect.width;
-                  syncParty.seek(pos * syncState.duration);
-                }}
-              >
-                <div
-                  className="bg-[var(--accent-sunofy)] h-full transition-all rounded-full shadow-sm"
-                  style={{
-                    width: `${syncState.duration > 0 ? (syncState.currentTime / syncState.duration) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-              <span>{formatTime(syncState.duration)}</span>
+            {/* Host Controls & Progress Bar Section */}
+            <div className="space-y-3 pt-2">
+              {/* Host-Only Playback Controls (Hidden for Listeners) */}
+              {syncState.isHost && (
+                <div className="flex items-center justify-center space-x-3 bg-[var(--bg-sunofy)]/70 px-4 py-2 rounded-2xl border border-[var(--border-sunofy)] shadow-inner w-fit mx-auto">
+                  <button
+                    onClick={() => syncParty.prevTrack()}
+                    className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer hover:scale-110"
+                    title="Previous Track"
+                  >
+                    <SkipBack className="w-4.5 h-4.5" />
+                  </button>
+
+                  <button
+                    onClick={() => syncParty.togglePlayPause()}
+                    className="w-10 h-10 rounded-xl bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
+                    title={syncState.isPlaying ? 'Pause' : 'Play'}
+                  >
+                    {syncState.isPlaying ? (
+                      <Pause className="w-5 h-5 fill-black" />
+                    ) : (
+                      <Play className="w-5 h-5 fill-black ml-0.5" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => syncParty.nextTrackInQueue()}
+                    className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer hover:scale-110"
+                    title="Next Track"
+                  >
+                    <SkipForward className="w-4.5 h-4.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Timeline Progress Bar (Host gets Knob & Seek; Listener gets Read-Only Line) */}
+              {(() => {
+                const pct = syncState.duration > 0 ? (syncState.currentTime / syncState.duration) * 100 : 0;
+                return (
+                  <div className="flex items-center space-x-2 text-[10px] text-[var(--muted-sunofy)] font-mono">
+                    <span>{formatTime(syncState.currentTime)}</span>
+                    <div
+                      className={`flex-1 h-2 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-full overflow-hidden relative ${
+                        syncState.isHost ? 'cursor-pointer' : 'cursor-default'
+                      }`}
+                      onClick={(e) => {
+                        if (!syncState.isHost) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const pos = (e.clientX - rect.left) / rect.width;
+                        syncParty.seek(pos * syncState.duration);
+                      }}
+                    >
+                      <div
+                        className="bg-[var(--accent-sunofy)] h-full transition-all rounded-full shadow-sm"
+                        style={{ width: `${pct}%` }}
+                      />
+                      {/* Host White Draggable Knob */}
+                      {syncState.isHost && (
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md border border-neutral-300 pointer-events-none transition-all"
+                          style={{ left: `calc(${pct}% - 7px)` }}
+                        />
+                      )}
+                    </div>
+                    <span>{formatTime(syncState.duration)}</span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 space-y-2 relative z-10">
-            <div className="w-16 h-16 rounded-full border-2 border-neutral-700 bg-black/60 flex items-center justify-center mx-auto shadow-inner">
-              <Music className="w-7 h-7 text-[var(--muted-sunofy)] animate-bounce" />
+          <div className="text-center py-12 space-y-3 relative z-10 my-auto">
+            <div className="w-20 h-20 rounded-full border-2 border-neutral-700 bg-black/70 flex items-center justify-center mx-auto shadow-inner">
+              <Music className="w-8 h-8 text-[var(--muted-sunofy)] animate-bounce" />
             </div>
-            <p className="text-xs font-semibold text-[var(--text-sunofy)]">No track currently playing in party room.</p>
-            <p className="text-[10px] text-[var(--muted-sunofy)]">Add songs from search below to start the party vibe!</p>
+            <p className="text-sm font-bold text-[var(--text-sunofy)]">No track currently playing in party room.</p>
+            <p className="text-xs text-[var(--muted-sunofy)] max-w-xs mx-auto">Search or add tracks below to broadcast to all party members!</p>
           </div>
         )}
       </div>
 
-      {/* Unified Single Card with Sub-Tabs for Queue, Add Music, Chat, and Members */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl overflow-hidden shadow-xl flex flex-col">
-        {/* Tab Header Bar */}
-        <div className="bg-[var(--bg-sunofy)] border-b border-[var(--border-sunofy)] p-1.5 flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveTab('queue')}
-            className={`flex-1 min-w-[70px] py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 cursor-pointer ${
-              activeTab === 'queue'
-                ? 'bg-[var(--accent-sunofy)] text-black shadow-md'
-                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-            }`}
-          >
-            <ListMusic className="w-3.5 h-3.5" />
-            <span>Queue</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
-                activeTab === 'queue' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'
+      {/* Bottom Sub-Tabs Console (Icon-Only with Tooltips & Minimizable Card) */}
+      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl overflow-hidden shadow-xl flex flex-col transition-all duration-300">
+        {/* Icon-Only Tab Header Bar with Minimize Toggle */}
+        <div className="bg-[var(--bg-sunofy)] border-b border-[var(--border-sunofy)] p-1.5 flex items-center justify-between gap-1">
+          <div className="flex items-center space-x-1 flex-1">
+            <button
+              onClick={() => setActiveTab('queue')}
+              title={`Party Queue (${syncState.queue.length})`}
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer relative ${
+                activeTab === 'queue'
+                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
               }`}
             >
-              {syncState.queue.length}
-            </span>
-          </button>
+              <ListMusic className="w-4 h-4" />
+              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'queue' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
+                {syncState.queue.length}
+              </span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('add_music')}
-            className={`flex-1 min-w-[85px] py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 cursor-pointer ${
-              activeTab === 'add_music'
-                ? 'bg-[var(--accent-sunofy)] text-black shadow-md'
-                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-            }`}
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Add Music</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex-1 min-w-[65px] py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 cursor-pointer ${
-              activeTab === 'chat'
-                ? 'bg-[var(--accent-sunofy)] text-black shadow-md'
-                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Chat</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
-                activeTab === 'chat' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'
+            <button
+              onClick={() => setActiveTab('add_music')}
+              title="Add / Request Music"
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer ${
+                activeTab === 'add_music'
+                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
               }`}
             >
-              {syncState.chat.length}
-            </span>
-          </button>
+              <PlusCircle className="w-4 h-4" />
+            </button>
 
-          <button
-            onClick={() => setActiveTab('members')}
-            className={`flex-1 min-w-[80px] py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 cursor-pointer ${
-              activeTab === 'members'
-                ? 'bg-[var(--accent-sunofy)] text-black shadow-md'
-                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Members</span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
-                activeTab === 'members' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'
+            <button
+              onClick={() => setActiveTab('chat')}
+              title={`Room Chat (${syncState.chat.length})`}
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer relative ${
+                activeTab === 'chat'
+                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
               }`}
             >
-              {syncState.members.length}
-            </span>
+              <MessageSquare className="w-4 h-4" />
+              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'chat' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
+                {syncState.chat.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('members')}
+              title={`Active Members (${syncState.members.length})`}
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer relative ${
+                activeTab === 'members'
+                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'members' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
+                {syncState.members.length}
+              </span>
+            </button>
+          </div>
+
+          {/* Minimize / Maximize Toggle */}
+          <button
+            onClick={() => setIsConsoleMinimized(!isConsoleMinimized)}
+            title={isConsoleMinimized ? "Expand Console" : "Minimize Console"}
+            className="p-2 rounded-xl text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)] transition cursor-pointer"
+          >
+            {isConsoleMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Tab Body View */}
-        <div className="p-3.5 space-y-3 min-h-[240px]">
-          {/* TAB 1: Party Queue */}
-          {activeTab === 'queue' && (
-            <div className="space-y-2 animate-fade">
+        {/* Tab Body View (Hidden when console is minimized) */}
+        {!isConsoleMinimized && (
+          <div className="p-3.5 space-y-3 min-h-[220px]">
+            {/* TAB 1: Party Queue */}
+            {activeTab === 'queue' && (
+              <div className="space-y-2 animate-fade">
               {/* Host Song Request Approval Banner */}
               {syncState.isHost && syncState.requests && syncState.requests.length > 0 && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 mb-3 space-y-2">
@@ -801,17 +842,20 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       className={`p-2.5 rounded-2xl text-xs flex flex-col ${
                         c.isSystem
                           ? 'text-[10px] text-[var(--muted-sunofy)] text-center py-1 font-medium bg-black/10 rounded-lg my-1'
-                          : c.sender === 'You' || c.sender === 'Host'
+                          : c.sender === 'You'
                           ? 'bg-[var(--accent-sunofy)] text-black ml-auto max-w-[80%] rounded-br-xs shadow-md'
                           : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] mr-auto max-w-[80%] rounded-bl-xs shadow-sm'
                       }`}
                     >
                       {!c.isSystem && (
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className={`text-[10px] font-bold ${c.sender === 'You' || c.sender === 'Host' ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
-                            {c.sender}
+                          <span className={`text-[10px] font-bold flex items-center gap-1 ${c.sender === 'You' ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
+                            <span>{c.sender}</span>
+                            {(c.sender === 'Host' || c.sender.includes('Host')) && (
+                              <Crown className="w-3 h-3 text-amber-400 rotate-12 inline" />
+                            )}
                           </span>
-                          <span className={`text-[8px] font-mono ${c.sender === 'You' || c.sender === 'Host' ? 'text-black/60' : 'text-[var(--muted-sunofy)]'}`}>
+                          <span className={`text-[8px] font-mono ${c.sender === 'You' ? 'text-black/60' : 'text-[var(--muted-sunofy)]'}`}>
                             {c.time}
                           </span>
                         </div>
@@ -877,7 +921,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     <div className="flex items-center space-x-2.5 min-w-0">
                       <img src={m.avatar} alt={m.name} className="w-8 h-8 rounded-full object-cover border border-[var(--border-sunofy)]" />
                       <div>
-                        <span className="text-xs font-bold text-[var(--text-sunofy)] truncate block">{m.name}</span>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs font-bold text-[var(--text-sunofy)] truncate block">{m.name}</span>
+                          {m.isHost && <Crown className="w-3 h-3 text-amber-400 rotate-12 inline" />}
+                        </div>
                         <span className="text-[9px] text-[var(--muted-sunofy)]">{m.isHost ? 'Host' : 'Listener'}</span>
                       </div>
                     </div>
@@ -905,6 +952,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             </div>
           )}
         </div>
+      )}
       </div>
 
       {/* QR Code Scan Modal */}

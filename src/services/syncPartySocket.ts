@@ -299,15 +299,21 @@ class SyncPartyManager {
     this.notify();
   }
   
-  // Method to sync real audio node state from App.tsx
-  syncAudioState(currentTime: number, isPlaying: boolean) {
+  private lastBroadcastTime = 0;
+
+  syncAudioState(currentTime: number, isPlaying: boolean, force = false) {
     if (!this.state.isHost) return;
     this.state.currentTime = currentTime;
     this.state.isPlaying = isPlaying;
-    this.broadcastState();
+
+    const now = Date.now();
+    if (force || now - this.lastBroadcastTime > 2000) {
+      this.lastBroadcastTime = now;
+      this.broadcastState();
+    }
   }
 
-  private  broadcastState() {
+  private broadcastState() {
     if (!this.state.inRoom || !this.state.isHost) return;
     const stateData = {
       currentTrack: this.state.currentTrack,
