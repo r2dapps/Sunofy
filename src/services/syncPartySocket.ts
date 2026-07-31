@@ -28,6 +28,15 @@ class SyncPartyManager {
 
   constructor() {
     this.initBroadcastChannel();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        this.leaveRoom();
+        sessionStorage.removeItem('sunofy_party_code');
+        sessionStorage.removeItem('sunofy_is_host');
+        localStorage.removeItem('sunofy_party_code');
+        localStorage.removeItem('sunofy_is_host');
+      });
+    }
   }
 
   private initBroadcastChannel() {
@@ -303,18 +312,8 @@ class SyncPartyManager {
     this.notify();
   }
 
-  togglePlayPause() {
-    if (!this.state.isHost) return;
-    this.state.isPlaying = !this.state.isPlaying;
-    this.broadcastState();
-    this.notify();
-  }
-
-  seek(seconds: number) {
-    if (!this.state.isHost) return;
-    this.state.currentTime = seconds;
-    this.broadcastState();
-    this.notify();
+  get myId(): string {
+    return this.myPeerId;
   }
   
   private lastBroadcastTime = 0;
@@ -357,6 +356,12 @@ class SyncPartyManager {
 
   addTrackToQueue(track: Track, requesterName: string = 'You') {
     if (!this.state.inRoom) return;
+
+    // Check for duplicate queuing (by id or title) to prevent duplicate track spamming
+    const isAlreadyInQueue = this.state.queue.some(t => t.id === track.id || t.title === track.title);
+    if (isAlreadyInQueue) {
+      return;
+    }
     
     if (!this.state.isHost) {
       // Non-host sends song request to host for approval
@@ -365,7 +370,7 @@ class SyncPartyManager {
       set(reqRef, {
         id: reqRef.key,
         track: cleanTrack,
-        requesterName: requesterName || 'Member',
+        requesterName: requesterName || `Member #${this.myPeerId.slice(-4)}`,
         timestamp: Date.now()
       });
       this.sendMessage(`Requested "${track.title}" (Waiting for Host approval)`);
@@ -400,41 +405,72 @@ class SyncPartyManager {
     remove(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/requests/${requestId}`));
   }
 
-  playQueueTrack(index: number) {
-    if (!this.state.isHost) return;
-    if (index >= 0 && index < this.state.queue.length) {
-      const selected = this.state.queue[index];
-      this.state.currentTrack = selected;
-      this.state.currentTime = 0;
-      this.state.duration = selected.duration || 200;
-      this.state.isPlaying = true;
+  removeTrackFromQueue(index: number) {
+    if (!this.state.isHost || index < 0 || index >= this.state.queue.length) return;
+    
+    this.state.queue.splice(index, 1);
+    
+    if (index === 0) {
+      if (this.state.queue.length > 0) {
+        this.state.currentTrack = this.state.queue[0];
+        this.state.currentTime = 0;
+      } else {
+        this.state.currentTrack = null;
+        this.state.isPlaying = false;
+      }
       this.broadcastState();
-      this.notify();
     }
+    
+    const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
+    this.notify();
   }
 
-  removeTrackFromQueue(index: number) {
+  playQueueTrack(index: number) {
+    if (!this.state.isHost || index < 0 || index >= this.state.queue.length) return;
+    
+    const selected = this.state.queue[index];
+    this.state.queue.splice(index, 1);
+    this.state.queue.unshift(selected);
+    this.state.currentTrack = selected;
+    this.state.currentTime = 0;
+    this.state.isPlaying = true;
+    
+    this.broadcastState();
+    const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
+    this.notify();
+  }
+
+  togglePlayPause() {
     if (!this.state.isHost) return;
-    if (index >= 0 && index < this.state.queue.length) {
-      this.state.queue.splice(index, 1);
-      const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
-      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
-      this.notify();
-    }
+    this.state.isPlaying = !this.state.isPlaying;
+    this.broadcastState();
+    this.notify();
+  }
+
+  seek(seconds: number) {
+    if (!this.state.isHost) return;
+    this.state.currentTime = Math.max(0, Math.min(seconds, this.state.duration || 9999));
+    this.broadcastState();
+    this.notify();
   }
 
   nextTrackInQueue() {
     if (!this.state.isHost) return;
-    if (this.state.queue.length > 0) {
-      const next = this.state.queue.shift()!;
-      this.state.currentTrack = next;
+    if (this.state.queue.length > 1) {
+      this.state.queue.shift();
+      this.state.currentTrack = this.state.queue[0];
       this.state.currentTime = 0;
-      this.state.duration = next.duration || 200;
-      this.state.isPlaying = true;
-      const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
-      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
+      this.broadcastState();
+    } else {
+      this.state.queue = [];
+      this.state.currentTrack = null;
+      this.state.isPlaying = false;
       this.broadcastState();
     }
+    const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
     this.notify();
   }
 
@@ -445,15 +481,18 @@ class SyncPartyManager {
     this.notify();
   }
 
-  sendMessage(text: string, sender: string = 'You') {
+  sendMessage(text: string, customSender?: string) {
     if (!this.state.inRoom) return;
     
+    const senderName = customSender || (this.state.isHost ? 'Host' : `Member #${this.myPeerId.slice(-4)}`);
+    
     const msg = {
-      id: 'msg_' + Date.now() + Math.random(),
-      sender,
+      id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      senderId: this.myPeerId,
+      sender: senderName,
       text: text.trim(),
       time: this.getTimeStr(),
-      isSystem: false,
+      isSystem: customSender === 'System',
     };
     
     push(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/chat`), msg);

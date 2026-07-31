@@ -419,11 +419,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               const ytId = extractYoutubeId(curTrack.downloadUrl || curTrack.url);
 
               if (isVideoTrack) {
+                const startSec = Math.floor(syncState.currentTime || 0);
                 return (
-                  <div className="relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto">
+                  <div className={`relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto ${
+                    !syncState.isHost ? 'pointer-events-none select-none' : ''
+                  }`}>
                     {ytId ? (
                       <iframe
-                        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=${syncState.isPlaying ? 1 : 0}&enablejsapi=1&origin=${window.location.origin}`}
+                        key={ytId + '_' + startSec}
+                        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=${syncState.isPlaying ? 1 : 0}&start=${startSec}&enablejsapi=1&origin=${window.location.origin}`}
                         className="w-full h-full border-0"
                         allow="autoplay; encrypted-media; picture-in-picture"
                         allowFullScreen
@@ -1052,33 +1056,36 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 {syncState.chat.length === 0 ? (
                   <div className="text-center py-10 text-xs text-[var(--muted-sunofy)]">No messages yet. Say hi to the room!</div>
                 ) : (
-                  syncState.chat.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`p-2.5 rounded-2xl text-xs flex flex-col ${
-                        c.isSystem
-                          ? 'text-[10px] text-[var(--muted-sunofy)] text-center py-1 font-medium bg-black/10 rounded-lg my-1'
-                          : c.sender === 'You'
-                          ? 'bg-[var(--accent-sunofy)] text-black ml-auto max-w-[80%] rounded-br-xs shadow-md'
-                          : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] mr-auto max-w-[80%] rounded-bl-xs shadow-sm'
-                      }`}
-                    >
-                      {!c.isSystem && (
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className={`text-[10px] font-bold flex items-center gap-1 ${c.sender === 'You' ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
-                            <span>{c.sender}</span>
-                            {(c.sender === 'Host' || c.sender.includes('Host')) && (
-                              <Crown className="w-3 h-3 text-amber-400 rotate-12 inline" />
-                            )}
-                          </span>
-                          <span className={`text-[8px] font-mono ${c.sender === 'You' ? 'text-black/60' : 'text-[var(--muted-sunofy)]'}`}>
-                            {c.time}
-                          </span>
-                        </div>
-                      )}
-                      <p className="font-semibold leading-relaxed">{c.text}</p>
-                    </div>
-                  ))
+                  syncState.chat.map((c) => {
+                    const isMyMessage = (c as any).senderId === syncParty.myId || c.sender === 'You';
+                    return (
+                      <div
+                        key={c.id}
+                        className={`p-2.5 rounded-2xl text-xs flex flex-col ${
+                          c.isSystem
+                            ? 'text-[10px] text-[var(--muted-sunofy)] text-center py-1 font-medium bg-black/10 rounded-lg my-1'
+                            : isMyMessage
+                            ? 'bg-[var(--accent-sunofy)] text-black ml-auto max-w-[80%] rounded-br-xs shadow-md'
+                            : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] mr-auto max-w-[80%] rounded-bl-xs shadow-sm'
+                        }`}
+                      >
+                        {!c.isSystem && (
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className={`text-[10px] font-bold flex items-center gap-1 ${isMyMessage ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
+                              <span>{isMyMessage ? 'You' : c.sender}</span>
+                              {(c.sender === 'Host' || c.sender.includes('Host')) && (
+                                <Crown className="w-3 h-3 text-amber-400 rotate-12 inline" />
+                              )}
+                            </span>
+                            <span className={`text-[8px] font-mono ${isMyMessage ? 'text-black/60' : 'text-[var(--muted-sunofy)]'}`}>
+                              {c.time}
+                            </span>
+                          </div>
+                        )}
+                        <p className="font-semibold leading-relaxed">{c.text}</p>
+                      </div>
+                    );
+                  })
                 )}
               </div>
 

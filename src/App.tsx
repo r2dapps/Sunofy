@@ -174,7 +174,7 @@ export default function App() {
           appTheme: 'emerald',
           apiSource: 'jiosaavn',
           appLockEnabled: true,
-          appLockPin: '0000',
+          appLockPin: '0908',
         };
   });
 
@@ -1314,7 +1314,7 @@ export default function App() {
       {/* App Lock Screen Overlay */}
       {isAppLocked && (
         <AppLockOverlay
-          pin={userProfile.appLockPin || '0000'}
+          pin={userProfile.appLockPin || '0908'}
           onUnlockSuccess={() => setIsAppLocked(false)}
         />
       )}

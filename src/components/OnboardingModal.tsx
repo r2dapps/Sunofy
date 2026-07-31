@@ -10,7 +10,7 @@ interface OnboardingModalProps {
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete }) => {
   const [username, setUsername] = useState('Music Lover');
   const [selectedTheme, setSelectedTheme] = useState<'emerald' | 'dark' | 'amoled' | 'ocean' | 'purple' | 'amber' | 'cyberpunk' | 'crimson' | 'light'>('emerald');
-  const [pin, setPin] = useState('0000');
+  const [pin, setPin] = useState('0908');
 
   if (!isOpen) return null;
 
@@ -32,7 +32,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComp
       username: username.trim() || 'Music Lover',
       appTheme: selectedTheme,
       accentColor: themes.find(t => t.key === selectedTheme)?.color || '#1db954',
-      appLockPin: pin.length === 4 ? pin : '0000',
+      appLockPin: pin.length === 4 ? pin : '0908',
     });
   };
 
@@ -92,14 +92,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComp
           {/* 4-Digit Security PIN */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-[var(--muted-sunofy)] flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-[var(--accent-sunofy)]" /> Set 4-Digit Passcode (Default 0000)
+              <KeyRound className="w-3.5 h-3.5 text-[var(--accent-sunofy)]" /> Set 4-Digit Passcode (Default 0908)
             </label>
             <input
               type="password"
               maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              placeholder="0000"
+              placeholder="0908"
               className="w-full bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-4 py-2 text-center text-lg font-black tracking-widest text-[var(--accent-sunofy)] focus:outline-none focus:border-[var(--accent-sunofy)]"
             />
           </div>
