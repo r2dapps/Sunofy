@@ -228,6 +228,24 @@ class SyncPartyManager {
            }
         });
 
+        // Listen to room closure
+        onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/closed`), (snap) => {
+          if (snap.val() === true) {
+            this.leaveRoom();
+            alert("The Host has ended the party room.");
+          }
+        });
+
+        // Listen to member kick status
+        if (this.myMemberRef) {
+          onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/members/${this.myPeerId}/kicked`), (snap) => {
+            if (snap.val() === true) {
+              this.leaveRoom();
+              alert("You were removed from the room by the Host.");
+            }
+          });
+        }
+
         // Listen to queue
         onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/queue`), (snap) => {
            const data = snap.val();
@@ -241,7 +259,6 @@ class SyncPartyManager {
         onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/members`), (snapshot) => {
           const data = snapshot.val();
           if (data) {
-             // Add host manually or fetch from room root
              get(ref(db, `sunofy_vibe_rooms/${cleanCode}/host`)).then(h => {
                 const hostProfile = h.val() || { id: 'host', name: 'Host', isHost: true };
                 this.state.members = [hostProfile, ...Object.values(data).filter((m:any) => !m.kicked)] as SyncMember[];
@@ -263,11 +280,12 @@ class SyncPartyManager {
       remove(this.myMemberRef);
     }
     if (this.roomRef && this.state.isHost) {
-      remove(this.roomRef);
+      update(this.roomRef, { closed: true, roomActive: false });
     }
     
     localStorage.removeItem('sunofy_sync_room_code');
     localStorage.removeItem('sunofy_sync_is_host');
+    sessionStorage.removeItem('sunofy_sync_room_code');
 
     this.state = {
       inRoom: false,

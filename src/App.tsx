@@ -337,6 +337,26 @@ export default function App() {
     }
   }, [currentTab]);
 
+  // Stop & clear audio on SyncParty exit to prevent ghost background audio or double tracks
+  useEffect(() => {
+    if (!syncState.inRoom && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [syncState.inRoom]);
+
+  // Auto-Join from URL parameter ?party=1234 or ?room=1234
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const partyCode = params.get('party') || params.get('room');
+    if (partyCode && !syncState.inRoom) {
+      setTimeout(() => {
+        syncParty.joinRoom(partyCode);
+        setCurrentTab('SyncParty');
+      }, 300);
+    }
+  }, []);
+
   // SyncParty WebRTC-Style Drift-Correction Audio Engine
   useEffect(() => {
     if (!syncState.inRoom || !audioRef.current) return;

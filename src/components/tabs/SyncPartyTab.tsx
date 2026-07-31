@@ -328,25 +328,28 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       </div>
 
-      {/* Vertically Expanded Live Audio Stage Box */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl p-5 space-y-4 shadow-2xl relative overflow-hidden min-h-[380px] flex flex-col justify-between">
-        {/* Blended Background Ambient Art Glow */}
+      {/* Grander Vanilla Live Audio Stage Box */}
+      <div className="bg-gradient-to-b from-purple-950/90 via-[#0a0d18] to-[var(--card-sunofy)] border border-purple-500/40 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden min-h-[420px] flex flex-col justify-between text-center">
+        {/* Blended Background Ambient Art & Pulsing Particles Glow */}
         {curTrack?.image && (
-          <div className="absolute inset-0 opacity-25 pointer-events-none">
-            <img src={curTrack.image} alt="Background Blur" className="w-full h-full object-cover filter blur-2xl scale-150" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--card-sunofy)] via-[var(--card-sunofy)]/60 to-[var(--card-sunofy)]" />
+          <div className="absolute inset-0 opacity-30 pointer-events-none">
+            <img src={curTrack.image} alt="Background Blur" className="w-full h-full object-cover filter blur-3xl scale-150" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--card-sunofy)] via-[#0a0d18]/70 to-purple-950/90" />
           </div>
         )}
 
+        {/* Ambient Pulsing Background Aura */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
+
         {/* Stage Header */}
-        <div className="flex items-center justify-between border-b border-[var(--border-sunofy)]/60 pb-3 relative z-10">
+        <div className="flex items-center justify-between border-b border-purple-500/30 pb-3 relative z-10">
           <div className="flex items-center space-x-2">
-            <Radio className="w-4 h-4 text-[var(--accent-sunofy)] animate-pulse" />
-            <span className="text-xs font-black uppercase tracking-widest text-[var(--text-sunofy)]">Live Audio Stage</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+            <span className="text-xs font-black uppercase tracking-widest text-white">LIVE WATCH PARTY STAGE</span>
           </div>
           <div className="flex items-center gap-2">
             <LiveAudioWave isPlaying={syncState.isPlaying} />
-            <span className="text-[9px] bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] px-2.5 py-1 rounded-full font-mono font-bold uppercase border border-[var(--accent-sunofy)]/40 shadow-sm">
+            <span className="text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/40 px-3 py-1 rounded-full font-mono font-bold uppercase tracking-wide shadow-sm">
               {syncState.isPlaying ? 'LISTENING LIVE' : 'PAUSED'}
             </span>
           </div>
@@ -354,53 +357,73 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
         {curTrack ? (
           <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-between py-2">
-            {/* Center Realistic Spinning Vinyl Disc Stage View */}
-            <div className="flex flex-col items-center justify-center my-auto space-y-4 relative">
-              {/* Outer Glowing Visualizer Aura */}
-              <div
-                className={`absolute w-44 sm:w-56 h-44 sm:h-56 rounded-full blur-2xl transition-all duration-1000 pointer-events-none ${
-                  syncState.isPlaying ? 'bg-[var(--accent-sunofy)]/35 scale-110 opacity-100 animate-pulse' : 'bg-transparent opacity-0 scale-90'
-                }`}
-              />
-
-              <div
-                className={`w-36 sm:w-44 h-36 sm:h-44 rounded-full border-4 border-neutral-800/90 shadow-2xl flex items-center justify-center overflow-hidden transition-all duration-700 bg-black/90 relative z-10 ${
-                  syncState.isPlaying ? 'animate-[spin_6s_linear_infinite] shadow-emerald-500/30 ring-4 ring-emerald-500/30' : 'scale-95 grayscale-[30%] opacity-90'
-                }`}
-                style={{
-                  backgroundImage: 'radial-gradient(circle, #262626 15%, #171717 16%, #000 65%, #262626 66%, #171717 100%)'
-                }}
-              >
-                {/* Grooves */}
-                <div className="absolute inset-2 rounded-full border border-neutral-700/30 pointer-events-none" />
-                <div className="absolute inset-5 rounded-full border border-neutral-700/20 pointer-events-none" />
-                <div className="absolute inset-8 rounded-full border border-neutral-700/20 pointer-events-none" />
-
-                {/* Center Label */}
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-neutral-600 bg-emerald-500 flex items-center justify-center overflow-hidden shadow-inner shrink-0 z-10">
-                  <img src={curTrack.image || './favicon.ico'} alt={curTrack.title} className="w-full h-full object-cover" />
+            {/* Center Vanilla Rotating Vinyl Deck or Video Watch Stage */}
+            {curTrack.mediaType === 'video' || (curTrack as any).isVideo ? (
+              <div className="relative w-full max-w-md mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto">
+                <video
+                  src={curTrack.downloadUrl || curTrack.url}
+                  className="w-full h-full object-contain"
+                  controls={syncState.isHost}
+                  autoPlay={syncState.isPlaying}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center my-auto space-y-4 relative">
+                {/* Vanilla Rotating Vinyl Deck Container */}
+                <div className="relative w-44 sm:w-56 h-44 sm:h-56 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_45px_rgba(168,85,247,0.35)] flex items-center justify-center my-2">
+                  <img
+                    src={curTrack.image || './favicon.ico'}
+                    alt={curTrack.title}
+                    className={`w-full h-full rounded-full object-cover border-4 border-[#070913] shadow-inner transition-transform duration-700 ${
+                      syncState.isPlaying ? 'animate-[spin_6s_linear_infinite]' : 'grayscale-[30%]'
+                    }`}
+                  />
+                  {/* Central Spindle Hole */}
+                  <div className="w-6 h-6 rounded-full bg-[#070913] border-2 border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl" />
                 </div>
-                <div className="absolute w-2.5 h-2.5 rounded-full bg-neutral-950 border border-neutral-400 shadow-inner z-20" />
-              </div>
 
-              {/* Track Info Banner */}
-              <div className="text-center max-w-xs space-y-1">
-                <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block border border-emerald-500/30">
-                  Now Playing
-                </span>
-                <h3 className="text-base font-black truncate text-[var(--text-sunofy)]">{curTrack.title}</h3>
-                <p className="text-xs text-[var(--muted-sunofy)] truncate font-medium">{curTrack.artist}</p>
+                {/* Track Info Banner */}
+                <div className="text-center max-w-sm space-y-1">
+                  <span className="text-[9px] bg-purple-500/20 text-purple-300 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block border border-purple-500/30">
+                    Now Playing
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black truncate text-white">{curTrack.title}</h3>
+                  <p className="text-xs text-purple-300 truncate font-medium">{curTrack.artist}</p>
+                </div>
+
+                {/* Live Party Floating Emoji Reactions Bar */}
+                <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                  {['❤️', '🔥', '🎵', '👏', '🎉'].map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => {
+                        syncParty.sendMessage(emoji);
+                        spawnFloatingEmoji(emoji);
+                      }}
+                      className="w-9 h-9 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setActiveTab('add_music')}
+                    className="bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-400/40 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ml-1 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[var(--accent-sunofy)]" />
+                    <span>Request Song</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Host Controls & Progress Bar Section */}
             <div className="space-y-3 pt-2">
               {/* Host-Only Playback Controls (Hidden for Listeners) */}
               {syncState.isHost && (
-                <div className="flex items-center justify-center space-x-3 bg-[var(--bg-sunofy)]/70 px-4 py-2 rounded-2xl border border-[var(--border-sunofy)] shadow-inner w-fit mx-auto">
+                <div className="flex items-center justify-center space-x-3 bg-black/60 px-4 py-2 rounded-2xl border border-purple-500/30 shadow-inner w-fit mx-auto">
                   <button
                     onClick={() => syncParty.prevTrack()}
-                    className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer hover:scale-110"
+                    className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
                     title="Previous Track"
                   >
                     <SkipBack className="w-4.5 h-4.5" />
@@ -420,7 +443,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
                   <button
                     onClick={() => syncParty.nextTrackInQueue()}
-                    className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer hover:scale-110"
+                    className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
                     title="Next Track"
                   >
                     <SkipForward className="w-4.5 h-4.5" />
@@ -432,10 +455,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               {(() => {
                 const pct = syncState.duration > 0 ? (syncState.currentTime / syncState.duration) * 100 : 0;
                 return (
-                  <div className="flex items-center space-x-2 text-[10px] text-[var(--muted-sunofy)] font-mono">
+                  <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
                     <span>{formatTime(syncState.currentTime)}</span>
                     <div
-                      className={`flex-1 h-2 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-full overflow-hidden relative ${
+                      className={`flex-1 h-2 bg-black/60 border border-purple-500/30 rounded-full overflow-hidden relative ${
                         syncState.isHost ? 'cursor-pointer' : 'cursor-default'
                       }`}
                       onClick={(e) => {
@@ -465,11 +488,11 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           </div>
         ) : (
           <div className="text-center py-12 space-y-3 relative z-10 my-auto">
-            <div className="w-20 h-20 rounded-full border-2 border-neutral-700 bg-black/70 flex items-center justify-center mx-auto shadow-inner">
-              <Music className="w-8 h-8 text-[var(--muted-sunofy)] animate-bounce" />
+            <div className="w-20 h-20 rounded-full border-2 border-purple-500/40 bg-black/70 flex items-center justify-center mx-auto shadow-inner">
+              <Music className="w-8 h-8 text-purple-400 animate-bounce" />
             </div>
-            <p className="text-sm font-bold text-[var(--text-sunofy)]">No track currently playing in party room.</p>
-            <p className="text-xs text-[var(--muted-sunofy)] max-w-xs mx-auto">Search or add tracks below to broadcast to all party members!</p>
+            <p className="text-sm font-bold text-white">No track currently playing in party room.</p>
+            <p className="text-xs text-purple-300 max-w-xs mx-auto">Search or add tracks below to broadcast to all party members!</p>
           </div>
         )}
       </div>
@@ -700,77 +723,82 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             </div>
           )}
 
-          {/* TAB 2: Add Music (Search & Import) */}
+          {/* TAB 2: Add Music (Search & Import 2-Column Grid) */}
           {activeTab === 'add_music' && (
-            <div className="space-y-3 animate-fade">
-              {/* Search Box */}
-              <div className="flex items-center bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-2 space-x-2 focus-within:border-[var(--accent-sunofy)] transition">
-                <Search className="w-4 h-4 text-[var(--muted-sunofy)]" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSyncSearch}
-                  placeholder="Search songs on JioSaavn..."
-                  className="w-full bg-transparent border-none text-xs text-[var(--text-sunofy)] focus:outline-none"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSearchResults([]);
-                    }}
-                    className="text-xs text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]"
-                  >
-                    Clear
-                  </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade">
+              {/* Left Column: Online Search */}
+              <div className="space-y-2.5">
+                <span className="text-[10px] font-bold text-[var(--accent-sunofy)] uppercase tracking-wider px-1 block">
+                  Search Songs Online
+                </span>
+                <div className="flex items-center bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-2 space-x-2 focus-within:border-[var(--accent-sunofy)] transition">
+                  <Search className="w-4 h-4 text-[var(--muted-sunofy)]" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSyncSearch}
+                    placeholder="Search songs on JioSaavn..."
+                    className="w-full bg-transparent border-none text-xs text-[var(--text-sunofy)] focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSearchResults([]);
+                      }}
+                      className="text-xs text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {searchResults.length > 0 ? (
+                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                    {searchResults.map((s) => (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between p-2 bg-[var(--bg-sunofy)] rounded-xl border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)] transition"
+                      >
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
+                          <img src={s.image} alt={s.title} className="w-8 h-8 rounded-lg object-cover" />
+                          <div className="min-w-0 flex-1">
+                            <h5 className="text-xs font-semibold truncate text-[var(--text-sunofy)]">{s.title}</h5>
+                            <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{s.artist}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            syncParty.addTrackToQueue(s, syncState.isHost ? 'Host' : 'Member');
+                            onShowToast(syncState.isHost ? `Added "${s.title}" to Party Queue!` : `Sent request for "${s.title}" to Host!`);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>{syncState.isHost ? 'Add' : 'Request'}</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center border border-dashed border-[var(--border-sunofy)] rounded-xl bg-[var(--bg-sunofy)]/50">
+                    <p className="text-xs text-[var(--muted-sunofy)]">Type a song or artist name to search and queue live tracks.</p>
+                  </div>
                 )}
               </div>
 
-              {/* Search Results */}
-              {searchResults.length > 0 && (
-                <div className="space-y-1.5 max-h-[160px] overflow-y-auto border-b border-[var(--border-sunofy)] pb-2">
-                  <p className="text-[10px] font-bold text-[var(--accent-sunofy)] uppercase tracking-wider px-1">
-                    Search Results
-                  </p>
-                  {searchResults.map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex items-center justify-between p-2 bg-[var(--bg-sunofy)] rounded-xl border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)] transition"
-                    >
-                      <div className="flex items-center space-x-2 min-w-0 flex-1">
-                        <img src={s.image} alt={s.title} className="w-8 h-8 rounded-lg object-cover" />
-                        <div className="min-w-0 flex-1">
-                          <h5 className="text-xs font-semibold truncate text-[var(--text-sunofy)]">{s.title}</h5>
-                          <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{s.artist}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          syncParty.addTrackToQueue(s, syncState.isHost ? 'Host' : 'Member');
-                          onShowToast(syncState.isHost ? `Added "${s.title}" to Party Queue!` : `Sent request for "${s.title}" to Host!`);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>{syncState.isHost ? 'Add' : 'Request'}</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Import from Playlists or Favorites */}
-              <div className="space-y-2 pt-1">
+              {/* Right Column: Import from Playlists or Favorites */}
+              <div className="space-y-2.5">
                 <span className="text-[10px] font-bold text-[var(--muted-sunofy)] uppercase tracking-wider px-1 block">
                   Import From My Library
                 </span>
 
                 {playlists.length === 0 && (!favorites?.songs || favorites.songs.length === 0) ? (
-                  <p className="text-xs text-[var(--muted-sunofy)] py-2 text-center">
+                  <p className="text-xs text-[var(--muted-sunofy)] py-4 text-center border border-dashed border-[var(--border-sunofy)] rounded-xl bg-[var(--bg-sunofy)]/50">
                     No saved playlists or favorites available to import.
                   </p>
                 ) : (
-                  <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
+                  <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
                     {/* Favorites Quick Import */}
                     {favorites?.songs && favorites.songs.length > 0 && (
                       <div className="flex items-center justify-between p-2 rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)]">
@@ -790,7 +818,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                             });
                             onShowToast(syncState.isHost ? `Imported ${favorites.songs.length} songs to Party!` : `Requested songs for Host approval!`);
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
                         >
                           <Plus className="w-3 h-3" />
                           <span>{syncState.isHost ? 'Import All' : 'Request All'}</span>
@@ -815,7 +843,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                         </div>
                         <button
                           onClick={() => handleImportPlaylistToParty(pl)}
-                          className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
                         >
                           <Plus className="w-3 h-3" />
                           <span>{syncState.isHost ? 'Import' : 'Request'}</span>
