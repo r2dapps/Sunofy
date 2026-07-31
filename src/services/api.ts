@@ -8,8 +8,8 @@ interface CacheItem<T> {
 class MusicAPI {
   public currentSource: 'jiosaavn' | 'youtube' | 'local' = 'jiosaavn';
   private localApiUrl = '/api/search/songs';
-  private primaryUrl = 'https://saavn.sumit.co/api';
-  private fallbackUrl = 'https://jiosaavn-api-v3.vercel.app/api';
+  private primaryUrl = 'https://saavn.dev/api';
+  private fallbackUrl = 'https://saavn.sumit.co/api';
   private cacheTTLMs = 20 * 60 * 1000; // 20 minutes API cache
   private memoryCache = new Map<string, CacheItem<any>>();
 
@@ -74,23 +74,7 @@ class MusicAPI {
       console.debug('Primary saavn mirror failed, trying local proxy...');
     }
 
-    // 2. Try local express backend proxy with extended limit of 50
-    try {
-      const res = await fetch(`${this.localApiUrl}?query=${encodeURIComponent(query)}${langQuery}&limit=50`);
-      if (res.ok) {
-        const data = await res.json();
-        const results = data.data?.results || data.data || (Array.isArray(data) ? data : null);
-        if (results && Array.isArray(results) && results.length > 0) {
-          const formatted = results.map((s: any) => this.formatSong(s));
-          this.setCache(cacheKey, formatted);
-          return formatted;
-        }
-      }
-    } catch (e) {
-      console.debug('Local proxy failed, trying secondary fallback...');
-    }
-
-    // 3. Try secondary public mirror with extended limit of 50
+    // 2. Try secondary public mirror with extended limit of 50
     try {
       const res = await fetch(`${this.fallbackUrl}/search/songs?query=${encodeURIComponent(query)}${langQuery}&limit=50`);
       if (res.ok) {
@@ -103,7 +87,23 @@ class MusicAPI {
         }
       }
     } catch (e) {
-      console.warn('All live JioSaavn APIs failed, serving emergency catalog');
+      console.debug('Fallback saavn mirror failed...');
+    }
+
+    // 3. Try local express backend proxy (only on localhost)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      try {
+        const res = await fetch(`${this.localApiUrl}?query=${encodeURIComponent(query)}${langQuery}&limit=50`);
+        if (res.ok) {
+          const data = await res.json();
+          const results = data.data?.results || data.data || (Array.isArray(data) ? data : null);
+          if (results && Array.isArray(results) && results.length > 0) {
+            const formatted = results.map((s: any) => this.formatSong(s));
+            this.setCache(cacheKey, formatted);
+            return formatted;
+          }
+        }
+      } catch (e) {}
     }
 
     // Placeholders are returned strictly if all APIs fail
@@ -117,8 +117,8 @@ class MusicAPI {
     if (cached) return cached;
 
     const urls = [
-      `/api/search/playlists?query=${encodeURIComponent(query)}&limit=50`,
       `${this.primaryUrl}/search/playlists?query=${encodeURIComponent(query)}&limit=50`,
+      `${this.fallbackUrl}/search/playlists?query=${encodeURIComponent(query)}&limit=50`,
     ];
 
     for (const url of urls) {
@@ -144,8 +144,8 @@ class MusicAPI {
     if (cached) return cached;
 
     const urls = [
-      `/api/search/albums?query=${encodeURIComponent(query)}&limit=50`,
       `${this.primaryUrl}/search/albums?query=${encodeURIComponent(query)}&limit=50`,
+      `${this.fallbackUrl}/search/albums?query=${encodeURIComponent(query)}&limit=50`,
     ];
 
     for (const url of urls) {
@@ -171,8 +171,8 @@ class MusicAPI {
     if (cached) return cached;
 
     const urls = [
-      `/api/playlists?id=${encodeURIComponent(id)}`,
       `${this.primaryUrl}/playlists?id=${encodeURIComponent(id)}`,
+      `${this.fallbackUrl}/playlists?id=${encodeURIComponent(id)}`,
     ];
 
     for (const url of urls) {

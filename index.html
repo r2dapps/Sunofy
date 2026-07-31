@@ -7,9 +7,9 @@
     <meta name="description" content="Sunofy is a high-fidelity web music player featuring JioSaavn & YouTube integration, real-time Sync Party listening rooms, equalizer, lyrics, and custom themes." />
     
     <!-- PWA & Favicons -->
-    <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
-    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="theme-color" content="#1db954" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -20,19 +20,19 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Sunofy Music - Stream & Listen Together" />
     <meta property="og:description" content="Experience high-quality music streaming, real-time Sync Party listening with friends, lyrics, equalizer, and offline support." />
-    <meta property="og:image" content="./icon-512.png" />
+    <meta property="og:image" content="icon-512.png" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Sunofy Music - Dive into Musical World" />
     <meta name="twitter:description" content="Stream music and listen synchronously with friends in real-time." />
-    <meta name="twitter:image" content="./icon-512.png" />
+    <meta name="twitter:image" content="icon-512.png" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="src/main.tsx"></script>
     <script>
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -40,7 +40,10 @@
       });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').catch((err) => {
+          const swPath = window.location.pathname.endsWith('/') 
+            ? window.location.pathname + 'sw.js' 
+            : window.location.pathname + '/sw.js';
+          navigator.serviceWorker.register(swPath).catch((err) => {
             console.log('SW registration failed: ', err);
           });
         });
