@@ -291,6 +291,140 @@ export default function App() {
     musicApi.currentSource = musicSource;
   }, [musicSource]);
 
+  // Real-time EQ Band updates
+  useEffect(() => {
+    if (filtersRef.current.length > 0) {
+      eqBands.forEach((band) => {
+        const filter = filtersRef.current.find((f) => Math.round(f.frequency.value) === band.freq);
+        if (filter) filter.gain.setValueAtTime(band.gain, 0);
+      });
+    }
+  }, [eqBands]);
+
+  // Real-time Preamp updates
+  useEffect(() => {
+    if (preampRef.current) {
+      preampRef.current.gain.setValueAtTime(Math.pow(10, preamp / 20), 0);
+    }
+  }, [preamp]);
+
+  // Real-time Bass Boost updates
+  useEffect(() => {
+    if (bassBoostRef.current) {
+      bassBoostRef.current.gain.setValueAtTime(bassBoost, 0);
+    }
+  }, [bassBoost]);
+
+  // Real-time Spatial Panner updates
+  useEffect(() => {
+    if (pannerRef.current) {
+      pannerRef.current.pan.setValueAtTime(spatialBalance, 0);
+    }
+  }, [spatialBalance]);
+
+  const updateReverbNodes = (preset: string, dNode?: DelayNode | null, dgNode?: GainNode | null) => {
+    const delayNode = dNode !== undefined ? dNode : delayRef.current;
+    const delayGainNode = dgNode !== undefined ? dgNode : delayGainRef.current;
+    
+    if (!delayNode || !delayGainNode) return;
+    
+    let config = [0.0, 0.0];
+    switch (preset) {
+      case 'Studio (Warm)': config = [0.05, 0.15]; break;
+      case 'Concert Hall': config = [0.18, 0.35]; break;
+      case 'Acoustic Arena': config = [0.35, 0.45]; break;
+      case 'Cosmic Echo': config = [0.60, 0.60]; break;
+      case 'Custom': config = [reverbDelay, reverbFeedback]; break;
+      case 'None': default: config = [0.0, 0.0]; break;
+    }
+    delayNode.delayTime.setValueAtTime(config[0], 0);
+    delayGainNode.gain.setValueAtTime(config[1], 0);
+  };
+
+  // Real-time Reverb updates
+  useEffect(() => {
+    updateReverbNodes(reverbPreset);
+  }, [reverbPreset, reverbDelay, reverbFeedback]);
+
+  // Init Web Audio API Equalizer & Audio FX Nodes lazily
+  const initEqualizerWebAudio = () => {
+    if (!audioRef.current || audioCtxRef.current) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+
+      const source = ctx.createMediaElementSource(audioRef.current);
+      
+      const preampNode = ctx.createGain();
+      preampNode.gain.value = Math.pow(10, preamp / 20);
+      preampRef.current = preampNode;
+
+      const bassBoostNode = ctx.createBiquadFilter();
+      bassBoostNode.type = 'lowshelf';
+      bassBoostNode.frequency.value = 80;
+      bassBoostNode.gain.value = bassBoost;
+      bassBoostRef.current = bassBoostNode;
+
+      const frequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+      const filters = frequencies.map((freq) => {
+        const filter = ctx.createBiquadFilter();
+        filter.type = freq <= 64 ? 'lowshelf' : freq >= 8000 ? 'highshelf' : 'peaking';
+        filter.frequency.value = freq;
+        const initialBand = eqBands.find((b) => b.freq === freq);
+        filter.gain.value = initialBand ? initialBand.gain : 0;
+        return filter;
+      });
+      filtersRef.current = filters;
+
+      let pannerNode: StereoPannerNode | null = null;
+      if (ctx.createStereoPanner) {
+        pannerNode = ctx.createStereoPanner();
+        pannerNode.pan.value = spatialBalance;
+        pannerRef.current = pannerNode;
+      }
+
+      const analyserNode = ctx.createAnalyser();
+      analyserNode.fftSize = 256;
+      analyserRef.current = analyserNode;
+
+      const delayNode = ctx.createDelay(1.0);
+      const delayGainNode = ctx.createGain();
+      delayNode.connect(delayGainNode);
+      delayGainNode.connect(delayNode);
+      delayRef.current = delayNode;
+      delayGainRef.current = delayGainNode;
+
+      updateReverbNodes(reverbPreset, delayNode, delayGainNode);
+
+      source.connect(preampNode);
+      preampNode.connect(bassBoostNode);
+      bassBoostNode.connect(filters[0]);
+      for (let i = 0; i < filters.length - 1; i++) {
+        filters[i].connect(filters[i + 1]);
+      }
+
+      const lastFilter = filters[filters.length - 1];
+      const mixGain = ctx.createGain();
+      mixGain.gain.value = 1.0;
+
+      lastFilter.connect(mixGain);
+      lastFilter.connect(delayNode);
+      delayGainNode.connect(mixGain);
+
+      if (pannerNode) {
+        mixGain.connect(pannerNode);
+        pannerNode.connect(analyserNode);
+      } else {
+        mixGain.connect(analyserNode);
+      }
+
+      analyserNode.connect(ctx.destination);
+    } catch (e) {
+      console.warn('Web Audio API EQ initialization deferred or CORS restricted:', e);
+    }
+  };
+
   // Load Offline Downloads on startup
   useEffect(() => {
     offlineStore.getAllOfflineTracks().then((tracks) => setDownloads(tracks));
@@ -598,139 +732,18 @@ export default function App() {
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-  const updateReverbNodes = (preset: string, dNode?: DelayNode | null, dgNode?: GainNode | null) => {
-    const delayNode = dNode !== undefined ? dNode : delayRef.current;
-    const delayGainNode = dgNode !== undefined ? dgNode : delayGainRef.current;
-    
-    if (!delayNode || !delayGainNode) return;
-    
-    // Config: [delayTime, feedbackGain]
-    let config = [0.0, 0.0];
-    switch (preset) {
-      case 'Studio (Warm)':
-        config = [0.05, 0.15];
-        break;
-      case 'Concert Hall':
-        config = [0.18, 0.35];
-        break;
-      case 'Acoustic Arena':
-        config = [0.35, 0.45];
-        break;
-      case 'Cosmic Echo':
-        config = [0.60, 0.60];
-        break;
-      case 'Custom':
-        config = [reverbDelay, reverbFeedback];
-        break;
-      case 'None':
-      default:
-        config = [0.0, 0.0];
-        break;
-    }
-    
-    delayNode.delayTime.setValueAtTime(config[0], 0);
-    delayGainNode.gain.setValueAtTime(config[1], 0);
-  };
-
-  // Init Web Audio API Equalizer & Audio FX Nodes lazily
-  const initEqualizerWebAudio = () => {
-    if (!audioRef.current || audioCtxRef.current) return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      const ctx = new AudioCtx();
-      audioCtxRef.current = ctx;
-
-      const source = ctx.createMediaElementSource(audioRef.current);
-      
-      // Preamp node
-      const preampNode = ctx.createGain();
-      preampNode.gain.value = Math.pow(10, preamp / 20);
-      preampRef.current = preampNode;
-
-      // Bass Boost node
-      const bassBoostNode = ctx.createBiquadFilter();
-      bassBoostNode.type = 'lowshelf';
-      bassBoostNode.frequency.value = 80;
-      bassBoostNode.gain.value = bassBoost;
-      bassBoostRef.current = bassBoostNode;
-
-      // 10 EQ Filters
-      const frequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-      const filters = frequencies.map((freq) => {
-        const filter = ctx.createBiquadFilter();
-        filter.type = freq <= 64 ? 'lowshelf' : freq >= 8000 ? 'highshelf' : 'peaking';
-        filter.frequency.value = freq;
-        const initialBand = eqBands.find((b) => b.freq === freq);
-        filter.gain.value = initialBand ? initialBand.gain : 0;
-        return filter;
-      });
-      filtersRef.current = filters;
-
-      // Stereo Panner node
-      let pannerNode: StereoPannerNode | null = null;
-      if (ctx.createStereoPanner) {
-        pannerNode = ctx.createStereoPanner();
-        pannerNode.pan.value = spatialBalance;
-        pannerRef.current = pannerNode;
-      }
-
-      // Analyser node
-      const analyserNode = ctx.createAnalyser();
-      analyserNode.fftSize = 256;
-      analyserRef.current = analyserNode;
-
-      // Echo / Reverb feedback nodes
-      const delayNode = ctx.createDelay(1.0);
-      const delayGainNode = ctx.createGain();
-      delayNode.connect(delayGainNode);
-      delayGainNode.connect(delayNode);
-      delayRef.current = delayNode;
-      delayGainRef.current = delayGainNode;
-
-      // Apply initial reverb preset values
-      updateReverbNodes(reverbPreset, delayNode, delayGainNode);
-
-      // Connect source -> preamp -> bassBoost -> filter[0] -> ... -> filter[9]
-      source.connect(preampNode);
-      preampNode.connect(bassBoostNode);
-      bassBoostNode.connect(filters[0]);
-      for (let i = 0; i < filters.length - 1; i++) {
-        filters[i].connect(filters[i + 1]);
-      }
-
-      const lastFilter = filters[filters.length - 1];
-
-      // Reverb mix node
-      const mixGain = ctx.createGain();
-      mixGain.gain.value = 1.0;
-
-      // Dry path
-      lastFilter.connect(mixGain);
-
-      // Wet path (reverb loop)
-      lastFilter.connect(delayNode);
-      delayGainNode.connect(mixGain);
-
-      // Connect wet/dry mix to panner / analyser
-      if (pannerNode) {
-        mixGain.connect(pannerNode);
-        pannerNode.connect(analyserNode);
-      } else {
-        mixGain.connect(analyserNode);
-      }
-
-      analyserNode.connect(ctx.destination);
-    } catch (e) {
-      console.warn('Web Audio API EQ initialization deferred or CORS restricted:', e);
-    }
-  };
-
   const handlePlayTrack = async (track: Track) => {
     if (currentTrack && currentTrack.id !== track.id) {
       setHistory((prev) => [...prev.filter((t) => t.id !== track.id), currentTrack]);
     }
     setCurrentTrack(track);
     setIsPlaying(true);
+
+    // Initialize Web Audio EQ lazily on user playback interaction
+    initEqualizerWebAudio();
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
 
     if (audioRef.current) {
       // Use local offline blob URL if downloaded
@@ -1340,6 +1353,8 @@ export default function App() {
           onOpenProfile={() => setCurrentTab('Profile')}
           onOpenEqualizer={() => setIsEqualizerOpen(true)}
           onOpenCarMode={() => setIsCarModeOpen(true)}
+          userAvatarIcon={userProfile.avatarIcon || '🎧'}
+          customAvatarUrl={userProfile.customAvatarUrl}
           musicSource={musicSource}
           onMusicSourceChange={setMusicSource}
           isPlaying={isPlaying}

@@ -246,11 +246,15 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
   return (
     <div className="space-y-4 animate-fade pb-12 text-[var(--text-sunofy)]">
-      {/* Profile Card Header with Avatar Icon Selector */}
+      {/* Profile Card Header with Avatar Icon & Custom Upload Selector */}
       <div className="bg-[var(--card-sunofy)] p-6 rounded-3xl border border-[var(--border-sunofy)] text-center shadow-xl relative group hover:border-[var(--accent-sunofy)]/50 transition flex flex-col items-center justify-center space-y-3">
         <div className="relative inline-block">
-          <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full mx-auto bg-gradient-to-tr from-[var(--accent-sunofy)]/30 via-purple-600/30 to-[var(--accent-sunofy)]/50 border-2 border-[var(--accent-sunofy)] shadow-xl flex items-center justify-center text-4xl sm:text-5xl group-hover:scale-105 transition-transform">
-            {profile.avatarIcon || '🎧'}
+          <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full mx-auto bg-gradient-to-tr from-[var(--accent-sunofy)]/30 via-purple-600/30 to-[var(--accent-sunofy)]/50 border-2 border-[var(--accent-sunofy)] shadow-xl flex items-center justify-center text-4xl sm:text-5xl group-hover:scale-105 transition-transform overflow-hidden">
+            {profile.customAvatarUrl ? (
+              <img src={profile.customAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span>{profile.avatarIcon || '🎧'}</span>
+            )}
           </div>
           {profile.appLockEnabled && (
             <span className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--accent-sunofy)] text-black shadow">
@@ -259,28 +263,65 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           )}
         </div>
 
-        {/* Avatar Icon Selector Grid */}
-        <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xs mx-auto py-1">
-          {['🎧', '🎵', '🎸', '👑', '🔥', '🚀', '💎', '⚡', '🐼', '🦁', '🦊', '🐶'].map((icon) => {
-            const isSelected = (profile.avatarIcon || '🎧') === icon;
-            return (
+        {/* Avatar Selection: Icons & Custom Upload */}
+        <div className="space-y-2 w-full max-w-xs mx-auto">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 py-1">
+            {['🎧', '🎵', '🎸', '👑', '🔥', '🚀', '💎', '⚡', '🐼', '🦁', '🦊', '🐶'].map((icon) => {
+              const isSelected = !profile.customAvatarUrl && (profile.avatarIcon || '🎧') === icon;
+              return (
+                <button
+                  key={icon}
+                  type="button"
+                  onClick={() => {
+                    onUpdateProfile({ avatarIcon: icon, customAvatarUrl: undefined });
+                    onShowToast(`Profile avatar updated to ${icon}`);
+                  }}
+                  className={`w-8 h-8 text-base rounded-xl transition-transform flex items-center justify-center cursor-pointer border ${
+                    isSelected
+                      ? 'bg-[var(--accent-sunofy)] text-black border-transparent scale-110 shadow-md font-bold'
+                      : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] text-[var(--text-sunofy)] hover:scale-105'
+                  }`}
+                >
+                  {icon}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-center gap-2">
+            <label className="px-3 py-1.5 rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)] text-[10px] font-bold text-[var(--accent-sunofy)] flex items-center gap-1 cursor-pointer transition shadow-sm">
+              <Upload className="w-3.5 h-3.5" /> Upload Photo
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      if (ev.target?.result) {
+                        onUpdateProfile({ customAvatarUrl: ev.target.result as string });
+                        onShowToast('Custom profile picture uploaded!');
+                      }
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                  }
+                }}
+              />
+            </label>
+            {profile.customAvatarUrl && (
               <button
-                key={icon}
                 type="button"
                 onClick={() => {
-                  onUpdateProfile({ avatarIcon: icon });
-                  onShowToast(`Profile avatar updated to ${icon}`);
+                  onUpdateProfile({ customAvatarUrl: undefined });
+                  onShowToast('Reset to default icon avatar');
                 }}
-                className={`w-8 h-8 text-base rounded-xl transition-transform flex items-center justify-center cursor-pointer border ${
-                  isSelected
-                    ? 'bg-[var(--accent-sunofy)] text-black border-transparent scale-110 shadow-md font-bold'
-                    : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] text-[var(--text-sunofy)] hover:scale-105'
-                }`}
+                className="px-2.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition cursor-pointer"
               >
-                {icon}
+                Reset Icon
               </button>
-            );
-          })}
+            )}
+          </div>
         </div>
 
         <div className="w-full flex items-center justify-center pt-1">

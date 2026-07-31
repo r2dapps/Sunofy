@@ -1071,8 +1071,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       >
                         {!c.isSystem && (
                           <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className={`text-[10px] font-bold flex items-center gap-1 ${isMyMessage ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
-                              <span>{isMyMessage ? 'You' : c.sender}</span>
+                            <span className={`text-[10px] font-bold flex items-center gap-1.5 ${isMyMessage ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
+                              <span className="text-xs select-none">{c.avatarIcon || (c.sender === 'Host' || c.sender.includes('Host') ? '👑' : '🎧')}</span>
+                              <span>{isMyMessage ? `${c.sender} (You)` : c.sender}</span>
                               {(c.sender === 'Host' || c.sender.includes('Host')) && (
                                 <Crown className="w-3 h-3 text-amber-400 rotate-12 inline" />
                               )}

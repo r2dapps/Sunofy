@@ -37,13 +37,16 @@ export interface SyncMember {
   name: string;
   avatar?: string;
   avatarIcon?: string;
+  customAvatarUrl?: string;
   isHost: boolean;
   pingMs?: number;
 }
 
 export interface SyncChatMessage {
   id: string;
+  senderId?: string;
   sender: string;
+  avatarIcon?: string;
   text: string;
   time: string;
   isSystem?: boolean;
@@ -87,5 +90,6 @@ export interface UserProfile {
   appLockEnabled: boolean;
   appLockPin: string;
   avatarIcon?: string;
+  customAvatarUrl?: string;
   lastBackupAt?: string;
 }

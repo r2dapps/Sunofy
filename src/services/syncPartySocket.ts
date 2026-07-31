@@ -329,10 +329,11 @@ class SyncPartyManager {
   
   private lastBroadcastTime = 0;
 
-  syncAudioState(currentTime: number, isPlaying: boolean, force = false) {
+  syncAudioState(currentTime: number, isPlaying: boolean, force = false, duration?: number) {
     if (!this.state.isHost) return;
     this.state.currentTime = currentTime;
     this.state.isPlaying = isPlaying;
+    if (duration && duration > 0) this.state.duration = duration;
 
     const now = Date.now();
     if (force || now - this.lastBroadcastTime > 2000) {
@@ -344,11 +345,11 @@ class SyncPartyManager {
   private broadcastState() {
     if (!this.state.inRoom || !this.state.isHost) return;
     const stateData = {
-      currentTrack: this.state.currentTrack,
+      track: this.state.currentTrack,
       isPlaying: this.state.isPlaying,
       currentTime: this.state.currentTime,
-      duration: this.state.duration,
-      updatedAt: Date.now()
+      duration: this.state.duration || (this.state.currentTrack?.duration || 0),
+      timestamp: Date.now()
     };
     
     // Clean any undefined properties for Firebase Realtime Database compatibility
@@ -495,12 +496,23 @@ class SyncPartyManager {
   sendMessage(text: string, customSender?: string) {
     if (!this.state.inRoom) return;
     
-    const senderName = customSender || (this.state.isHost ? 'Host' : `Member #${this.myPeerId.slice(-4)}`);
+    const profileStr = typeof localStorage !== 'undefined' ? localStorage.getItem('sunofy_user_profile') : null;
+    let senderName = customSender || (this.state.isHost ? 'Host' : `Member #${this.myPeerId.slice(-4)}`);
+    let senderAvatarIcon = this.state.isHost ? '👑' : '🎧';
+    
+    if (profileStr && !customSender) {
+      try {
+        const parsed = JSON.parse(profileStr);
+        if (parsed.username) senderName = parsed.username;
+        if (parsed.avatarIcon) senderAvatarIcon = parsed.avatarIcon;
+      } catch(e) {}
+    }
     
     const msg = {
       id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       senderId: this.myPeerId,
       sender: senderName,
+      avatarIcon: senderAvatarIcon,
       text: text.trim(),
       time: this.getTimeStr(),
       isSystem: customSender === 'System',

@@ -7,7 +7,8 @@ interface HeaderProps {
   onOpenProfile: () => void;
   onOpenEqualizer: () => void;
   onOpenCarMode: () => void;
-  userAvatar?: string;
+  userAvatarIcon?: string;
+  customAvatarUrl?: string;
   musicSource?: 'jiosaavn' | 'youtube' | 'local';
   onMusicSourceChange?: (source: 'jiosaavn' | 'youtube' | 'local') => void;
   isPlaying?: boolean;
@@ -19,7 +20,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenProfile,
   onOpenEqualizer,
   onOpenCarMode,
-  userAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
+  userAvatarIcon = '🎧',
+  customAvatarUrl,
   musicSource = 'jiosaavn',
   onMusicSourceChange,
   isPlaying = false,
@@ -59,20 +61,17 @@ export const Header: React.FC<HeaderProps> = ({
             { id: 'youtube', label: 'YouTube', icon: <Youtube className="w-3 h-3 text-red-500" /> },
             { id: 'local', label: 'Offline', icon: <HardDrive className="w-3 h-3 text-blue-400" /> },
           ];
-          const current = sources.find((s) => s.id === musicSource) || sources[0];
+
           return (
-            <div 
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] text-[10px] font-bold select-none shadow-sm mr-0.5"
-              title={`Music Engine: ${current.label}`}
-            >
-              {current.icon}
-              <span className="hidden xs:inline">{current.label}</span>
-              {musicSource !== 'local' && (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[var(--muted-sunofy)] font-mono">{latency}ms</span>
-                </>
-              )}
+            <div className="flex items-center bg-[var(--card-sunofy)]/80 border border-[var(--border-sunofy)] rounded-full px-2 py-1 space-x-1 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+              <span className="text-[10px] font-extrabold text-[var(--text-sunofy)] tracking-wide uppercase flex items-center gap-1">
+                {sources.find(s => s.id === musicSource)?.icon}
+                <span className="hidden sm:inline">{sources.find(s => s.id === musicSource)?.label}</span>
+              </span>
+              <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded border border-emerald-500/20">
+                {latency}ms
+              </span>
             </div>
           );
         })()}
@@ -104,9 +103,13 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onOpenProfile}
           title="Profile & Settings"
-          className="w-8 h-8 rounded-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] overflow-hidden flex items-center justify-center cursor-pointer hover:border-[var(--accent-sunofy)] transition"
+          className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--accent-sunofy)]/30 to-purple-600/30 border border-[var(--accent-sunofy)]/60 overflow-hidden flex items-center justify-center cursor-pointer hover:scale-105 transition shadow-sm"
         >
-          <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
+          {customAvatarUrl ? (
+            <img src={customAvatarUrl} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-base select-none">{userAvatarIcon}</span>
+          )}
         </button>
       </div>
     </header>
