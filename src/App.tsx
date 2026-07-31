@@ -365,6 +365,14 @@ export default function App() {
     const track = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
 
     if (track) {
+      // Bypass video tracks & YouTube links from native <audio> element to prevent NotSupportedError
+      const isVideoTrack = track.mediaType === 'video' || (track as any).isVideo || track.url?.includes('youtube.com') || track.url?.includes('youtu.be') || track.downloadUrl?.includes('youtube.com');
+      if (isVideoTrack) {
+        if (!audio.paused) audio.pause();
+        setIsPlaying(syncState.isPlaying);
+        return;
+      }
+
       const src = track.downloadUrl || track.url;
       const isNewTrack = src && audio.src !== src;
 
@@ -387,7 +395,7 @@ export default function App() {
         // Drift correction for Listeners without hard seeking or 2-second repeat stutters
         if (!syncState.isHost && !isNewTrack && syncState.currentTime > 0) {
           const drift = Math.abs(audio.currentTime - syncState.currentTime);
-          if (drift > 2.5) {
+          if (drift > 3.0) {
             // Hard seek only if severely out of sync
             audio.currentTime = syncState.currentTime;
             audio.playbackRate = 1.0;

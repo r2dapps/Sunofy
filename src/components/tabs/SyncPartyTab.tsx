@@ -90,6 +90,20 @@ const LiveAudioWave: React.FC<{ isPlaying: boolean }> = ({ isPlaying }) => {
           0% { height: 4px; }
           100% { height: 16px; }
         }
+        @keyframes floatUpFade {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(0.8) rotate(0deg);
+          }
+          40% {
+            opacity: 1;
+            transform: translateY(-90px) scale(1.4) rotate(12deg);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-220px) scale(2.0) rotate(-12deg);
+          }
+        }
       `}</style>
     </div>
   );
@@ -151,6 +165,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     setTimeout(() => {
       setFloatingEmojis((prev) => prev.filter((item) => item.id !== id));
     }, 2200);
+  };
+
+  const extractYoutubeId = (url?: string) => {
+    if (!url) return null;
+    const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+    return match && match[2].length === 11 ? match[2] : null;
   };
 
   const formatTime = (secs: number) => {
@@ -394,56 +414,74 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         {curTrack ? (
           <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-between py-2">
             {/* Center Vanilla Rotating Vinyl Deck or Video Watch Stage */}
-            {curTrack.mediaType === 'video' || (curTrack as any).isVideo ? (
-              <div className="relative w-full max-w-md mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto">
-                <video
-                  src={curTrack.downloadUrl || curTrack.url}
-                  className="w-full h-full object-contain"
-                  controls={syncState.isHost}
-                  autoPlay={syncState.isPlaying}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center my-auto space-y-4 relative">
-                {/* Vanilla Rotating Vinyl Deck Container */}
-                <div className="relative w-44 sm:w-56 h-44 sm:h-56 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_45px_rgba(168,85,247,0.35)] flex items-center justify-center my-2">
-                  <img
-                    src={curTrack.image || './favicon.ico'}
-                    alt={curTrack.title}
-                    className={`w-full h-full rounded-full object-cover border-4 border-[#070913] shadow-inner transition-transform duration-700 ${
-                      syncState.isPlaying ? 'animate-[spin_6s_linear_infinite]' : 'grayscale-[30%]'
-                    }`}
-                  />
-                  {/* Central Spindle Hole */}
-                  <div className="w-6 h-6 rounded-full bg-[#070913] border-2 border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl" />
-                </div>
+            {(() => {
+              const isVideoTrack = curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com');
+              const ytId = extractYoutubeId(curTrack.downloadUrl || curTrack.url);
 
-                {/* Track Info Banner */}
-                <div className="text-center max-w-sm space-y-1">
-                  <span className="text-[9px] bg-purple-500/20 text-purple-300 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block border border-purple-500/30">
-                    Now Playing
-                  </span>
-                  <h3 className="text-base sm:text-lg font-black truncate text-white">{curTrack.title}</h3>
-                  <p className="text-xs text-purple-300 truncate font-medium">{curTrack.artist}</p>
-                </div>
+              if (isVideoTrack) {
+                return (
+                  <div className="relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto">
+                    {ytId ? (
+                      <iframe
+                        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=${syncState.isPlaying ? 1 : 0}&enablejsapi=1&origin=${window.location.origin}`}
+                        className="w-full h-full border-0"
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={curTrack.downloadUrl || curTrack.url}
+                        className="w-full h-full object-contain"
+                        controls={syncState.isHost}
+                        autoPlay={syncState.isPlaying}
+                      />
+                    )}
+                  </div>
+                );
+              }
 
-                {/* Live Party Floating Emoji Reactions Bar */}
-                <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
-                  {['❤️', '🔥', '🎵', '👏', '🎉', '🚀'].map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => {
-                        syncParty.sendMessage(emoji);
-                        spawnFloatingEmoji(emoji);
-                      }}
-                      className="w-9.5 h-9.5 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-lg flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+              return (
+                <div className="flex flex-col items-center justify-center my-auto space-y-4 relative">
+                  {/* Vanilla Rotating Vinyl Deck Container */}
+                  <div className="relative w-44 sm:w-56 h-44 sm:h-56 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_45px_rgba(168,85,247,0.35)] flex items-center justify-center my-2">
+                    <img
+                      src={curTrack.image || './favicon.ico'}
+                      alt={curTrack.title}
+                      className={`w-full h-full rounded-full object-cover border-4 border-[#070913] shadow-inner transition-transform duration-700 ${
+                        syncState.isPlaying ? 'animate-[spin_6s_linear_infinite]' : 'grayscale-[30%]'
+                      }`}
+                    />
+                    {/* Central Spindle Hole */}
+                    <div className="w-6 h-6 rounded-full bg-[#070913] border-2 border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl" />
+                  </div>
+
+                  {/* Track Info Banner */}
+                  <div className="text-center max-w-sm space-y-1">
+                    <span className="text-[9px] bg-purple-500/20 text-purple-300 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block border border-purple-500/30">
+                      Now Playing
+                    </span>
+                    <h3 className="text-base sm:text-lg font-black truncate text-white">{curTrack.title}</h3>
+                    <p className="text-xs text-purple-300 truncate font-medium">{curTrack.artist}</p>
+                  </div>
+
+                  {/* Live Party Floating Emoji Reactions Bar */}
+                  <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                    {['❤️', '🔥', '🎵', '👏', '🎉', '🚀'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          syncParty.sendMessage(emoji);
+                          spawnFloatingEmoji(emoji);
+                        }}
+                        className="w-9.5 h-9.5 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-lg flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Host Controls & Progress Bar Section */}
             <div className="space-y-3 pt-2">
@@ -700,58 +738,66 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
-                    {syncState.queue.map((song, idx) => (
-                      <div
-                        key={song.id + '_' + idx}
-                        onClick={() => {
-                          if (syncState.isHost) {
-                            syncParty.playQueueTrack(idx);
-                            onShowToast(`Now playing "${song.title}"`);
-                          }
-                        }}
-                        className={`flex items-center justify-between p-2 rounded-xl border transition cursor-pointer ${
-                          idx === 0
-                            ? 'bg-[var(--accent-sunofy)]/10 border-[var(--accent-sunofy)]/40 shadow-sm'
-                            : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--hover-sunofy)]'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                          <div className="relative">
-                            <img src={song.image} alt={song.title} className="w-8 h-8 rounded-lg object-cover" />
-                            {idx === 0 && (
-                              <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
-                                <span className="w-2 h-2 rounded-full bg-[var(--accent-sunofy)] animate-ping" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center space-x-1.5">
-                              <h5 className="text-xs font-semibold truncate text-[var(--text-sunofy)]">{song.title}</h5>
-                              {idx === 0 && (
-                                <span className="text-[9px] bg-[var(--accent-sunofy)] text-black font-bold px-1.5 py-0.2 rounded-full uppercase">
-                                  PLAYING
-                                </span>
+                    {syncState.queue.map((song, idx) => {
+                      const isCurrentlyPlaying = curTrack
+                        ? (song.id === curTrack.id || (song.title === curTrack.title && song.artist === curTrack.artist))
+                        : idx === 0;
+
+                      return (
+                        <div
+                          key={song.id + '_' + idx}
+                          onClick={() => {
+                            if (syncState.isHost) {
+                              syncParty.playQueueTrack(idx);
+                              onShowToast(`Now playing "${song.title}"`);
+                            }
+                          }}
+                          className={`flex items-center justify-between p-2 rounded-xl border transition cursor-pointer ${
+                            isCurrentlyPlaying
+                              ? 'bg-[var(--accent-sunofy)]/10 border-[var(--accent-sunofy)]/40 shadow-sm'
+                              : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--hover-sunofy)]'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                            <div className="relative shrink-0">
+                              <img src={song.image} alt={song.title} className="w-8 h-8 rounded-lg object-cover" />
+                              {isCurrentlyPlaying && (
+                                <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+                                  <span className={`w-2 h-2 rounded-full ${syncState.isPlaying ? 'bg-[var(--accent-sunofy)] animate-ping' : 'bg-amber-400'}`} />
+                                </div>
                               )}
                             </div>
-                            <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{song.artist}</p>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center space-x-1.5">
+                                <h5 className="text-xs font-semibold truncate text-[var(--text-sunofy)]">{song.title}</h5>
+                                {isCurrentlyPlaying && (
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase shrink-0 ${
+                                    syncState.isPlaying ? 'bg-[var(--accent-sunofy)] text-black' : 'bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                                  }`}>
+                                    {syncState.isPlaying ? 'PLAYING' : 'PAUSED'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{song.artist}</p>
+                            </div>
                           </div>
-                        </div>
 
-                        {idx !== 0 && syncState.isHost && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              syncParty.removeTrackFromQueue(idx);
-                              onShowToast(`Removed "${song.title}" from queue`);
-                            }}
-                            className="p-1.5 text-[var(--muted-sunofy)] hover:text-red-400 transition cursor-pointer"
-                            title="Remove Track"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                          {!isCurrentlyPlaying && syncState.isHost && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                syncParty.removeTrackFromQueue(idx);
+                                onShowToast(`Removed "${song.title}" from queue`);
+                              }}
+                              className="p-1.5 text-[var(--muted-sunofy)] hover:text-red-400 transition cursor-pointer shrink-0 ml-1"
+                              title="Remove Track"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
