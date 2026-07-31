@@ -258,7 +258,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   }
 
   // Active Isolated Sync Party Room View
-  const curTrack = syncState.currentTrack;
+  const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
 
   return (
     <div className="space-y-3 animate-fade pb-6 text-[var(--text-sunofy)] select-none">
@@ -315,11 +315,19 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       </div>
 
-      {/* Non-collapsible Live Audio Stage */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-3.5 space-y-3 shadow-lg">
-        <div className="flex items-center justify-between border-b border-[var(--border-sunofy)] pb-2">
+      {/* Prominent Vibe Live Audio Stage with Rotating Vinyl Disc */}
+      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-4 space-y-3.5 shadow-xl relative overflow-hidden">
+        {/* Blended Background Ambient Art Glow */}
+        {curTrack?.image && (
+          <div className="absolute inset-0 opacity-20 pointer-events-none">
+            <img src={curTrack.image} alt="Background Blur" className="w-full h-full object-cover filter blur-xl scale-125" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--card-sunofy)] via-transparent to-[var(--card-sunofy)]" />
+          </div>
+        )}
+
+        <div className="flex items-center justify-between border-b border-[var(--border-sunofy)] pb-2 relative z-10">
           <div className="flex items-center space-x-2">
-            <Music className="w-4 h-4 text-[var(--accent-sunofy)]" />
+            <Radio className="w-4 h-4 text-[var(--accent-sunofy)] animate-pulse" />
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-sunofy)]">Live Audio Stage</span>
           </div>
           <div className="flex items-center gap-2">
@@ -331,65 +339,79 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
 
         {curTrack ? (
-          <>
-            <div className="flex items-center space-x-3">
-              <img
-                src={curTrack.image}
-                alt={curTrack.title}
-                className={`w-12 h-12 rounded-xl object-cover border border-[var(--border-sunofy)] spinning-art ${
-                  syncState.isPlaying ? 'playing shadow-[0_0_15px_var(--accent-sunofy)]' : ''
-                }`}
-              />
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold truncate text-[var(--text-sunofy)]">{curTrack.title}</h4>
-                <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{curTrack.artist}</p>
+          <div className="relative z-10 space-y-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              {/* Rotating Vinyl Disc Component */}
+              <div className="flex items-center space-x-3.5 min-w-0 flex-1 w-full sm:w-auto">
+                <div
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-neutral-700 bg-black flex items-center justify-center overflow-hidden shadow-2xl shrink-0 transition-transform duration-700 relative ${
+                    syncState.isPlaying ? 'animate-[spin_5s_linear_infinite] shadow-emerald-500/30 ring-2 ring-emerald-500/40' : 'scale-95 grayscale-[30%]'
+                  }`}
+                  style={{
+                    backgroundImage: 'radial-gradient(circle, #262626 15%, #171717 16%, #000 65%, #262626 66%, #171717 100%)'
+                  }}
+                >
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border border-neutral-600 overflow-hidden shadow-inner shrink-0 z-10">
+                    <img src={curTrack.image || './favicon.ico'} alt={curTrack.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="absolute w-2 h-2 rounded-full bg-neutral-900 border border-neutral-400 shadow-inner z-20" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider inline-block mb-1 border border-emerald-500/30">
+                    Now Playing
+                  </span>
+                  <h4 className="text-sm font-bold truncate text-[var(--text-sunofy)]">{curTrack.title}</h4>
+                  <p className="text-xs text-[var(--muted-sunofy)] truncate mt-0.5">{curTrack.artist}</p>
+                </div>
               </div>
 
-              {/* Playback Controls */}
-              <div className="flex items-center space-x-1">
+              {/* Host Controls */}
+              <div className="flex items-center space-x-2 shrink-0 bg-[var(--bg-sunofy)]/70 px-3 py-1.5 rounded-2xl border border-[var(--border-sunofy)] shadow-inner">
                 <button
                   onClick={() => syncParty.prevTrack()}
-                  className="p-1.5 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
-                  title="Previous"
+                  className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
+                  title="Previous Track"
                 >
                   <SkipBack className="w-4 h-4" />
                 </button>
 
                 <button
                   onClick={() => syncParty.togglePlayPause()}
-                  className="w-9 h-9 rounded-full bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
+                  className="w-10 h-10 rounded-xl bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
                   title={syncState.isPlaying ? 'Pause' : 'Play'}
                 >
                   {syncState.isPlaying ? (
-                    <Pause className="w-4 h-4 fill-black" />
+                    <Pause className="w-5 h-5 fill-black" />
                   ) : (
-                    <Play className="w-4 h-4 fill-black ml-0.5" />
+                    <Play className="w-5 h-5 fill-black ml-0.5" />
                   )}
                 </button>
 
                 <button
                   onClick={() => syncParty.nextTrackInQueue()}
-                  className="p-1.5 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
-                  title="Next"
+                  className="p-2 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
+                  title="Next Track"
                 >
                   <SkipForward className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="flex items-center space-x-2 text-[10px] text-[var(--muted-sunofy)]">
+            {/* Timeline Progress Bar */}
+            <div className="flex items-center space-x-2 text-[10px] text-[var(--muted-sunofy)] font-mono">
               <span>{formatTime(syncState.currentTime)}</span>
               <div
-                className="flex-1 h-1.5 bg-[var(--border-sunofy)] rounded-full overflow-hidden cursor-pointer relative"
+                className="flex-1 h-2 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-full overflow-hidden cursor-pointer relative"
                 onClick={(e) => {
+                  if (!syncState.isHost) return;
                   const rect = e.currentTarget.getBoundingClientRect();
                   const pos = (e.clientX - rect.left) / rect.width;
                   syncParty.seek(pos * syncState.duration);
                 }}
               >
                 <div
-                  className="bg-[var(--accent-sunofy)] h-full transition-all"
+                  className="bg-[var(--accent-sunofy)] h-full transition-all rounded-full shadow-sm"
                   style={{
                     width: `${syncState.duration > 0 ? (syncState.currentTime / syncState.duration) * 100 : 0}%`,
                   }}
@@ -397,11 +419,14 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               </div>
               <span>{formatTime(syncState.duration)}</span>
             </div>
-          </>
+          </div>
         ) : (
-          <div className="text-center py-6 space-y-2">
-            <Music className="w-8 h-8 text-[var(--border-sunofy)] mx-auto animate-bounce" />
-            <p className="text-xs text-[var(--muted-sunofy)]">No track currently playing in party room.</p>
+          <div className="text-center py-8 space-y-2 relative z-10">
+            <div className="w-16 h-16 rounded-full border-2 border-neutral-700 bg-black/60 flex items-center justify-center mx-auto shadow-inner">
+              <Music className="w-7 h-7 text-[var(--muted-sunofy)] animate-bounce" />
+            </div>
+            <p className="text-xs font-semibold text-[var(--text-sunofy)]">No track currently playing in party room.</p>
+            <p className="text-[10px] text-[var(--muted-sunofy)]">Add songs from search below to start the party vibe!</p>
           </div>
         )}
       </div>
@@ -524,7 +549,13 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       {syncState.queue.map((song, idx) => (
                         <div
                           key={song.id + '_' + idx}
-                          className={`flex items-center justify-between p-2 rounded-xl border transition ${
+                          onClick={() => {
+                            if (syncState.isHost) {
+                              syncParty.playQueueTrack(idx);
+                              onShowToast(`Now playing "${song.title}"`);
+                            }
+                          }}
+                          className={`flex items-center justify-between p-2 rounded-xl border transition cursor-pointer ${
                             idx === 0
                               ? 'bg-[var(--accent-sunofy)]/10 border-[var(--accent-sunofy)]/40 shadow-sm'
                               : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--hover-sunofy)]'

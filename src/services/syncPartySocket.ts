@@ -356,10 +356,32 @@ class SyncPartyManager {
 
     const queueItem = { ...track, artist: `${track.artist} (Req by ${requesterName})` };
     this.state.queue.push(queueItem);
+
+    // If no track is currently playing, start playing this track immediately!
+    if (!this.state.currentTrack) {
+      this.state.currentTrack = queueItem;
+      this.state.currentTime = 0;
+      this.state.duration = queueItem.duration || 200;
+      this.state.isPlaying = true;
+      this.broadcastState();
+    }
     
     const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
     set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
     this.notify();
+  }
+
+  playQueueTrack(index: number) {
+    if (!this.state.isHost) return;
+    if (index >= 0 && index < this.state.queue.length) {
+      const selected = this.state.queue[index];
+      this.state.currentTrack = selected;
+      this.state.currentTime = 0;
+      this.state.duration = selected.duration || 200;
+      this.state.isPlaying = true;
+      this.broadcastState();
+      this.notify();
+    }
   }
 
   removeTrackFromQueue(index: number) {
