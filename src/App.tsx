@@ -77,19 +77,11 @@ export default function App() {
 
   // Player State
   const [currentTrack, setCurrentTrack] = useState<Track | null>(
-    savedPlayerState?.currentTrack || {
-      id: 'tr_featured_1',
-      title: 'Blinding Lights',
-      artist: 'The Weeknd',
-      album: 'After Hours',
-      image: '/icon-192.png',
-      duration: 200,
-      downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    }
+    savedPlayerState?.currentTrack || null
   );
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(savedPlayerState?.currentTime || 0);
-  const [duration, setDuration] = useState(savedPlayerState?.currentTrack?.duration || 200);
+  const [duration, setDuration] = useState(savedPlayerState?.currentTrack?.duration || 0);
   const [queue, setQueue] = useState<Track[]>(savedPlayerState?.queue || []);
   const [originalQueue, setOriginalQueue] = useState<Track[]>(savedPlayerState?.queue || []);
   const [history, setHistory] = useState<Track[]>([]);
@@ -100,25 +92,7 @@ export default function App() {
   // Library & Persistence State
   const [playlists, setPlaylists] = useState<Playlist[]>(() => {
     const saved = localStorage.getItem('sunofy_playlists');
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 'p1',
-            name: 'Late Night Vibes',
-            songs: [
-              {
-                id: 'tr_featured_1',
-                title: 'Blinding Lights',
-                artist: 'The Weeknd',
-                album: 'After Hours',
-                image: '/icon-192.png',
-                duration: 200,
-              },
-            ],
-            duration: '3 mins',
-          },
-        ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [favorites, setFavorites] = useState<Favorites>(() => {
@@ -126,32 +100,9 @@ export default function App() {
     return saved
       ? JSON.parse(saved)
       : {
-          songs: [
-            {
-              id: 'tr_featured_1',
-              title: 'Blinding Lights',
-              artist: 'The Weeknd',
-              album: 'After Hours',
-              image: '/icon-192.png',
-              duration: 200,
-            },
-          ],
-          albums: [
-            {
-              id: 'al_1',
-              title: 'After Hours',
-              artist: 'The Weeknd',
-              image: '/icon-192.png',
-            },
-          ],
-          artists: [
-            {
-              id: 'ar_1',
-              name: 'The Weeknd',
-              followers: '68M Followers',
-              image: '/icon-192.png',
-            },
-          ],
+          songs: [],
+          albums: [],
+          artists: [],
           playlists: [],
         };
   });
