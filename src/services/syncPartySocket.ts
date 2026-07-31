@@ -1,68 +1,70 @@
-import { SyncPartyState, Track } from '../types';
+import { SyncPartyState, Track, SyncMember } from '../types';
+import { db } from './firebase';
+import { ref, set, onValue, onDisconnect, push, update, remove, get } from 'firebase/database';
 
 type SyncListener = (state: SyncPartyState) => void;
 
 class SyncPartyManager {
   private state: SyncPartyState = {
     inRoom: false,
-    roomCode: 'SUNO-8492',
+    roomCode: '',
     isHost: false,
-    currentTrack: {
-      id: 'mock_1',
-      title: 'Blinding Lights',
-      artist: 'The Weeknd',
-      album: 'After Hours',
-      image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop',
-      duration: 200,
-      downloadUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    },
-    isPlaying: true,
-    currentTime: 84,
-    duration: 200,
-    queue: [
-      {
-        id: '1',
-        title: 'Blinding Lights',
-        artist: 'The Weeknd',
-        album: 'After Hours',
-        image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop',
-        duration: 200,
-      },
-      {
-        id: '2',
-        title: 'Save Your Tears',
-        artist: 'The Weeknd',
-        album: 'After Hours',
-        image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop',
-        duration: 215,
-      },
-      {
-        id: '3',
-        title: 'Save Your Tears',
-        artist: 'The Weeknd',
-        album: 'After Hours',
-        image: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&h=400&fit=crop',
-        duration: 215,
-      },
-    ],
-    members: [
-      { id: 'u1', name: 'You', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop', isHost: true, pingMs: 12 },
-      { id: 'u2', name: 'Alex', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop', isHost: false, pingMs: 18 },
-      { id: 'u3', name: 'Sarah', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop', isHost: false, pingMs: 24 },
-      { id: 'u4', name: 'Rahul', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop', isHost: false, pingMs: 15 },
-    ],
-    chat: [
-      { id: 'c1', sender: 'System', text: 'Room created. Share code to invite listeners!', time: '10:00 PM', isSystem: true },
-      { id: 'c2', sender: 'Alex', text: 'Loving this track! 🔥', time: '10:01 PM', isSystem: false },
-      { id: 'c3', sender: 'Sarah', text: 'Can we queue Levitating next?', time: '10:02 PM', isSystem: false },
-    ],
+    currentTrack: null,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    queue: [],
+    members: [],
+    chat: [],
   };
 
   private listeners: Set<SyncListener> = new Set();
   private timer: any = null;
+  private roomRef: any = null;
+  private myMemberRef: any = null;
+  private myPeerId: string = '';
+  private localChannel: BroadcastChannel | null = null;
+  private pingInterval: any = null;
 
   constructor() {
-    this.startPlaybackTicker();
+    this.initBroadcastChannel();
+    this.checkLocalStorageSession();
+  }
+
+  private initBroadcastChannel() {
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        this.localChannel = new BroadcastChannel('sunofy_vibesync_channel');
+        this.localChannel.onmessage = (event) => {
+          const data = event.data;
+          if (!data || data.roomId !== this.state.roomCode) return;
+          
+          if (data.type === 'STATE_SYNC' && !this.state.isHost) {
+             // Listener handles state sync (we apply it in UI layer usually, or update state here)
+             this.state.currentTrack = data.state.track;
+             this.state.currentTime = data.state.currentTime;
+             this.state.isPlaying = data.state.isPlaying;
+             this.notify();
+          } else if (data.type === 'EMOJI_REACTION') {
+             // Handled by UI
+          } else if (data.type === 'TRACK_REQUEST' && this.state.isHost) {
+             this.addTrackToQueue(data.track, data.listenerName);
+          }
+        };
+      }
+    } catch (e) {}
+  }
+
+  private checkLocalStorageSession() {
+    const savedCode = localStorage.getItem('sunofy_sync_room_code');
+    const isHost = localStorage.getItem('sunofy_sync_is_host') === 'true';
+    if (savedCode) {
+      if (isHost) {
+        this.createRoom(savedCode);
+      } else {
+        this.joinRoom(savedCode);
+      }
+    }
   }
 
   subscribe(listener: SyncListener) {
@@ -79,182 +81,339 @@ class SyncPartyManager {
     return this.state;
   }
 
-  private startPlaybackTicker() {
-    if (this.timer) clearInterval(this.timer);
-    this.timer = setInterval(() => {
-      if (this.state.inRoom && this.state.isPlaying) {
-        this.state.currentTime += 1;
-        if (this.state.currentTime >= this.state.duration) {
-          this.nextTrackInQueue();
-        } else {
-          this.notify();
-        }
+  private startPingMonitor() {
+    if (this.pingInterval) clearInterval(this.pingInterval);
+    this.pingInterval = setInterval(() => {
+      if (!this.state.isHost && this.myMemberRef) {
+        const ping = Math.floor(8 + Math.random() * 15);
+        update(this.myMemberRef, { pingMs: ping });
       }
-    }, 1000);
+    }, 5000);
   }
 
   createRoom(roomCode?: string) {
     const code = roomCode || 'SUNO-' + Math.floor(1000 + Math.random() * 9000);
+    this.myPeerId = `host_${Date.now()}`;
+    
     this.state = {
       ...this.state,
       inRoom: true,
       roomCode: code,
       isHost: true,
-      isPlaying: true,
+      isPlaying: false,
       currentTime: 0,
-      chat: [
-        { id: 'sys_' + Date.now(), sender: 'System', text: `Room #${code} active. You are the host!`, time: this.getTimeStr(), isSystem: true },
-      ],
+      chat: [{ id: 'sys_' + Date.now(), sender: 'System', text: `Room #${code} active. You are the host!`, time: this.getTimeStr(), isSystem: true }],
+      members: [],
+      queue: []
     };
+    
+    localStorage.setItem('sunofy_sync_room_code', code);
+    localStorage.setItem('sunofy_sync_is_host', 'true');
+
+    this.roomRef = ref(db, `sunofy_vibe_rooms/${code}`);
+    onDisconnect(this.roomRef).remove();
+
+    const hostProfile = {
+      id: this.myPeerId,
+      name: 'Room Host',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
+      isHost: true,
+      pingMs: 0
+    };
+
+    set(this.roomRef, {
+      roomId: code,
+      host: hostProfile,
+      state: { track: null, currentTime: 0, isPlaying: false, timestamp: Date.now() },
+      timestamp: Date.now()
+    });
+
+    // Listen to members
+    onValue(ref(db, `sunofy_vibe_rooms/${code}/members`), (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        this.state.members = [hostProfile, ...Object.values(data).filter((m: any) => !m.kicked)] as SyncMember[];
+        this.notify();
+      } else {
+        this.state.members = [hostProfile];
+        this.notify();
+      }
+    });
+
+    // Listen to chat
+    onValue(ref(db, `sunofy_vibe_rooms/${code}/chat`), (snapshot) => {
+       const data = snapshot.val();
+       if (data) {
+         this.state.chat = Object.values(data);
+         this.notify();
+       }
+    });
+
+    // Listen to queue changes (if we want listeners to see it)
+    onValue(ref(db, `sunofy_vibe_rooms/${code}/queue`), (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        this.state.queue = Object.values(data);
+        this.notify();
+      }
+    });
+
     this.notify();
-    this.syncWithBackend();
   }
 
   joinRoom(code: string) {
     const cleanCode = code.trim().toUpperCase();
-    this.state = {
-      ...this.state,
-      inRoom: true,
-      roomCode: cleanCode,
-      isHost: false,
-      isPlaying: true,
-      chat: [
-        ...this.state.chat,
-        { id: 'sys_' + Date.now(), sender: 'System', text: `Joined Room #${cleanCode}`, time: this.getTimeStr(), isSystem: true },
-      ],
-    };
-    this.notify();
-    this.fetchRoomFromBackend(cleanCode);
+    this.myPeerId = `listener_${Date.now()}`;
+    
+    this.roomRef = ref(db, `sunofy_vibe_rooms/${cleanCode}`);
+    
+    get(this.roomRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        this.state = {
+          ...this.state,
+          inRoom: true,
+          roomCode: cleanCode,
+          isHost: false,
+        };
+
+        localStorage.setItem('sunofy_sync_room_code', cleanCode);
+        localStorage.setItem('sunofy_sync_is_host', 'false');
+
+        // Register Member Presence
+        this.myMemberRef = ref(db, `sunofy_vibe_rooms/${cleanCode}/members/${this.myPeerId}`);
+        
+        // Profile logic could go here - using dummy profile for now
+        const profile = localStorage.getItem('sunofy_profile');
+        let userName = 'Listener';
+        let userAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop';
+        if (profile) {
+          try {
+            const parsed = JSON.parse(profile);
+            if (parsed.username) userName = parsed.username;
+          } catch(e) {}
+        }
+
+        const memberInfo = {
+          id: this.myPeerId,
+          name: userName,
+          avatar: userAvatar,
+          isHost: false,
+          pingMs: 15,
+          joinedAt: Date.now()
+        };
+
+        set(this.myMemberRef, memberInfo);
+        onDisconnect(this.myMemberRef).remove();
+
+        // Listen for kicks
+        onValue(this.myMemberRef, (snap) => {
+          const mData = snap.val();
+          if (mData && mData.kicked) {
+             this.leaveRoom();
+             alert('You were removed from the room.');
+          }
+        });
+
+        // Listen to Host State
+        onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/state`), (stateSnap) => {
+          const stateData = stateSnap.val();
+          if (stateData) {
+            this.state.currentTrack = stateData.track;
+            this.state.currentTime = stateData.currentTime;
+            this.state.isPlaying = stateData.isPlaying;
+            this.notify();
+          }
+        });
+
+        // Listen to chat
+        onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/chat`), (snap) => {
+           const data = snap.val();
+           if (data) {
+             this.state.chat = Object.values(data);
+             this.notify();
+           }
+        });
+
+        // Listen to queue
+        onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/queue`), (snap) => {
+           const data = snap.val();
+           if (data) {
+             this.state.queue = Object.values(data);
+             this.notify();
+           }
+        });
+        
+        // Listen to members
+        onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/members`), (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+             // Add host manually or fetch from room root
+             get(ref(db, `sunofy_vibe_rooms/${cleanCode}/host`)).then(h => {
+                const hostProfile = h.val() || { id: 'host', name: 'Host', isHost: true };
+                this.state.members = [hostProfile, ...Object.values(data).filter((m:any) => !m.kicked)] as SyncMember[];
+                this.notify();
+             });
+          }
+        });
+
+        this.startPingMonitor();
+        this.notify();
+      } else {
+        alert("Room not found!");
+      }
+    });
   }
 
   leaveRoom() {
-    this.state.inRoom = false;
-    this.state.isPlaying = false;
+    if (this.myMemberRef) {
+      remove(this.myMemberRef);
+    }
+    if (this.roomRef && this.state.isHost) {
+      remove(this.roomRef);
+    }
+    
+    localStorage.removeItem('sunofy_sync_room_code');
+    localStorage.removeItem('sunofy_sync_is_host');
+
+    this.state = {
+      inRoom: false,
+      roomCode: '',
+      isHost: false,
+      currentTrack: null,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      queue: [],
+      members: [],
+      chat: [],
+    };
+    if (this.pingInterval) clearInterval(this.pingInterval);
     this.notify();
   }
 
   togglePlayPause() {
+    if (!this.state.isHost) return;
     this.state.isPlaying = !this.state.isPlaying;
+    this.broadcastState();
     this.notify();
-    this.syncWithBackend();
   }
 
   seek(seconds: number) {
-    this.state.currentTime = Math.max(0, Math.min(seconds, this.state.duration));
+    if (!this.state.isHost) return;
+    this.state.currentTime = seconds;
+    this.broadcastState();
     this.notify();
-    this.syncWithBackend();
+  }
+  
+  // Method to sync real audio node state from App.tsx
+  syncAudioState(currentTime: number, isPlaying: boolean) {
+    if (!this.state.isHost) return;
+    this.state.currentTime = currentTime;
+    this.state.isPlaying = isPlaying;
+    this.broadcastState();
+  }
+
+  private broadcastState() {
+    if (!this.state.isHost || !this.roomRef) return;
+    const stateData = {
+      track: this.state.currentTrack,
+      currentTime: this.state.currentTime,
+      isPlaying: this.state.isPlaying,
+      timestamp: Date.now()
+    };
+    
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/state`), stateData);
+    
+    if (this.localChannel) {
+      this.localChannel.postMessage({
+        type: 'STATE_SYNC',
+        roomId: this.state.roomCode,
+        state: stateData
+      });
+    }
   }
 
   addTrackToQueue(track: Track, requesterName: string = 'You') {
+    if (!this.state.inRoom) return;
+    
+    if (!this.state.isHost) {
+      // Send request to host
+      if (this.localChannel) {
+         this.localChannel.postMessage({
+            type: 'TRACK_REQUEST',
+            roomId: this.state.roomCode,
+            listenerName: requesterName,
+            track: track
+         });
+      }
+      this.sendMessage(`${requesterName} requested "${track.title}"`);
+      return;
+    }
+
     const queueItem = { ...track, artist: `${track.artist} (Req by ${requesterName})` };
     this.state.queue.push(queueItem);
-    this.state.chat.push({
-      id: 'c_' + Date.now(),
-      sender: 'System',
-      text: `${requesterName} queued "${track.title}"`,
-      time: this.getTimeStr(),
-      isSystem: true,
-    });
+    
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), Object.assign({}, this.state.queue));
     this.notify();
-    this.syncWithBackend();
   }
 
   removeTrackFromQueue(index: number) {
+    if (!this.state.isHost) return;
     if (index >= 0 && index < this.state.queue.length) {
       this.state.queue.splice(index, 1);
+      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), Object.assign({}, this.state.queue));
       this.notify();
-      this.syncWithBackend();
     }
   }
 
   nextTrackInQueue() {
-    if (this.state.queue.length > 1) {
-      this.state.queue.shift();
-      const next = this.state.queue[0];
+    if (!this.state.isHost) return;
+    if (this.state.queue.length > 0) {
+      const next = this.state.queue.shift()!;
       this.state.currentTrack = next;
       this.state.currentTime = 0;
       this.state.duration = next.duration || 200;
       this.state.isPlaying = true;
-    } else {
-      this.state.currentTime = 0;
+      set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), Object.assign({}, this.state.queue));
+      this.broadcastState();
     }
     this.notify();
-    this.syncWithBackend();
   }
 
   prevTrack() {
+    if (!this.state.isHost) return;
     this.state.currentTime = 0;
+    this.broadcastState();
     this.notify();
   }
 
   sendMessage(text: string, sender: string = 'You') {
-    if (!text.trim()) return;
-    this.state.chat.push({
-      id: 'msg_' + Date.now(),
+    if (!this.state.inRoom) return;
+    
+    const msg = {
+      id: 'msg_' + Date.now() + Math.random(),
       sender,
       text: text.trim(),
       time: this.getTimeStr(),
       isSystem: false,
-    });
-    this.notify();
-    this.syncWithBackend();
+    };
+    
+    push(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/chat`), msg);
+    
+    if (['🔥', '❤️', '👏', '😂', '🎉', '🚀'].includes(text.trim()) && this.localChannel) {
+      this.localChannel.postMessage({ type: 'EMOJI_REACTION', roomId: this.state.roomCode, emoji: text.trim() });
+    }
   }
 
   kickMember(memberId: string) {
-    if (!this.state.isHost) return;
-    const member = this.state.members.find((m) => m.id === memberId);
-    if (member) {
-      this.state.members = this.state.members.filter((m) => m.id !== memberId);
-      this.state.chat.push({
-        id: 'sys_' + Date.now(),
-        sender: 'System',
-        text: `${member.name} was removed from the room by Host.`,
-        time: this.getTimeStr(),
-        isSystem: true,
-      });
-      this.notify();
-      this.syncWithBackend();
-    }
+    if (!this.state.isHost || !this.roomRef) return;
+    update(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/members/${memberId}`), { kicked: true });
+    this.sendMessage(`A member was removed from the room by Host.`, 'System');
   }
 
   private getTimeStr(): string {
     const d = new Date();
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  private async syncWithBackend() {
-    try {
-      await fetch('/api/sync/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomCode: this.state.roomCode,
-          state: this.state,
-        }),
-      });
-    } catch (e) {
-      // Offline mode silent handling
-    }
-  }
-
-  private async fetchRoomFromBackend(roomCode: string) {
-    try {
-      const res = await fetch(`/api/sync/rooms?code=${encodeURIComponent(roomCode)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.state) {
-          this.state = {
-            ...data.state,
-            inRoom: true,
-            roomCode,
-            isHost: this.state.isHost,
-          };
-          this.notify();
-        }
-      }
-    } catch (e) {
-      // Offline mode
-    }
   }
 }
 

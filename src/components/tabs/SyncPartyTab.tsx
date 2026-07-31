@@ -334,7 +334,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 src={curTrack.image}
                 alt={curTrack.title}
                 className={`w-12 h-12 rounded-xl object-cover border border-[var(--border-sunofy)] spinning-art ${
-                  syncState.isPlaying ? 'playing' : ''
+                  syncState.isPlaying ? 'playing shadow-[0_0_15px_var(--accent-sunofy)]' : ''
                 }`}
               />
               <div className="flex-1 min-w-0">

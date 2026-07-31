@@ -187,6 +187,13 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsBootLoading(false);
+      const params = new URLSearchParams(window.location.search);
+      const partyCode = params.get('party') || params.get('room');
+      if (partyCode) {
+        setCurrentTab('Sync Party');
+        syncParty.joinRoom(partyCode);
+        setTimeout(() => setToastMsg(`Auto-joined Sync Party #${partyCode}`), 500);
+      }
     }, 1400);
     return () => clearTimeout(timer);
   }, []);
@@ -293,9 +300,34 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = syncParty.subscribe((newState) => {
       setSyncState(newState);
+      if (newState.inRoom && !newState.isHost) {
+         if (newState.currentTrack && (!currentTrack || currentTrack.id !== newState.currentTrack.id)) {
+            setCurrentTrack(newState.currentTrack);
+            if (audioRef.current) {
+               audioRef.current.src = newState.currentTrack.downloadUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+               if (newState.isPlaying) {
+                  audioRef.current.currentTime = newState.currentTime;
+                  audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
+               }
+            }
+         }
+         if (audioRef.current) {
+            if (newState.isPlaying && audioRef.current.paused) {
+               audioRef.current.currentTime = newState.currentTime;
+               audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
+               setIsPlaying(true);
+            } else if (!newState.isPlaying && !audioRef.current.paused) {
+               audioRef.current.pause();
+               setIsPlaying(false);
+            }
+            if (Math.abs(audioRef.current.currentTime - newState.currentTime) > 3) {
+               audioRef.current.currentTime = newState.currentTime;
+            }
+         }
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [currentTrack]);
 
   // Save state changes to LocalStorage
   useEffect(() => {
@@ -348,12 +380,42 @@ export default function App() {
       }
     };
 
+    const handlePlay = () => {
+      const state = syncParty.getState();
+      if (state.inRoom) {
+        if (state.isHost) syncParty.syncAudioState(audio.currentTime, true);
+        else if (!state.isPlaying) audio.pause(); // strict sync
+      }
+    };
+    
+    const handlePause = () => {
+      const state = syncParty.getState();
+      if (state.inRoom) {
+        if (state.isHost) syncParty.syncAudioState(audio.currentTime, false);
+        else if (state.isPlaying) audio.play().catch(()=>{}); // strict sync
+      }
+    };
+
+    const handleSeeked = () => {
+      const state = syncParty.getState();
+      if (state.inRoom) {
+        if (state.isHost) syncParty.syncAudioState(audio.currentTime, !audio.paused);
+        else if (Math.abs(audio.currentTime - state.currentTime) > 3) audio.currentTime = state.currentTime;
+      }
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('seeked', handleSeeked);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('seeked', handleSeeked);
     };
   }, [repeatMode, queue, originalQueue, isShuffle]);
 
