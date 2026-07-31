@@ -410,7 +410,7 @@ export default function App() {
          if (newState.currentTrack && (!currentTrack || currentTrack.id !== newState.currentTrack.id)) {
             setCurrentTrack(newState.currentTrack);
             if (audioRef.current) {
-               audioRef.current.src = newState.currentTrack.downloadUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+               audioRef.current.src = newState.currentTrack.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
                if (newState.isPlaying) {
                   audioRef.current.currentTime = newState.currentTime;
                   audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
@@ -720,7 +720,7 @@ export default function App() {
     if (audioRef.current) {
       // Use local offline blob URL if downloaded
       const offlineCopy = downloads.find((d) => d.id === track.id);
-      let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+      let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
 
       if ((track as any).isCobalt) {
         showToast('Extracting stream via Cobalt API...');
@@ -809,7 +809,7 @@ export default function App() {
       setIsPlaying(true);
       if (audioRef.current) {
         const offlineCopy = downloads.find((d) => d.id === prev.id);
-        let src = offlineCopy?.offlineBlobUrl || prev.downloadUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        let src = offlineCopy?.offlineBlobUrl || prev.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
         audioRef.current.src = src;
         audioRef.current.play().then(() => {
           initEqualizerWebAudio();

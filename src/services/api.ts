@@ -195,7 +195,7 @@ class MusicAPI {
     }
 
     // Extract best download audio stream URL
-    let audioUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+    let audioUrl = 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
     if (Array.isArray(s.downloadUrl) && s.downloadUrl.length > 0) {
       const bestStream = s.downloadUrl[s.downloadUrl.length - 1] || s.downloadUrl[2] || s.downloadUrl[0];
       audioUrl = typeof bestStream === 'string' ? bestStream : (bestStream.link || bestStream.url || audioUrl);

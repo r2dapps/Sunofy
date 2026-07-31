@@ -164,14 +164,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       name: `${results[0]?.title || query} Official Album`,
       artist: results[0]?.artist || 'Various Artists',
       trackCount: '12 tracks',
-      image: results[0]?.image || '/icon-192.png',
+      image: results[0]?.image || './icon-192.png',
     },
     {
       id: 'salb_2',
       name: `${query || 'Hits'} Remastered Edition`,
       artist: results[1]?.artist || results[0]?.artist || 'Soundtrack Studio',
       trackCount: '18 tracks',
-      image: results[1]?.image || results[0]?.image || '/icon-192.png',
+      image: results[1]?.image || results[0]?.image || './icon-192.png',
     }
   ] : [];
 
