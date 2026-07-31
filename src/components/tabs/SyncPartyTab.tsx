@@ -987,6 +987,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               <div className="animate-fade rounded-2xl overflow-hidden border border-purple-500/30 shadow-xl bg-[var(--card-sunofy)] p-2">
                 <VideoTab
                   onShowToast={onShowToast}
+                  isEmbeddedInSyncParty={true}
                   onVideoSelect={(vid) => {
                     const newTrack: Track = {
                       id: 'vid_' + Date.now(),

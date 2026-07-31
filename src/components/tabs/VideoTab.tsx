@@ -58,9 +58,17 @@ interface VideoTabProps {
   onVideoSelect?: (video: { url: string; title: string; type: string }) => void;
   isAudioPlaying?: boolean;
   onMinimize?: () => void;
+  isEmbeddedInSyncParty?: boolean;
 }
 
-export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, onVideoSelect, isAudioPlaying, onMinimize }) => {
+export const VideoTab: React.FC<VideoTabProps> = ({
+  onShowToast,
+  onVideoPlay,
+  onVideoSelect,
+  isAudioPlaying,
+  onMinimize,
+  isEmbeddedInSyncParty = false,
+}) => {
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string>(
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
   );
@@ -129,8 +137,8 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
     }
   });
 
-  // Expandable Search Panel
-  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
+  // Expandable Search Panel - Default open when embedded in SyncParty
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(true);
 
   // Video Queue State
   const [videoQueue, setVideoQueue] = useState<(SampleVideo | SavedVideoItem)[]>([]);
@@ -402,6 +410,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
         thumbnail: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=350&fit=crop',
       });
       onShowToast(`Loaded local video: ${file.name}`);
+      onVideoSelect?.({ url: blobUrl, title: file.name, type: 'local' });
     }
   };
 
@@ -414,8 +423,6 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
       return;
     }
 
-    
-
     // 1. YouTube
     const ytId = extractYoutubeId(url);
     if (ytId) {
@@ -426,6 +433,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
       setVideoTitle('YouTube Stream');
       setLocalFileSize(null);
       addToHistory({ title: 'YouTube Stream', videoUrl: url, embedUrl: eUrl, type: 'youtube' });
+      onVideoSelect?.({ url, title: 'YouTube Stream', type: 'youtube' });
       onShowToast('Loaded YouTube video!');
       setCustomInputUrl('');
       return;
@@ -441,6 +449,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
       setVideoTitle('Dailymotion Stream');
       setLocalFileSize(null);
       addToHistory({ title: 'Dailymotion Stream', videoUrl: url, embedUrl: eUrl, type: 'dailymotion' });
+      onVideoSelect?.({ url, title: 'Dailymotion Stream', type: 'dailymotion' });
       onShowToast('Loaded Dailymotion video!');
       setCustomInputUrl('');
       return;
@@ -456,6 +465,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
       setVideoTitle('Vimeo Stream');
       setLocalFileSize(null);
       addToHistory({ title: 'Vimeo Stream', videoUrl: url, embedUrl: eUrl, type: 'vimeo' });
+      onVideoSelect?.({ url, title: 'Vimeo Stream', type: 'vimeo' });
       onShowToast('Loaded Vimeo video!');
       setCustomInputUrl('');
       return;
@@ -471,6 +481,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
       setVideoTitle('Google Drive Cloud Video Stream');
       setLocalFileSize(null);
       addToHistory({ title: 'Google Drive Stream', videoUrl: url, embedUrl: eUrl, type: 'drive' });
+      onVideoSelect?.({ url, title: 'Google Drive Stream', type: 'drive' });
       onShowToast('Loaded Google Drive cloud stream!');
       setCustomInputUrl('');
       return;
@@ -485,6 +496,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({ onShowToast, onVideoPlay, on
       setLocalFileSize(null);
       setIsPlaying(true);
       addToHistory({ title: 'Custom Video Stream', videoUrl: url, type: 'mp4' });
+      onVideoSelect?.({ url, title: 'Custom Video Stream', type: 'mp4' });
       onShowToast('Playing custom video URL!');
       setCustomInputUrl('');
       return;
