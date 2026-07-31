@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+@layer base {
+  :root {
+    --bg-sunofy: #0a0a0c; --text-sunofy: #ffffff;
+    --card-sunofy: #121216;
+    --border-sunofy: #22222c;
+    --accent-sunofy: #1db954;
+    --accent: #1db954;
+    --accent-glow: rgba(29, 185, 84, 0.4);
+    --accent-hover: #1ed760;
+    --muted-sunofy: #a7a7a7;
+  }
+
+  body {
+    background-color: var(--bg-sunofy);
+    color: var(--text-sunofy);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Glassmorphism */
+.glass {
+  background: color-mix(in srgb, var(--card-sunofy) 75%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-sunofy);
+}
+.glass-player {
+  background: color-mix(in srgb, var(--card-sunofy) 90%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-sunofy);
+}
+.glass-card {
+  background: color-mix(in srgb, var(--card-sunofy) 65%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-sunofy);
+}
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseSkeleton {
+  0% { background-color: var(--border-sunofy); }
+  50% { background-color: var(--hover-sunofy); }
+  100% { background-color: var(--border-sunofy); }
+}
+
+@keyframes rotateVinyl {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slowGradient {
+  0% { transform: scale(1.4) rotate(0deg); filter: blur(40px) hue-rotate(0deg); }
+  50% { transform: scale(1.6) rotate(180deg); filter: blur(50px) hue-rotate(40deg); }
+  100% { transform: scale(1.4) rotate(360deg); filter: blur(40px) hue-rotate(0deg); }
+}
+
+.canvas-slow-ambient {
+  animation: slowGradient 32s ease-in-out infinite alternate;
+  will-change: transform, filter;
+}
+
+.animate-fade {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.skeleton {
+  animation: pulseSkeleton 1.5s infinite ease-in-out;
+}
+
+.spinning-art {
+  animation: rotateVinyl 15s linear infinite;
+  animation-play-state: paused;
+}
+
+.spinning-art.playing {
+  animation-play-state: running;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-sunofy);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-sunofy);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-sunofy);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
