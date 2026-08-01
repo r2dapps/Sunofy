@@ -1502,12 +1502,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   {/* Preset Trending GIFs Grid */}
                   <div className="grid grid-cols-3 gap-1.5 max-h-[120px] overflow-y-auto pr-1">
                     {[
-                      { name: 'Vibe Cat 🐱', url: 'https://media.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif' },
-                      { name: 'Party 🕺', url: 'https://media.giphy.com/media/l3vR1v8L3tW9FvRZC/giphy.gif' },
-                      { name: 'Mind Blown 🤯', url: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
-                      { name: 'Lit Fire 🔥', url: 'https://media.giphy.com/media/3o72FfM5HJydzaMpfO/giphy.gif' },
-                      { name: 'Popcorn 🍿', url: 'https://media.giphy.com/media/hVTouq08y8fzW/giphy.gif' },
-                      { name: 'Cheers 🍻', url: 'https://media.giphy.com/media/BPJmthQ3YRwD6QqcVD/giphy.gif' },
+                      { name: 'Vibe Cat 🐱', url: 'https://i.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif' },
+                      { name: 'Party 🕺', url: 'https://i.giphy.com/media/l3vR1v8L3tW9FvRZC/giphy.gif' },
+                      { name: 'Mind Blown 🤯', url: 'https://i.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
+                      { name: 'Lit Fire 🔥', url: 'https://i.giphy.com/media/3o72FfM5HJydzaMpfO/giphy.gif' },
+                      { name: 'Popcorn 🍿', url: 'https://i.giphy.com/media/hVTouq08y8fzW/giphy.gif' },
+                      { name: 'Cheers 🍻', url: 'https://i.giphy.com/media/BPJmthQ3YRwD6QqcVD/giphy.gif' },
                     ].map((gif) => (
                       <button
                         key={gif.url}

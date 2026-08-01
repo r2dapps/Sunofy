@@ -247,30 +247,33 @@ class MusicAPI {
       return cached;
     }
 
-    // 1. Try local Express proxy endpoint first
-    try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const items = data.results || data.items || [];
-        if (items.length > 0) {
-          const tracks: Track[] = items.map((item: any, idx: number) => ({
-            id: `yt_${item.videoId || item.id || idx}`,
-            title: item.title,
-            artist: item.artist || item.author || 'YouTube Music',
-            album: 'YouTube Music Live',
-            image: item.image || item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
-            duration: item.lengthSeconds || 210,
-            downloadUrl: item.videoUrl || `https://www.youtube.com/watch?v=${item.videoId}`,
-            mediaType: 'video',
-            isVideo: true,
-            isCobalt: true,
-          }));
-          this.setCache(cacheKey, tracks);
-          return tracks;
+    // 1. Try local Express proxy endpoint first if running on localhost
+    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (isLocalHost) {
+      try {
+        const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.results || data.items || [];
+          if (items.length > 0) {
+            const tracks: Track[] = items.map((item: any, idx: number) => ({
+              id: `yt_${item.videoId || item.id || idx}`,
+              title: item.title,
+              artist: item.artist || item.author || 'YouTube Music',
+              album: 'YouTube Music Live',
+              image: item.image || item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
+              duration: item.lengthSeconds || 210,
+              downloadUrl: item.videoUrl || `https://www.youtube.com/watch?v=${item.videoId}`,
+              mediaType: 'video',
+              isVideo: true,
+              isCobalt: true,
+            }));
+            this.setCache(cacheKey, tracks);
+            return tracks;
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
 
     // 2. Try Invidious public CORS API mirrors for static hosting (GitHub Pages)
     const invidiousMirrors = [

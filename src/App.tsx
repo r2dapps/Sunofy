@@ -421,11 +421,19 @@ export default function App() {
       if (newState.inRoom && !newState.isHost) {
          if (newState.currentTrack && (!currentTrack || currentTrack.id !== newState.currentTrack.id)) {
             setCurrentTrack(newState.currentTrack);
+            const track = newState.currentTrack;
+            const trackUrl = (track as any).url || track.downloadUrl || '';
+            const isVideoTrack = track.mediaType === 'video' || (track as any).isVideo || trackUrl.includes('youtube.com') || trackUrl.includes('youtu.be');
+            
             if (audioRef.current) {
-               audioRef.current.src = newState.currentTrack.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
-               if (newState.isPlaying) {
-                  audioRef.current.currentTime = newState.currentTime;
-                  audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
+               if (isVideoTrack) {
+                  audioRef.current.pause();
+               } else {
+                  audioRef.current.src = track.downloadUrl || trackUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
+                  if (newState.isPlaying) {
+                     audioRef.current.currentTime = newState.currentTime;
+                     audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
+                  }
                }
             }
          }
