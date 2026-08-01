@@ -29,6 +29,7 @@ class SyncPartyManager {
     queue: [],
     members: [],
     chat: [],
+    allowMemberMics: true,
   };
 
   private listeners: Set<SyncListener> = new Set();
@@ -148,21 +149,41 @@ class SyncPartyManager {
       pingMs: 0
     };
 
+    this.myMemberRef = ref(db, `sunofy_vibe_rooms/${code}/host`);
+    onDisconnect(this.myMemberRef).remove();
+
     set(this.roomRef, {
       roomId: code,
       host: hostProfile,
+      allowMemberMics: true,
       state: { track: null, currentTime: 0, isPlaying: false, timestamp: Date.now() },
       timestamp: Date.now()
+    });
+
+    // Listen to mic permissions
+    onValue(ref(db, `sunofy_vibe_rooms/${code}/allowMemberMics`), (snap) => {
+      const allow = snap.val() !== false;
+      this.state.allowMemberMics = allow;
+      this.notify();
+    });
+
+    // Listen to host updates
+    onValue(this.myMemberRef, (hostSnap) => {
+      const updatedHost = hostSnap.val() || hostProfile;
+      const otherMembers = this.state.members.filter(m => !m.isHost);
+      this.state.members = [updatedHost, ...otherMembers];
+      this.notify();
     });
 
     // Listen to members
     onValue(ref(db, `sunofy_vibe_rooms/${code}/members`), (snapshot) => {
       const data = snapshot.val();
+      const currentHost = this.state.members.find(m => m.isHost) || hostProfile;
       if (data) {
-        this.state.members = [hostProfile, ...Object.values(data).filter((m: any) => !m.kicked)] as SyncMember[];
+        this.state.members = [currentHost, ...Object.values(data).filter((m: any) => !m.kicked)] as SyncMember[];
         this.notify();
       } else {
-        this.state.members = [hostProfile];
+        this.state.members = [currentHost];
         this.notify();
       }
     });
@@ -273,6 +294,17 @@ class SyncPartyManager {
              this.state.chat = Object.values(data);
              this.notify();
            }
+        });
+
+        // Listen to mic permissions
+        onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/allowMemberMics`), (snap) => {
+          const allow = snap.val() !== false;
+          this.state.allowMemberMics = allow;
+          if (!this.state.isHost && !allow && this.localAudioStream) {
+            this.stopContinuousVoiceStream();
+            this.notifyToast('🔒 Microphone permissions locked by Host');
+          }
+          this.notify();
         });
 
         // Listen to room closure
@@ -495,6 +527,7 @@ class SyncPartyManager {
   seek(seconds: number) {
     if (!this.state.isHost) return;
     this.state.currentTime = Math.max(0, Math.min(seconds, this.state.duration || 9999));
+    this.lastBroadcastTime = Date.now();
     this.broadcastState();
     this.notify();
   }
@@ -587,6 +620,14 @@ class SyncPartyManager {
     this.sendMessage(`A member was removed from the room by Host.`, 'System');
   }
 
+  toggleAllowMemberMics(allow: boolean) {
+    if (!this.state.isHost || !this.state.roomCode) return;
+    this.state.allowMemberMics = allow;
+    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/allowMemberMics`), allow);
+    this.sendMessage(allow ? '🎙️ Host unlocked microphone permissions for members.' : '🔒 Host locked microphone permissions for members.', 'System');
+    this.notify();
+  }
+
   // Initialize WebRTC Signaling Listener over Firebase Realtime DB
   private initWebRTCSignaling() {
     if (!this.state.inRoom || !this.state.roomCode || !this.myPeerId) return;
@@ -673,27 +714,40 @@ class SyncPartyManager {
     return pc;
   }
 
-  private async handleWebRTCOffer(fromPeerId: string, sdp: RTCSessionDescriptionInit) {
+  private async handleWebRTCOffer(fromPeerId: string, sdpData: any) {
+    if (!sdpData) return;
+    const type = sdpData.type || 'offer';
+    const sdp = typeof sdpData === 'string' ? sdpData : sdpData.sdp;
+    if (!sdp) return;
+
     const pc = this.getOrCreatePeerConnection(fromPeerId);
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    await pc.setRemoteDescription(new RTCSessionDescription({ type, sdp }));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     this.sendSignal(fromPeerId, {
       type: 'answer',
-      sdp: pc.localDescription,
+      sdp: {
+        type: answer.type || 'answer',
+        sdp: answer.sdp,
+      },
     });
   }
 
-  private async handleWebRTCAnswer(fromPeerId: string, sdp: RTCSessionDescriptionInit) {
+  private async handleWebRTCAnswer(fromPeerId: string, sdpData: any) {
+    if (!sdpData) return;
+    const type = sdpData.type || 'answer';
+    const sdp = typeof sdpData === 'string' ? sdpData : sdpData.sdp;
+    if (!sdp) return;
+
     const pc = this.peerConnections[fromPeerId];
     if (pc && pc.signalingState !== 'stable') {
-      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      await pc.setRemoteDescription(new RTCSessionDescription({ type, sdp }));
     }
   }
 
   private async handleWebRTCCandidate(fromPeerId: string, candidate: RTCIceCandidateInit) {
     const pc = this.peerConnections[fromPeerId];
-    if (pc) {
+    if (pc && candidate) {
       try {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (e) {}
@@ -735,7 +789,7 @@ class SyncPartyManager {
     if (!this.state.inRoom) return;
 
     this.localAudioStream = micStream;
-    this.setMicSpeakingStatus(true);
+    this.setMicSpeakingStatus(true, true);
 
     // Connect to all other room members
     const otherMembers = this.state.members.filter((m) => m.id !== this.myPeerId);
@@ -746,7 +800,10 @@ class SyncPartyManager {
         await pc.setLocalDescription(offer);
         this.sendSignal(member.id, {
           type: 'offer',
-          sdp: pc.localDescription,
+          sdp: {
+            type: offer.type || 'offer',
+            sdp: offer.sdp,
+          },
         });
       } catch (e) {
         console.warn(`Failed to connect WebRTC voice stream to member ${member.id}:`, e);
@@ -761,7 +818,7 @@ class SyncPartyManager {
       this.localAudioStream = null;
     }
 
-    this.setMicSpeakingStatus(false);
+    this.setMicSpeakingStatus(false, false);
 
     // Notify peers that voice has stopped
     Object.keys(this.peerConnections).forEach((peerId) => {
@@ -770,9 +827,9 @@ class SyncPartyManager {
     });
   }
 
-  setMicSpeakingStatus(isSpeaking: boolean) {
+  setMicSpeakingStatus(isSpeaking: boolean, isMicActive: boolean = isSpeaking) {
     if (this.myMemberRef) {
-      update(this.myMemberRef, { isMicSpeaking: isSpeaking });
+      update(this.myMemberRef, { isMicSpeaking: isSpeaking, isMicActive: isMicActive });
     }
   }
 

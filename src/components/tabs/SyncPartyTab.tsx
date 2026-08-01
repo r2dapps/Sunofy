@@ -289,6 +289,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
   const toggleMic = async () => {
     if (!isMicActive) {
+      if (!syncState.isHost && syncState.allowMemberMics === false) {
+        onShowToast('🔒 Microphone permissions are currently locked by the Host.');
+        return;
+      }
       try {
         // Unlock AudioContext on user interaction
         getVoiceAudioContext();
@@ -344,6 +348,25 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
       }
     };
   }, []);
+
+  // Automatically mute mic and update visual UI to OFF if Host locks member mic permissions
+  React.useEffect(() => {
+    if (!syncState.isHost && syncState.allowMemberMics === false && isMicActive) {
+      stopMicLevelAnalyser();
+      syncParty.stopContinuousVoiceStream();
+      if (recorderIntervalRef.current) {
+        clearInterval(recorderIntervalRef.current);
+        recorderIntervalRef.current = null;
+      }
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((track) => track.stop());
+        micStreamRef.current = null;
+      }
+      setIsMicActive(false);
+      playAudioFeedbackTone('off');
+      onShowToast('🔒 Microphone permissions locked by Host - Muted & Voice Stream Closed');
+    }
+  }, [syncState.isHost, syncState.allowMemberMics, isMicActive]);
 
   // Ref to track last chat count for triggering floating emoji sync reactions
   const lastMessageCountRef = React.useRef(syncState.chat.length);
@@ -880,20 +903,27 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             </button>
 
             {/* 7. Voice Chat & Mic Console */}
-            <button
-              onClick={() => setActiveTab('voice')}
-              title="Live Voice Chat & Microphone Mixer Console"
-              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
-                activeTab === 'voice'
-                  ? 'bg-emerald-500 text-black shadow-md font-bold'
-                  : isMicActive
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
-                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-              }`}
-            >
-              {isMicActive ? <Mic className="w-4 h-4 text-emerald-400" /> : <MicOff className="w-4 h-4" />}
-              <span className="text-[10px] font-extrabold hidden sm:inline">Mic</span>
-            </button>
+            {(() => {
+              const activeMicCount = syncState.members.filter((m) => m.isMicActive).length;
+              return (
+                <button
+                  onClick={() => setActiveTab('voice')}
+                  title={`Live Voice Chat (${activeMicCount} Mics Active)`}
+                  className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
+                    activeTab === 'voice'
+                      ? 'bg-emerald-500 text-black shadow-md font-bold'
+                      : activeMicCount > 0
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
+                      : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
+                  }`}
+                >
+                  {isMicActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'voice' ? 'bg-black/20 text-black' : activeMicCount > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
+                    {activeMicCount > 0 ? `🎙️ ${activeMicCount}` : 'Off'}
+                  </span>
+                </button>
+              );
+            })()}
           </div>
 
           {/* Minimize / Maximize Toggle */}
@@ -1325,7 +1355,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             <div className="space-y-2 animate-fade">
               <div className="flex items-center justify-between text-[10px] font-bold text-[var(--muted-sunofy)] uppercase tracking-wider px-1">
                 <span>Active Listeners ({syncState.members.length})</span>
-                <span className="text-emerald-400">Live Sync</span>
+                <span className="text-emerald-400 flex items-center gap-1">
+                  <span>🎙️ {syncState.members.filter((m) => m.isMicActive).length} Mic Active</span>
+                </span>
               </div>
 
               <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
@@ -1335,15 +1367,35 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     className="flex items-center justify-between p-2.5 bg-[var(--bg-sunofy)] rounded-xl border border-[var(--border-sunofy)]"
                   >
                     <div className="flex items-center space-x-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-purple-500/20 border border-[var(--border-sunofy)] flex items-center justify-center text-sm shadow-sm shrink-0">
-                        {m.avatarIcon || (m.isHost ? '👑' : '🎧')}
+                      <div className="relative shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-purple-500/20 border border-[var(--border-sunofy)] flex items-center justify-center text-sm shadow-sm">
+                          {m.avatarIcon || (m.isHost ? '👑' : '🎧')}
+                        </div>
+                        {m.isMicActive && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[var(--bg-sunofy)] flex items-center justify-center shadow">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                          </div>
+                        )}
                       </div>
                       <div>
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1.5">
                           <span className="text-xs font-bold text-[var(--text-sunofy)] truncate block">{m.name}</span>
                           {m.isHost && <Crown className="w-3 h-3 text-amber-400 rotate-12 inline" />}
                         </div>
-                        <span className="text-[9px] text-[var(--muted-sunofy)]">{m.isHost ? 'Host' : 'Listener'}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[9px] text-[var(--muted-sunofy)]">{m.isHost ? 'Host' : 'Listener'}</span>
+                          {m.isMicActive ? (
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono font-bold border border-emerald-500/40 flex items-center gap-1">
+                              <Mic className="w-2.5 h-2.5 text-emerald-400" />
+                              <span>Mic ON</span>
+                            </span>
+                          ) : (
+                            <span className="text-[9px] bg-neutral-500/10 text-[var(--muted-sunofy)] px-1.5 py-0.2 rounded font-mono font-medium border border-[var(--border-sunofy)] flex items-center gap-1">
+                              <MicOff className="w-2.5 h-2.5 text-neutral-400" />
+                              <span>Muted</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -1381,6 +1433,37 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               </div>
 
               <div className="bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-4 space-y-4">
+                {/* Host Mic Permission Lock Control Card */}
+                {syncState.isHost && (
+                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
+                        <Crown className="w-4 h-4 rotate-12" />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-bold text-[var(--text-sunofy)]">Member Mic Permissions</h5>
+                        <p className="text-[10px] text-[var(--muted-sunofy)]">
+                          {syncState.allowMemberMics !== false ? 'Members can unmute & speak live' : 'Members are locked & muted'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const nextState = syncState.allowMemberMics === false;
+                        syncParty.toggleAllowMemberMics(nextState);
+                        onShowToast(nextState ? '🎙️ Member microphones enabled' : '🔒 Member microphones locked');
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ml-1 ${
+                        syncState.allowMemberMics !== false
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-red-500/20 text-red-400 border border-red-500/40'
+                      }`}
+                    >
+                      {syncState.allowMemberMics !== false ? 'Unlocked (ON)' : 'Locked (OFF)'}
+                    </button>
+                  </div>
+                )}
+
                 {/* Master Mic Toggle Button */}
                 <button
                   onClick={toggleMic}

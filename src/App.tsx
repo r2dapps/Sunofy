@@ -512,15 +512,17 @@ export default function App() {
         }
         setIsPlaying(true);
 
-        // Drift correction for Listeners without hard seeking or 2-second repeat stutters
-        if (!syncState.isHost && !isNewTrack && syncState.currentTime > 0) {
+        // Seek / Drift correction for Host and Listeners
+        if (!isNewTrack && syncState.currentTime >= 0) {
           const drift = Math.abs(audio.currentTime - syncState.currentTime);
-          if (drift > 4.0) {
-            // Hard seek only if severely out of sync
-            audio.currentTime = syncState.currentTime;
-            audio.playbackRate = 1.0;
-          } else if (drift > 0.5) {
-            // Minor drift: smoothly adjust playback speed to catch up silently
+          if (drift > 1.5) {
+            // Hard seek if out of sync or if new seek position received
+            try {
+              audio.currentTime = syncState.currentTime;
+              audio.playbackRate = 1.0;
+            } catch (e) {}
+          } else if (!syncState.isHost && drift > 0.5) {
+            // Minor drift for Listeners: smoothly adjust playback speed to catch up silently
             audio.playbackRate = audio.currentTime < syncState.currentTime ? 1.02 : 0.98;
           } else {
             audio.playbackRate = 1.0;
@@ -536,7 +538,7 @@ export default function App() {
       audio.playbackRate = 1.0;
       setIsPlaying(false);
     }
-  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying]);
+  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying, syncState.currentTime]);
 
   // Host Audio Timeupdate Sync Engine (Throttled once per 2 seconds during playback)
   useEffect(() => {
@@ -780,6 +782,10 @@ export default function App() {
     if (audioRef.current) {
       audioRef.current.currentTime = timeSecs;
       setCurrentTime(timeSecs);
+    }
+    const state = syncParty.getState();
+    if (state.inRoom && state.isHost) {
+      syncParty.seek(timeSecs);
     }
   };
 

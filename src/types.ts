@@ -41,6 +41,7 @@ export interface SyncMember {
   customAvatarUrl?: string;
   isHost: boolean;
   pingMs?: number;
+  isMicActive?: boolean;
   isMicSpeaking?: boolean;
 }
 
@@ -73,6 +74,7 @@ export interface SyncPartyState {
   members: SyncMember[];
   chat: SyncChatMessage[];
   requests?: SyncPartyRequest[];
+  allowMemberMics?: boolean;
 }
 
 export interface EqualizerBand {
