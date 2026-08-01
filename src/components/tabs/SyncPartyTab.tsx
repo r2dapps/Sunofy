@@ -381,8 +381,40 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   // Active sub-tab inside the consolidated Sync Party console
   const [activeTab, setActiveTab] = useState<'queue' | 'search_music' | 'library' | 'video_search' | 'chat' | 'members' | 'voice'>('queue');
   const [isConsoleMinimized, setIsConsoleMinimized] = useState(false);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
   const [videoSearchQuery, setVideoSearchQuery] = useState('');
   const [videoSearchResults, setVideoSearchResults] = useState<any[]>([]);
+
+  const lastChatLenRef = React.useRef(syncState.chat.length);
+  const chatBottomRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Auto-expand console when an icon is tapped
+  const handleSelectTab = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    if (isConsoleMinimized) {
+      setIsConsoleMinimized(false);
+    }
+    if (tab === 'chat') {
+      setHasUnreadChat(false);
+    }
+  };
+
+  // Track new unread chat messages
+  React.useEffect(() => {
+    if (syncState.chat.length > lastChatLenRef.current) {
+      if (activeTab !== 'chat' || isConsoleMinimized) {
+        setHasUnreadChat(true);
+      }
+    }
+    lastChatLenRef.current = syncState.chat.length;
+  }, [syncState.chat.length, activeTab, isConsoleMinimized]);
+
+  // Auto-scroll chat to latest message
+  React.useEffect(() => {
+    if (activeTab === 'chat' && !isConsoleMinimized) {
+      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [syncState.chat.length, activeTab, isConsoleMinimized]);
 
   // Floating Emoji Particles state over Live Stage
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string; left: number }[]>([]);
@@ -868,7 +900,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 min-w-0 py-0.5 pr-1">
             {/* 1. Queue */}
             <button
-              onClick={() => setActiveTab('queue')}
+              onClick={() => handleSelectTab('queue')}
               title={`Party Queue (${syncState.queue.length})`}
               className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
                 activeTab === 'queue'
@@ -884,7 +916,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
             {/* 2. Search Music */}
             <button
-              onClick={() => setActiveTab('search_music')}
+              onClick={() => handleSelectTab('search_music')}
               title="Search Songs Online"
               className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
                 activeTab === 'search_music'
@@ -897,7 +929,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
             {/* 3. My Library */}
             <button
-              onClick={() => setActiveTab('library')}
+              onClick={() => handleSelectTab('library')}
               title="My Library (Favorites, Playlists & Offline)"
               className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
                 activeTab === 'library'
@@ -910,7 +942,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
             {/* 4. Search Videos */}
             <button
-              onClick={() => setActiveTab('video_search')}
+              onClick={() => handleSelectTab('video_search')}
               title="Search & Queue Watch Party Videos"
               className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
                 activeTab === 'video_search'
@@ -923,7 +955,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
             {/* 5. Chat */}
             <button
-              onClick={() => setActiveTab('chat')}
+              onClick={() => handleSelectTab('chat')}
               title={`Room Chat (${syncState.chat.length})`}
               className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
                 activeTab === 'chat'
@@ -931,7 +963,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
               }`}
             >
-              <MessageSquare className="w-4 h-4" />
+              <div className="relative">
+                <MessageSquare className="w-4 h-4" />
+                {hasUnreadChat && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-pulse" />
+                )}
+              </div>
               <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'chat' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
                 {syncState.chat.length}
               </span>
@@ -939,7 +976,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
             {/* 6. Members */}
             <button
-              onClick={() => setActiveTab('members')}
+              onClick={() => handleSelectTab('members')}
               title={`Active Members (${syncState.members.length})`}
               className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
                 activeTab === 'members'
@@ -958,7 +995,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               const activeMicCount = syncState.members.filter((m) => m.isMicActive).length;
               return (
                 <button
-                  onClick={() => setActiveTab('voice')}
+                  onClick={() => handleSelectTab('voice')}
                   title={`Live Voice Chat (${activeMicCount} Mics Active)`}
                   className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
                     activeTab === 'voice'
@@ -1363,6 +1400,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     );
                   })
                 )}
+                <div ref={chatBottomRef} />
               </div>
 
               {/* Emoji Reaction Bar */}
