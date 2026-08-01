@@ -70,34 +70,35 @@ const playAudioFeedbackTone = (type: 'on' | 'off') => {
   } catch (e) {}
 };
 
-const spawnFloatingEmoji = (emoji: string) => {
-  if (navigator.vibrate) navigator.vibrate(25);
+const triggerFloatingEmojiConfetti = (emoji: string) => {
+  if (navigator.vibrate) navigator.vibrate(30);
   const container = document.body;
   const el = document.createElement('div');
   el.innerText = emoji;
 
   const randomX = Math.floor(Math.random() * 70) + 15;
-  const randomRotate = (Math.random() - 0.5) * 45;
-  const randomScale = 1.2 + Math.random() * 0.8;
-  const driftX = (Math.random() - 0.5) * 80;
+  const randomRotate = (Math.random() - 0.5) * 60;
+  const randomScale = 1.4 + Math.random() * 0.8;
+  const driftX = (Math.random() - 0.5) * 120;
 
-  el.className = 'fixed bottom-28 z-[99999] text-5xl pointer-events-none select-none drop-shadow-[0_0_20px_rgba(255,215,0,0.85)]';
+  el.className = 'fixed bottom-[32vh] text-6xl sm:text-7xl pointer-events-none select-none drop-shadow-[0_0_30px_rgba(255,215,0,0.95)]';
   el.style.left = `${randomX}%`;
+  el.style.zIndex = '999999';
   el.style.transform = `translate3d(0px, 0px, 0px) scale(0.3) rotate(0deg)`;
   el.style.opacity = '1';
-  el.style.transition = 'transform 1.3s cubic-bezier(0.15, 0.85, 0.35, 1.2), opacity 1.3s ease-out';
+  el.style.transition = 'transform 1.4s cubic-bezier(0.15, 0.85, 0.35, 1.2), opacity 1.4s ease-out';
 
   container.appendChild(el);
   void el.offsetWidth;
 
   requestAnimationFrame(() => {
-    el.style.transform = `translate3d(${driftX}px, -320px, 0px) scale(${randomScale}) rotate(${randomRotate}deg)`;
+    el.style.transform = `translate3d(${driftX}px, -450px, 0px) scale(${randomScale}) rotate(${randomRotate}deg)`;
     el.style.opacity = '0';
   });
 
   setTimeout(() => {
     if (el.parentNode) el.parentNode.removeChild(el);
-  }, 1350);
+  }, 1450);
 };
 
 const LiveAudioWave: React.FC<{ isPlaying: boolean }> = ({ isPlaying }) => {
@@ -387,6 +388,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string; left: number }[]>([]);
 
   const spawnFloatingEmoji = (emoji: string) => {
+    triggerFloatingEmojiConfetti(emoji);
     const id = Math.random().toString(36).substring(2, 9);
     const left = Math.floor(15 + Math.random() * 70);
     setFloatingEmojis((prev) => [...prev, { id, emoji, left }]);
@@ -632,6 +634,17 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
         {/* Ambient Pulsing Background Aura */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-600/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
+
+        {/* Live Stage Floating Emoji Particles Overlay */}
+        {floatingEmojis.map((fe) => (
+          <div
+            key={fe.id}
+            style={{ left: `${fe.left}%` }}
+            className="absolute bottom-16 z-30 text-5xl sm:text-6xl pointer-events-none select-none animate-[ping_1.8s_ease-out_infinite] drop-shadow-[0_0_25px_rgba(255,215,0,0.95)]"
+          >
+            {fe.emoji}
+          </div>
+        ))}
 
         {/* Stage Header */}
         <div className="flex items-center justify-between border-b border-purple-500/30 pb-3 relative z-10">
