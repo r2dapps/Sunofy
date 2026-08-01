@@ -589,14 +589,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         ))}
 
         {/* Integrated Room Header Bar */}
-        <div className="bg-black/40 border-b border-purple-500/20 p-2.5 sm:p-3 flex items-start justify-between backdrop-blur-md shrink-0 relative z-20 rounded-2xl">
-          {/* Top Left: Room Info */}
-          <div className="flex items-center space-x-2.5 min-w-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shrink-0 shadow-inner">
-              <Radio className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
-            </div>
-            <div className="flex flex-col min-w-0 text-left">
-              <div className="flex items-center space-x-1.5 text-xs font-bold text-white">
+        <div className="bg-black/40 border-b border-purple-500/20 p-2.5 sm:p-3 flex items-start justify-between backdrop-blur-md shrink-0 relative z-20 rounded-2xl gap-2">
+          {/* Column 1 (Left): Row 1 = Sync Room title. Row 2 = Room Code + QR + Share */}
+          <div className="flex flex-col min-w-0 space-y-1.5 text-left">
+            {/* Left Row 1: Title & Badge */}
+            <div className="flex items-center space-x-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shrink-0 shadow-inner">
+                <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" style={{ animationDuration: '6s' }} />
+              </div>
+              <div className="flex items-center space-x-1.5 text-xs font-bold text-white min-w-0">
                 <span className="truncate">Sync Room</span>
                 {syncState.isHost ? (
                   <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 font-mono font-bold uppercase flex items-center gap-1 shrink-0">
@@ -609,43 +610,46 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Left Row 2: Room Code button + QR Code button + Share button */}
+            <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
               <button
                 onClick={handleCopyCode}
-                className="text-[10px] font-mono text-[var(--accent-sunofy)] bg-black/40 px-2 py-0.5 rounded border border-[var(--border-sunofy)] flex items-center space-x-1 hover:border-[var(--accent-sunofy)] transition w-fit mt-0.5 cursor-pointer"
+                className="text-[10px] font-mono text-[var(--accent-sunofy)] bg-black/40 px-2 py-1 rounded-xl border border-[var(--border-sunofy)] flex items-center space-x-1 hover:border-[var(--accent-sunofy)] transition cursor-pointer shrink-0"
+                title="Copy Room Code"
               >
                 <span>#{syncState.roomCode}</span>
                 <Copy className="w-3 h-3" />
               </button>
-            </div>
-          </div>
-
-          {/* Top Right: Row 1 = Listening Live Badge + QR + Share. Row 2 = Exit Button */}
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
-            {/* Row 1 */}
-            <div className="flex items-center space-x-1.5">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 rounded-full border border-purple-400/30">
-                <LiveAudioWave isPlaying={syncState.isPlaying} />
-                <span className="text-[9px] font-mono font-bold uppercase text-purple-200">
-                  {syncState.isPlaying ? 'LISTENING LIVE' : 'PAUSED'}
-                </span>
-              </div>
               <button
                 onClick={() => setShowQrModal(true)}
-                className="w-7.5 h-7.5 rounded-xl bg-white/10 hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer flex items-center justify-center text-white"
+                className="w-7 h-7 rounded-xl bg-white/10 hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer flex items-center justify-center text-white shrink-0"
                 title="Show Room QR Code"
               >
                 <QrCode className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleShareLink}
-                className="w-7.5 h-7.5 rounded-xl bg-white/10 hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer flex items-center justify-center text-white"
+                className="w-7 h-7 rounded-xl bg-white/10 hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer flex items-center justify-center text-white shrink-0"
                 title="Share Room"
               >
                 <Share2 className="w-3.5 h-3.5" />
               </button>
             </div>
+          </div>
 
-            {/* Row 2: Exit Button */}
+          {/* Column 2 (Right): Row 1 = Listening Live status. Row 2 = Exit button */}
+          <div className="flex flex-col items-end space-y-1.5 shrink-0">
+            {/* Right Row 1: Listening Live status badge */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 rounded-full border border-purple-400/30">
+              <LiveAudioWave isPlaying={syncState.isPlaying} />
+              <span className="text-[9px] font-mono font-bold uppercase text-purple-200">
+                {syncState.isPlaying ? 'LISTENING LIVE' : 'PAUSED'}
+              </span>
+            </div>
+
+            {/* Right Row 2: Exit button */}
             <button
               onClick={() => {
                 syncParty.leaveRoom();
