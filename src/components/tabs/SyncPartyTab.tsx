@@ -647,8 +647,8 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       </div>
 
-      {/* Grander Vanilla Live Audio Stage Box */}
-      <div className="bg-gradient-to-b from-purple-950/90 via-[#0a0d18] to-[var(--card-sunofy)] border border-purple-500/40 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden min-h-[420px] flex flex-col justify-between text-center">
+      {/* Grander Vanilla Live Audio Stage Box (Optimized for Mobile Height & Desktop) */}
+      <div className="bg-gradient-to-b from-purple-950/90 via-[#0a0d18] to-[var(--card-sunofy)] border border-purple-500/40 rounded-3xl p-3.5 sm:p-6 space-y-2.5 sm:space-y-4 shadow-2xl relative overflow-hidden min-h-[260px] sm:min-h-[420px] flex flex-col justify-between text-center">
         {/* Blended Background Ambient Art & Pulsing Particles Glow */}
         {curTrack?.image && (
           <div className="absolute inset-0 opacity-30 pointer-events-none">
@@ -665,28 +665,28 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           <div
             key={fe.id}
             style={{ left: `${fe.left}%` }}
-            className="absolute bottom-16 z-30 text-5xl sm:text-6xl pointer-events-none select-none animate-[ping_1.8s_ease-out_infinite] drop-shadow-[0_0_25px_rgba(255,215,0,0.95)]"
+            className="absolute bottom-16 z-30 text-4xl sm:text-6xl pointer-events-none select-none animate-[ping_1.8s_ease-out_infinite] drop-shadow-[0_0_25px_rgba(255,215,0,0.95)]"
           >
             {fe.emoji}
           </div>
         ))}
 
         {/* Stage Header */}
-        <div className="flex items-center justify-between border-b border-purple-500/30 pb-3 relative z-10">
+        <div className="flex items-center justify-between border-b border-purple-500/30 pb-2 sm:pb-3 relative z-10">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
-            <span className="text-xs font-black uppercase tracking-widest text-white">LIVE WATCH PARTY STAGE</span>
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white">LIVE WATCH PARTY STAGE</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <LiveAudioWave isPlaying={syncState.isPlaying} />
-            <span className="text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/40 px-3 py-1 rounded-full font-mono font-bold uppercase tracking-wide shadow-sm">
+            <span className="text-[8px] sm:text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-mono font-bold uppercase tracking-wide shadow-sm">
               {syncState.isPlaying ? 'LISTENING LIVE' : 'PAUSED'}
             </span>
           </div>
         </div>
 
         {curTrack ? (
-          <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-between py-2">
+          <div className="relative z-10 space-y-2 sm:space-y-5 flex-1 flex flex-col justify-between py-1 sm:py-2">
             {/* Center Vanilla Rotating Vinyl Deck or Video Watch Stage */}
             {(() => {
               const isVideoTrack = curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com');
@@ -719,38 +719,38 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               }
 
               return (
-                <div className="flex flex-col items-center justify-center my-auto space-y-4 relative">
+                <div className="flex flex-col items-center justify-center my-auto space-y-2 sm:space-y-4 relative">
                   {/* Vanilla Rotating Vinyl Deck Container */}
-                  <div className="relative w-44 sm:w-56 h-44 sm:h-56 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_45px_rgba(168,85,247,0.35)] flex items-center justify-center my-2">
+                  <div className="relative w-28 sm:w-56 h-28 sm:h-56 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_45px_rgba(168,85,247,0.35)] flex items-center justify-center my-1 sm:my-2">
                     <img
                       src={curTrack.image || './favicon.ico'}
                       alt={curTrack.title}
-                      className={`w-full h-full rounded-full object-cover border-4 border-[#070913] shadow-inner transition-transform duration-700 ${
+                      className={`w-full h-full rounded-full object-cover border-2 sm:border-4 border-[#070913] shadow-inner transition-transform duration-700 ${
                         syncState.isPlaying ? 'animate-[spin_6s_linear_infinite]' : 'grayscale-[30%]'
                       }`}
                     />
                     {/* Central Spindle Hole */}
-                    <div className="w-6 h-6 rounded-full bg-[#070913] border-2 border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl" />
+                    <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-[#070913] border-2 border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl" />
                   </div>
 
                   {/* Track Info Banner */}
-                  <div className="text-center max-w-sm space-y-1">
-                    <span className="text-[9px] bg-purple-500/20 text-purple-300 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block border border-purple-500/30">
+                  <div className="text-center max-w-sm space-y-0.5 sm:space-y-1">
+                    <span className="text-[8px] sm:text-[9px] bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider inline-block border border-purple-500/30">
                       Now Playing
                     </span>
-                    <h3 className="text-base sm:text-lg font-black truncate text-white">{curTrack.title}</h3>
-                    <p className="text-xs text-purple-300 truncate font-medium">{curTrack.artist}</p>
+                    <h3 className="text-xs sm:text-lg font-black truncate text-white">{curTrack.title}</h3>
+                    <p className="text-[10px] sm:text-xs text-purple-300 truncate font-medium">{curTrack.artist}</p>
                   </div>
 
                   {/* Live Party Floating Emoji Reactions Bar */}
-                  <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
                     {['❤️', '🔥', '🎵', '👏', '🎉', '🚀'].map((emoji) => (
                       <button
                         key={emoji}
                         onClick={() => {
                           syncParty.sendEmojiReaction(emoji);
                         }}
-                        className="w-9.5 h-9.5 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-lg flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
+                        className="w-7.5 h-7.5 sm:w-9.5 sm:h-9.5 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-sm sm:text-lg flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
                       >
                         {emoji}
                       </button>
@@ -969,7 +969,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
         {/* Tab Body View (Hidden when console is minimized) */}
         {!isConsoleMinimized && (
-          <div className="p-3.5 space-y-3 min-h-[240px]">
+          <div className="p-3 sm:p-4 space-y-3 max-h-[300px] sm:max-h-[460px] overflow-y-auto">
             {/* SUB-TAB 1: Party Queue */}
             {activeTab === 'queue' && (
               <div className="space-y-2 animate-fade">
