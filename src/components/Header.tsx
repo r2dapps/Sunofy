@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           const sources = [
             { id: 'jiosaavn', label: 'Saavn', icon: <Headphones className="w-3 h-3 text-[var(--accent-sunofy)]" /> },
-            { id: 'youtube', label: 'YouTube', icon: <Youtube className="w-3 h-3 text-red-500" /> },
+            { id: 'youtube', label: 'YT Music', icon: <Youtube className="w-3 h-3 text-red-500" /> },
             { id: 'local', label: 'Offline', icon: <HardDrive className="w-3 h-3 text-blue-400" /> },
           ];
 

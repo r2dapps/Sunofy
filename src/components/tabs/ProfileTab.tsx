@@ -378,7 +378,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               onClick={() => {
                 onUpdateProfile({ apiSource: 'cobalt_yt' });
                 if (onMusicSourceChange) onMusicSourceChange('youtube');
-                onShowToast('Switched to YouTube Cobalt');
+                onShowToast('Switched to YouTube Music Engine');
               }}
               className={`text-[10px] sm:text-xs py-2 px-1 rounded-xl border font-bold transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer ${
                 musicSource === 'youtube'
@@ -386,7 +386,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   : 'bg-[var(--border-sunofy)] border-transparent text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
               }`}
             >
-              Cobalt API
+              🎵 YouTube Music
             </button>
             <button
               onClick={() => {

@@ -247,13 +247,14 @@ class MusicAPI {
       return cached;
     }
 
+    // 1. Try local Express proxy endpoint first
     try {
       const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         const data = await res.json();
         const items = data.results || data.items || [];
         if (items.length > 0) {
-          const tracks = items.map((item: any, idx: number) => ({
+          const tracks: Track[] = items.map((item: any, idx: number) => ({
             id: `yt_${item.videoId || item.id || idx}`,
             title: item.title,
             artist: item.artist || item.author || 'YouTube Music',
@@ -261,21 +262,56 @@ class MusicAPI {
             image: item.image || item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
             duration: item.lengthSeconds || 210,
             downloadUrl: item.videoUrl || `https://www.youtube.com/watch?v=${item.videoId}`,
+            mediaType: 'video',
+            isVideo: true,
             isCobalt: true,
           }));
           this.setCache(cacheKey, tracks);
           return tracks;
         }
       }
-    } catch (e) {
-      console.warn('YouTube search API failed', e);
+    } catch (e) {}
+
+    // 2. Try Invidious public CORS API mirrors for static hosting (GitHub Pages)
+    const invidiousMirrors = [
+      'https://inv.tux.pizza/api/v1/search',
+      'https://invidious.nerdvpn.de/api/v1/search',
+      'https://vid.puffyan.us/api/v1/search',
+      'https://invidious.drgns.space/api/v1/search'
+    ];
+
+    for (const mirror of invidiousMirrors) {
+      try {
+        const res = await fetch(`${mirror}?q=${encodeURIComponent(query)}&type=video`);
+        if (res.ok) {
+          const items = await res.json();
+          if (Array.isArray(items) && items.length > 0) {
+            const tracks: Track[] = items.slice(0, 25).map((item: any) => ({
+              id: `yt_${item.videoId}`,
+              title: item.title,
+              artist: item.author || 'YouTube Music',
+              album: 'YouTube Music Live',
+              image: item.videoThumbnails?.find((t: any) => t.quality === 'medium' || t.quality === 'high')?.url || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
+              duration: item.lengthSeconds || 200,
+              downloadUrl: `https://www.youtube.com/watch?v=${item.videoId}`,
+              mediaType: 'video',
+              isVideo: true,
+              isCobalt: true,
+            }));
+            this.setCache(cacheKey, tracks);
+            return tracks;
+          }
+        }
+      } catch (e) {}
     }
-    
-    // Fallback to JioSaavn with YouTube tag if YT search endpoint fails
+
+    // 3. Fallback to JioSaavn with YouTube Music tag if all mirrors fail
     const tracks = await this.searchSongs(query);
     return tracks.map(t => ({
       ...t,
-      artist: t.artist + ' (YouTube Stream)',
+      artist: t.artist + ' (YouTube Music)',
+      mediaType: 'video',
+      isVideo: true,
       isCobalt: true
     }));
   }
