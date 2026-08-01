@@ -9,8 +9,8 @@ interface HeaderProps {
   onOpenCarMode: () => void;
   userAvatarIcon?: string;
   customAvatarUrl?: string;
-  musicSource?: 'jiosaavn' | 'youtube' | 'local';
-  onMusicSourceChange?: (source: 'jiosaavn' | 'youtube' | 'local') => void;
+  musicSource?: 'jiosaavn' | 'cobalt' | 'youtube' | 'local';
+  onMusicSourceChange?: (source: 'jiosaavn' | 'cobalt' | 'youtube' | 'local') => void;
   isPlaying?: boolean;
 }
 
@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCarMode,
   userAvatarIcon = '🎧',
   customAvatarUrl,
-  musicSource = 'jiosaavn',
+  musicSource = 'jiosaavn' as 'jiosaavn' | 'cobalt' | 'youtube' | 'local',
   onMusicSourceChange,
   isPlaying = false,
 }) => {
@@ -58,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           const sources = [
             { id: 'jiosaavn', label: 'Saavn', icon: <Headphones className="w-3 h-3 text-[var(--accent-sunofy)]" /> },
+            { id: 'cobalt', label: 'Cobalt', icon: <span className="text-amber-400 font-black text-[10px]">⚡</span> },
             { id: 'youtube', label: 'YT Music', icon: <Youtube className="w-3 h-3 text-red-500" /> },
             { id: 'local', label: 'Offline', icon: <HardDrive className="w-3 h-3 text-blue-400" /> },
           ];
