@@ -13,6 +13,10 @@
 
 </div>
 
+> [!CAUTION]
+> **PROPRIETARY & INTELLECTUAL PROPERTY NOTICE**  
+> **STRICTLY PROHIBITED**: Copying, stealing, re-distributing, scraping, mirroring, or using any portion of this source code or design system without explicit written authorization is strictly forbidden and subject to copyright enforcement.
+
 ---
 
 ## ✨ Key Features & Architecture
