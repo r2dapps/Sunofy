@@ -121,7 +121,7 @@ export const AppLockOverlay: React.FC<AppLockOverlayProps> = ({ pin, onUnlockSuc
       {error && (
         <p className="text-xs font-semibold text-red-400 -mt-2 animate-pulse flex items-center space-x-1">
           <ShieldAlert className="w-3.5 h-3.5" />
-          <span>Incorrect PIN code. Default is 0908.</span>
+          <span>Incorrect PIN code. Please try again.</span>
         </p>
       )}
 
@@ -168,11 +168,6 @@ export const AppLockOverlay: React.FC<AppLockOverlayProps> = ({ pin, onUnlockSuc
         >
           <Fingerprint className="w-6 h-6 text-[var(--accent-sunofy)]" />
         </button>
-      </div>
-
-      {/* Unlock Footer Note */}
-      <div className="pb-4 text-center">
-        <p className="text-[10px] text-[var(--muted-sunofy)]">Default Passcode: <span className="text-[var(--accent-sunofy)] font-bold">0908</span></p>
       </div>
     </div>
   );

@@ -42,12 +42,13 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
     >
       {/* Artwork & Track Info */}
       <div className="flex items-center space-x-2.5 md:space-x-4 min-w-0 flex-1">
-        <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] shadow-md">
+        <div className="relative w-10 h-10 md:w-11 md:h-11 rounded-full p-[1.5px] bg-gradient-to-tr from-emerald-500 via-purple-500 to-pink-500 flex items-center justify-center shrink-0 shadow-md">
           <img
             src={currentTrack.image}
-            className={`w-full h-full object-cover spinning-art ${isPlaying ? 'playing' : ''}`}
+            className={`w-full h-full rounded-full object-cover border-2 border-[#0e101d] spinning-art ${isPlaying ? 'playing' : ''}`}
             alt={currentTrack.title}
           />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#0e101d] border border-gray-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 shadow-inner" />
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="text-xs md:text-sm font-bold truncate text-white">{currentTrack.title}</h4>

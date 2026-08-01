@@ -553,7 +553,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
 
   return (
-    <div className="space-y-3 animate-fade pb-2 text-[var(--text-sunofy)] select-none relative flex flex-col h-[calc(100vh-110px)] sm:h-auto min-h-[580px]">
+    <div className="space-y-3 animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col h-[calc(100vh-100px)] sm:h-auto min-h-[580px]">
       {/* Live Voice Active Speaker Floating Indicator */}
       {activeSpeaker && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-black font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce-subtle backdrop-blur-md border border-emerald-300">
@@ -563,7 +563,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
       )}
 
       {/* Top Room Banner Bar with Member Avatars HUD & Actions */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-3 flex items-center justify-between shadow-xl sticky top-0 z-20 backdrop-blur-md bg-opacity-95 flex-wrap gap-2 shrink-0">
+      <div className="bg-[var(--card-sunofy)]/90 border border-[var(--border-sunofy)] rounded-2xl p-3 flex items-center justify-between shadow-xl sticky top-0 z-20 backdrop-blur-md flex-wrap gap-2 shrink-0">
         <div className="flex items-center space-x-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shrink-0 shadow-inner">
             <Radio className="w-4.5 h-4.5 animate-spin" style={{ animationDuration: '6s' }} />
@@ -647,8 +647,8 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       </div>
 
-      {/* Grander Live Audio Stage Box (Dynamic Height Full View) */}
-      <div className={`bg-gradient-to-b from-purple-950/90 via-[#0a0d18] to-[var(--card-sunofy)] border border-purple-500/40 rounded-3xl p-3.5 sm:p-6 space-y-2.5 sm:space-y-4 shadow-2xl relative overflow-hidden flex flex-col justify-between text-center transition-all duration-300 ${
+      {/* Seamless Live Audio Stage (Border Box Removed for Natural Color Blend) */}
+      <div className={`bg-gradient-to-b from-purple-950/60 via-[#0a0d18]/90 to-[var(--bg-sunofy)] rounded-3xl p-3.5 sm:p-6 space-y-2.5 sm:space-y-4 relative overflow-hidden flex flex-col justify-between text-center transition-all duration-300 ${
         isConsoleMinimized ? 'flex-1 min-h-[340px]' : 'h-[42vh] sm:h-[48%] min-h-[220px] shrink-0'
       }`}>
         {/* Blended Background Ambient Art & Pulsing Particles Glow */}

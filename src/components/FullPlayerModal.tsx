@@ -136,10 +136,10 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
             <ChevronDown className="w-6 h-6" />
           </button>
 
-          <div className="text-center px-4">
-            <p className="text-[10px] uppercase tracking-widest text-[var(--muted-sunofy)] font-bold">PLAYING FROM ALBUM</p>
-            <h3 className="text-xs font-bold text-[var(--text-sunofy)] truncate max-w-[200px] sm:max-w-[280px]">
-              {currentTrack.album || 'Sunofy High Quality Stream'}
+          <div className="text-center px-1 min-w-0 flex-1 mx-2">
+            <p className="text-[8px] sm:text-[9px] uppercase tracking-widest text-[var(--muted-sunofy)] font-bold truncate">PLAYING ALBUM</p>
+            <h3 className="text-[11px] sm:text-xs font-bold text-[var(--text-sunofy)] truncate max-w-[110px] sm:max-w-[220px] mx-auto">
+              {currentTrack.album || 'Sunofy Audio Stream'}
             </h3>
           </div>
 

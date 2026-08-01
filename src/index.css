@@ -110,38 +110,54 @@
   scrollbar-width: none;
 }
 
-/* Smooth Touch Sliders for Mobile & Desktop Range Sliders */
+/* Smooth Touch Sliders & Accent Track Fill for Mobile & Desktop */
 input[type=range] {
   touch-action: manipulation;
   -webkit-appearance: none;
   appearance: none;
+  background: var(--border-sunofy);
+  border-radius: 9999px;
   cursor: pointer;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
 }
 
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
   border-radius: 50%;
-  background: currentColor;
+  background: #ffffff;
+  border: 2.5px solid var(--accent-sunofy);
+  box-shadow: 0 0 10px rgba(29, 185, 84, 0.7);
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  transition: transform 0.1s ease-in-out;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type=range]:active::-webkit-slider-thumb {
-  transform: scale(1.35);
+  transform: scale(1.3);
+  box-shadow: 0 0 16px rgba(29, 185, 84, 0.9);
+}
+
+input[type=range]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--border-sunofy);
 }
 
 input[type=range]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: currentColor;
+  background: #ffffff;
+  border: 2.5px solid var(--accent-sunofy);
+  box-shadow: 0 0 10px rgba(29, 185, 84, 0.7);
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  border: none;
 }
 
 /* Rainbow Glowing Heart Animation */
