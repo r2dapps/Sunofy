@@ -843,9 +843,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
       {/* Bottom Sub-Tabs Console (6 Consolidated Sub-Tabs with Tooltips & Minimizable Card) */}
       <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl overflow-hidden shadow-xl flex flex-col transition-all duration-300">
-        {/* Icon-Only Tab Header Bar with Minimize Toggle */}
-        <div className="bg-[var(--bg-sunofy)] border-b border-[var(--border-sunofy)] p-1.5 flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
-          <div className="flex items-center space-x-1 flex-1 min-w-0">
+        {/* Icon-Only Tab Header Bar with Fixed Minimize Toggle */}
+        <div className="bg-[var(--bg-sunofy)] border-b border-[var(--border-sunofy)] p-1.5 flex items-center justify-between gap-1.5">
+          {/* Scrollable sub-tabs container */}
+          <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 min-w-0 py-0.5 pr-1">
             {/* 1. Queue */}
             <button
               onClick={() => setActiveTab('queue')}
@@ -957,14 +958,16 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             })()}
           </div>
 
-          {/* Minimize / Maximize Toggle */}
-          <button
-            onClick={() => setIsConsoleMinimized(!isConsoleMinimized)}
-            title={isConsoleMinimized ? "Expand Console" : "Minimize Console"}
-            className="p-2 rounded-xl text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)] transition cursor-pointer shrink-0"
-          >
-            {isConsoleMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-          </button>
+          {/* Fixed Minimize / Maximize Toggle */}
+          <div className="pl-1 border-l border-[var(--border-sunofy)]/60 shrink-0 flex items-center">
+            <button
+              onClick={() => setIsConsoleMinimized(!isConsoleMinimized)}
+              title={isConsoleMinimized ? "Expand Console" : "Minimize Console"}
+              className="p-2 rounded-xl text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)] transition cursor-pointer shrink-0"
+            >
+              {isConsoleMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         {/* Tab Body View (Hidden when console is minimized) */}

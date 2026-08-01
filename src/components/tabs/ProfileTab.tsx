@@ -718,8 +718,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         </div>
       )}
 
-      {/* PWA App Install Button at the end */}
-      <div className="pt-2 pb-4">
+      {/* PWA App Install Button & Razel Tech Branding Footer at the end */}
+      <div className="pt-2 pb-6 space-y-4 text-center">
         <button
           onClick={() => {
             if ((window as any).deferredPwaPrompt) {
@@ -730,7 +730,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 }
               });
             } else {
-              onShowToast('To install: Tap browser menu (⋮ or Share) -> Add to Home Screen');
+              onShowToast('To install: Tap browser menu (⋮ or Share) -> Add to Home Screen / Install App');
             }
           }}
           className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[var(--accent-sunofy)] to-emerald-400 text-[var(--bg-sunofy)] font-black text-sm flex items-center justify-center space-x-2 shadow-lg hover:scale-[1.02] active:scale-98 transition cursor-pointer"
@@ -738,6 +738,17 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           <Smartphone className="w-5 h-5" />
           <span>Install Sunofy PWA App</span>
         </button>
+
+        <div className="pt-2 flex flex-col items-center justify-center space-y-1">
+          <p className="text-xs font-bold text-[var(--muted-sunofy)] flex items-center justify-center gap-1.5">
+            <span>Powered by</span>
+            <span className="text-[var(--text-sunofy)] font-black uppercase tracking-wider">Razel Tech</span>
+            <Heart className="w-4 h-4 fill-current rainbow-heart-glow" />
+          </p>
+          <p className="text-[10px] text-[var(--muted-sunofy)]/70">
+            Developed by Razel Tech • Sunofy Music & SyncParty v3.0
+          </p>
+        </div>
       </div>
 
       {/* PIN Change Modal */}

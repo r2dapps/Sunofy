@@ -699,6 +699,41 @@ export default function App() {
     }
   }, [currentTrack, isPlaying]);
 
+  // PC Keyboard Hotkey Shortcuts Listener (Space/Enter to toggle play/pause, Arrow keys, N/P/M)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as HTMLElement).isContentEditable);
+      if (isInput) return;
+
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyK') {
+        e.preventDefault();
+        handleTogglePlayPause();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        if (audioRef.current) handleSeek(audioRef.current.currentTime + 5);
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        if (audioRef.current) handleSeek(Math.max(0, audioRef.current.currentTime - 5));
+      } else if (e.code === 'ArrowUp') {
+        e.preventDefault();
+        setVolume((v) => Math.min(1, Math.round((v + 0.05) * 100) / 100));
+      } else if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        setVolume((v) => Math.max(0, Math.round((v - 0.05) * 100) / 100));
+      } else if (e.code === 'KeyN') {
+        handleNextTrack();
+      } else if (e.code === 'KeyP') {
+        handlePrevTrack();
+      } else if (e.code === 'KeyM') {
+        setVolume((v) => (v > 0 ? 0 : 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentTrack, isPlaying, volume]);
+
   // Sleep Timer Handler
   useEffect(() => {
     if (sleepTimerTimeoutRef.current) clearTimeout(sleepTimerTimeoutRef.current);
