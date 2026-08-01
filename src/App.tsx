@@ -1637,6 +1637,7 @@ export default function App() {
           isDownloaded={isCurrentDownloaded}
           isShuffle={isShuffle}
           repeatMode={repeatMode}
+          musicSource={musicSource}
           onTogglePlayPause={handleTogglePlayPause}
           onNextTrack={handleNextTrack}
           onToggleFavorite={handleToggleFavoriteCurrent}
@@ -1684,6 +1685,7 @@ export default function App() {
         onRemoveQueueItem={(idx) => setQueue((prev) => prev.filter((_, i) => i !== idx))}
         onPlayQueueItem={handlePlayQueueItem}
         onSaveQueueAsPlaylist={handleSaveQueueAsPlaylist}
+        musicSource={musicSource}
       />
 
       {/* Search Modal */}

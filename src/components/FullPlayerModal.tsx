@@ -1,4 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+/** Extract YouTube video ID from a URL */
+function extractYtId(url?: string): string | null {
+  if (!url) return null;
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
 import {
   ChevronDown,
   Play,
@@ -53,6 +60,7 @@ interface FullPlayerModalProps {
   onRemoveQueueItem?: (index: number) => void;
   onPlayQueueItem?: (index: number) => void;
   onSaveQueueAsPlaylist?: () => void;
+  musicSource?: 'jiosaavn' | 'cobalt' | 'youtube' | 'local';
 }
 
 export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
@@ -84,7 +92,25 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
   onRemoveQueueItem,
   onPlayQueueItem,
   onSaveQueueAsPlaylist,
+  musicSource = 'jiosaavn',
 }) => {
+  const ytIframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Determine if this is a YT Music track
+  const ytId = musicSource === 'youtube'
+    ? extractYtId((currentTrack as any)?.downloadUrl || (currentTrack as any)?.url)
+    : null;
+  const isYtMusic = !!ytId;
+
+  // Send play/pause commands to YouTube IFrame API via postMessage
+  useEffect(() => {
+    if (!isYtMusic || !ytIframeRef.current) return;
+    const cmd = isPlaying ? 'playVideo' : 'pauseVideo';
+    ytIframeRef.current.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: cmd, args: [] }),
+      '*'
+    );
+  }, [isPlaying, isYtMusic]);
   const [activeTab, setActiveTab] = useState<'player' | 'lyrics' | 'queue'>('player');
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
@@ -209,35 +235,55 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
                 }`}
               />
 
-              {/* Rotating Vinyl Disc Component (Clean borderless view) */}
-              <div
-                className={`relative z-10 w-60 sm:w-72 h-60 sm:h-72 rounded-full border-4 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden transition-all duration-700 bg-black/90 ${
-                  isPlaying ? 'animate-[spin_6s_linear_infinite] shadow-emerald-500/20' : 'scale-95 opacity-90'
-                }`}
-                style={{
-                  backgroundImage: 'radial-gradient(circle, #262626 15%, #171717 16%, #000 65%, #262626 66%, #171717 100%)'
-                }}
-              >
-                {/* Vinyl Grooves Effect */}
-                <div className="absolute inset-3 rounded-full border border-neutral-700/30" />
-                <div className="absolute inset-8 rounded-full border border-neutral-700/20" />
-                <div className="absolute inset-14 rounded-full border border-neutral-700/20" />
-
-                {/* Disc Center Label */}
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-neutral-600 bg-emerald-500/90 flex items-center justify-center overflow-hidden shadow-inner shrink-0 z-10">
-                  <img
-                    src={currentTrack.image || './favicon.ico'}
-                    alt="Disc Center"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLElement).setAttribute('src', './favicon.ico');
-                    }}
+              {/* Rotating Vinyl Disc Component — or YouTube iframe for YT Music */}
+              {isYtMusic && ytId ? (
+                /* YT Music: full disc replaced by YouTube iframe */
+                <div className="relative z-10 w-60 sm:w-72 h-60 sm:h-72 rounded-full border-4 border-red-900/60 shadow-[0_0_50px_rgba(220,38,38,0.4)] overflow-hidden bg-black">
+                  <iframe
+                    ref={ytIframeRef}
+                    src={`https://www.youtube.com/embed/${ytId}?autoplay=${isPlaying ? 1 : 0}&controls=0&disablekb=1&modestbranding=1&playsinline=1&enablejsapi=1&mute=0&loop=1&playlist=${ytId}&rel=0`}
+                    className="w-full h-full"
+                    style={{ pointerEvents: 'none', border: 'none' }}
+                    allow="autoplay; encrypted-media"
+                    title={currentTrack.title}
                   />
+                  {/* YT Music label overlay */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur px-3 py-1 rounded-full flex items-center gap-1.5 z-10">
+                    <span className="text-red-500 text-xs font-black">▶</span>
+                    <span className="text-white text-[10px] font-bold tracking-wide">YouTube Music</span>
+                  </div>
                 </div>
+              ) : (
+                /* Default: Spinning Vinyl Disc */
+                <div
+                  className={`relative z-10 w-60 sm:w-72 h-60 sm:h-72 rounded-full border-4 border-neutral-800/80 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden transition-all duration-700 bg-black/90 ${
+                    isPlaying ? 'animate-[spin_6s_linear_infinite] shadow-emerald-500/20' : 'scale-95 opacity-90'
+                  }`}
+                  style={{
+                    backgroundImage: 'radial-gradient(circle, #262626 15%, #171717 16%, #000 65%, #262626 66%, #171717 100%)'
+                  }}
+                >
+                  {/* Vinyl Grooves Effect */}
+                  <div className="absolute inset-3 rounded-full border border-neutral-700/30" />
+                  <div className="absolute inset-8 rounded-full border border-neutral-700/20" />
+                  <div className="absolute inset-14 rounded-full border border-neutral-700/20" />
 
-                {/* Center Spindle Hole */}
-                <div className="absolute w-4 h-4 rounded-full bg-neutral-900 border border-neutral-400 shadow-inner z-20" />
-              </div>
+                  {/* Disc Center Label */}
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-neutral-600 bg-emerald-500/90 flex items-center justify-center overflow-hidden shadow-inner shrink-0 z-10">
+                    <img
+                      src={currentTrack.image || './favicon.ico'}
+                      alt="Disc Center"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLElement).setAttribute('src', './favicon.ico');
+                      }}
+                    />
+                  </div>
+
+                  {/* Center Spindle Hole */}
+                  <div className="absolute w-4 h-4 rounded-full bg-neutral-900 border border-neutral-400 shadow-inner z-20" />
+                </div>
+              )}
             </div>
 
             {/* Title & Artist & Quick Actions */}
