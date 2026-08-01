@@ -689,42 +689,66 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 );
               }
 
-              return (
-                <div className="flex items-center justify-center my-auto gap-3 relative px-2">
-                  {/* Compact Rotating Vinyl Disc */}
-                  <div className={`relative ${isConsoleMinimized ? 'w-24 sm:w-48 h-24 sm:h-48' : 'w-14 h-14'} rounded-full p-0.5 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_25px_rgba(168,85,247,0.35)] flex items-center justify-center shrink-0 transition-all duration-300`}>
+              return isConsoleMinimized ? (
+                /* COLLAPSED CONSOLE MODE: Grand Centered Stage with Floating Reactions & Pulsing Vinyl */
+                <div className="flex flex-col items-center justify-center my-auto space-y-2 sm:space-y-4 relative text-center">
+                  {/* Grand Rotating Vinyl Deck */}
+                  <div className="relative w-28 sm:w-52 h-28 sm:h-52 rounded-full p-1 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_40px_rgba(168,85,247,0.4)] flex items-center justify-center my-1 sm:my-2">
                     <img
                       src={curTrack.image || './favicon.ico'}
                       alt={curTrack.title}
-                      className={`w-full h-full rounded-full object-cover border-2 border-[#070913] shadow-inner transition-transform duration-700 ${
+                      className={`w-full h-full rounded-full object-cover border-2 sm:border-4 border-[#070913] shadow-inner transition-transform duration-700 ${
                         syncState.isPlaying ? 'animate-[spin_6s_linear_infinite]' : 'grayscale-[30%]'
                       }`}
                     />
                     {/* Central Spindle Hole */}
-                    <div className={`${isConsoleMinimized ? 'w-3.5 h-3.5 sm:w-5 sm:h-5' : 'w-2.5 h-2.5'} rounded-full bg-[#070913] border border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl`} />
+                    <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-[#070913] border-2 border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl" />
                   </div>
 
-                  {/* Track Info & Reactions (Expanded vs Minimized) */}
-                  <div className="text-left min-w-0 flex-1 space-y-0.5">
-                    <h3 className="text-xs sm:text-base font-black truncate text-white">{curTrack.title}</h3>
+                  {/* Track Info Banner */}
+                  <div className="text-center max-w-sm space-y-0.5 sm:space-y-1">
+                    <span className="text-[8px] sm:text-[9px] bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider inline-block border border-purple-500/30">
+                      Now Playing
+                    </span>
+                    <h3 className="text-xs sm:text-lg font-black truncate text-white">{curTrack.title}</h3>
                     <p className="text-[10px] sm:text-xs text-purple-300 truncate font-medium">{curTrack.artist}</p>
-                    
-                    {/* Live Reaction Emojis (Visible in Full Stage View) */}
-                    {isConsoleMinimized && (
-                      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                        {['❤️', '🔥', '🎵', '👏', '🎉', '🚀'].map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => {
-                              syncParty.sendEmojiReaction(emoji);
-                            }}
-                            className="w-7.5 h-7.5 sm:w-9 sm:h-9 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-sm sm:text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                  </div>
+
+                  {/* Live Party Floating Emoji Reactions Bar */}
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
+                    {['❤️', '🔥', '🎵', '👏', '🎉', '🚀'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          syncParty.sendEmojiReaction(emoji);
+                        }}
+                        className="w-7.5 h-7.5 sm:w-9 sm:h-9 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-sm sm:text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* EXPANDED CONSOLE MODE: Compact Horizontal Player Deck */
+                <div className="flex items-center justify-center my-auto gap-3 relative px-2 text-left">
+                  {/* Compact Rotating Vinyl Disc */}
+                  <div className="relative w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-purple-500 via-emerald-400 to-pink-500 shadow-[0_0_20px_rgba(168,85,247,0.35)] flex items-center justify-center shrink-0">
+                    <img
+                      src={curTrack.image || './favicon.ico'}
+                      alt={curTrack.title}
+                      className={`w-full h-full rounded-full object-cover border border-[#070913] shadow-inner transition-transform duration-700 ${
+                        syncState.isPlaying ? 'animate-[spin_6s_linear_infinite]' : 'grayscale-[30%]'
+                      }`}
+                    />
+                    {/* Central Spindle Hole */}
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#070913] border border-gray-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 shadow-xl" />
+                  </div>
+
+                  {/* Track Info */}
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <h3 className="text-xs sm:text-sm font-black truncate text-white">{curTrack.title}</h3>
+                    <p className="text-[10px] sm:text-xs text-purple-300 truncate font-medium">{curTrack.artist}</p>
                   </div>
                 </div>
               );
