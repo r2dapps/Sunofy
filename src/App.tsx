@@ -784,28 +784,26 @@ export default function App() {
       const offlineCopy = downloads.find((d) => d.id === track.id);
       let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
 
-      // YouTube Music tracks (YT Music engine) — play via iframe stage embed, NOT <audio>
-      // Skip loading into audioRef to prevent YouTube CORS errors and wrong lock screen URL
-      const isYtMusicTrack = musicSource === 'youtube' && ((track as any).isVideo || (track as any).isCobalt || (src && (src.includes('youtube.com') || src.includes('youtu.be'))));
-      if (isYtMusicTrack) {
-        // Track will play via stage YouTube iframe embed — just update metadata
-        showToast('YouTube Music 🎵 Playing via Stage embed');
-        return;
-      }
-
-      if ((track as any).isCobalt && musicSource === 'cobalt') {
-        showToast('Extracting stream via Cobalt API...');
+      // For both Cobalt YT and YT Music engines: extract direct audio stream via Cobalt API
+      // This bypasses YouTube's CORS restriction — Cobalt returns a CDN audio link that plays in <audio>
+      const needsCobaltExtraction = ((track as any).isCobalt) && (musicSource === 'cobalt' || musicSource === 'youtube');
+      if (needsCobaltExtraction) {
+        showToast('Extracting audio stream...');
         try {
-          const ytUrl = (track.downloadUrl && track.downloadUrl.startsWith('http')) ? track.downloadUrl : `https://www.youtube.com/watch?v=${track.id.replace('yt_', '')}`;
+          const ytUrl = (track.downloadUrl && track.downloadUrl.startsWith('http') && !track.downloadUrl.includes('saavncdn'))
+            ? track.downloadUrl
+            : `https://www.youtube.com/watch?v=${track.id.replace('yt_', '')}`;
           const cobaltSrc = await musicApi.extractCobaltStream(ytUrl);
           if (cobaltSrc) {
             src = cobaltSrc;
-            showToast('Cobalt Stream Active ⚡');
+            showToast(musicSource === 'youtube' ? 'YouTube Music 🎵 Playing' : 'Cobalt Stream Active ⚡');
           } else {
             throw new Error('Cobalt failed');
           }
         } catch (e) {
-          showToast('Cobalt failed. Falling back to native stream.');
+          showToast('Stream extraction failed. Check Cobalt API.');
+          // Don't fall back to YouTube URL (would CORS-fail) — just stop here
+          return;
         }
       }
 

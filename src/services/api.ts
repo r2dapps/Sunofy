@@ -285,29 +285,42 @@ class MusicAPI {
   }
 
   async extractCobaltStream(url: string): Promise<string | null> {
-    try {
-      const res = await fetch('https://api.cobalt.tools/', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: url,
-          videoQuality: 'audio',
-          audioFormat: 'mp3',
-          audioBitrate: '320'
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.url) {
-          return data.url;
+    // Community-hosted Cobalt instances (api.cobalt.tools blocks third-party use)
+    const cobaltInstances = [
+      'https://cobalt.api.timelessnesses.me',
+      'https://co.wuk.sh',
+      'https://cobalt.synth.zip',
+      'https://api.cobalt.tools',
+    ];
+
+    const body = JSON.stringify({
+      url: url,
+      downloadMode: 'audio',
+      audioFormat: 'mp3',
+      audioBitrate: '128',
+    });
+
+    for (const instance of cobaltInstances) {
+      try {
+        const res = await fetch(`${instance}/`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.url) {
+            return data.url;
+          }
         }
+      } catch (err) {
+        // Try next instance
       }
-    } catch (err) {
-      console.error('Cobalt extraction failed:', err);
     }
+    console.error('All Cobalt instances failed for:', url);
     return null;
   }
 
