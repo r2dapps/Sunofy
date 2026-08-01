@@ -180,6 +180,16 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const recorderIntervalRef = React.useRef<any>(null);
   const micStreamRef = React.useRef<MediaStream | null>(null);
   const animFrameRef = React.useRef<number | null>(null);
+  const videoContainerRef = React.useRef<HTMLDivElement | null>(null);
+
+  const handleToggleFullscreen = () => {
+    if (!videoContainerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      videoContainerRef.current.requestFullscreen().catch(() => {});
+    }
+  };
 
   const startMicLevelAnalyser = (stream: MediaStream) => {
     try {
@@ -584,6 +594,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
   // Active Isolated Sync Party Room View
   const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
+  const isVideoTrack = curTrack ? (curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com')) : false;
 
   return (
     <div className="space-y-3 animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col h-[calc(100vh-100px)] sm:h-auto min-h-[580px]">
@@ -638,15 +649,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     <Crown className="w-3 h-3 text-amber-400 rotate-12" />
                   </span>
                 ) : (
-                  <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/40 font-mono font-bold uppercase shrink-0">
-                    LISTENER
+                  <span className="text-[9px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/40 font-mono font-bold uppercase shrink-0">
+                    MEMBER
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Left Row 2: Room Code button + QR Code button + Share button */}
-            <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+            {/* Left Row 2: Code badge + QR code button + Share button */}
+            <div className="flex items-center space-x-1.5">
               <button
                 onClick={handleCopyCode}
                 className="text-[10px] font-mono text-[var(--accent-sunofy)] bg-black/40 px-2 py-1 rounded-xl border border-[var(--border-sunofy)] flex items-center space-x-1 hover:border-[var(--accent-sunofy)] transition cursor-pointer shrink-0"
@@ -701,15 +712,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           <div className="relative z-10 space-y-1.5 sm:space-y-3 flex-1 flex flex-col justify-between py-1">
             {/* Center Vanilla Rotating Vinyl Deck or Video Watch Stage */}
             {(() => {
-              const isVideoTrack = curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com');
               const ytId = extractYoutubeId(curTrack.downloadUrl || curTrack.url);
 
               if (isVideoTrack) {
                 const startSec = Math.floor(syncState.currentTime || 0);
                 return (
-                  <div className={`relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto ${
-                    !syncState.isHost ? 'pointer-events-none select-none' : ''
-                  }`}>
+                  <div
+                    ref={videoContainerRef}
+                    className="relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto group"
+                  >
                     {ytId ? (
                       <iframe
                         key={ytId + '_' + startSec}
@@ -726,6 +737,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                         autoPlay={syncState.isPlaying}
                       />
                     )}
+
+                    {/* Individual Fullscreen Overlay Button for any member */}
+                    <button
+                      onClick={handleToggleFullscreen}
+                      className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-purple-600/80 text-white rounded-xl backdrop-blur-md border border-white/20 transition cursor-pointer shadow-lg z-30"
+                      title="Toggle Individual Fullscreen Theatre Mode"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
                   </div>
                 );
               }
@@ -795,90 +815,92 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               );
             })()}
 
-            {/* Host Controls & Progress Bar Section */}
-            <div className="space-y-3 pt-2">
-              {/* Host-Only Playback Controls (Hidden for Listeners) */}
-              {syncState.isHost && (
-                <div className="flex items-center justify-center space-x-3 bg-black/60 px-4 py-2 rounded-2xl border border-purple-500/30 shadow-inner w-fit mx-auto">
-                  <button
-                    onClick={() => syncParty.prevTrack()}
-                    className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
-                    title="Previous Track"
-                  >
-                    <SkipBack className="w-4.5 h-4.5" />
-                  </button>
-
-                  <button
-                    onClick={() => syncParty.togglePlayPause()}
-                    className="w-10 h-10 rounded-xl bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
-                    title={syncState.isPlaying ? 'Pause' : 'Play'}
-                  >
-                    {syncState.isPlaying ? (
-                      <Pause className="w-5 h-5 fill-black" />
-                    ) : (
-                      <Play className="w-5 h-5 fill-black ml-0.5" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => syncParty.nextTrackInQueue()}
-                    className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
-                    title="Next Track"
-                  >
-                    <SkipForward className="w-4.5 h-4.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Timeline Progress Bar (Host gets Knob & Seek; Listener gets Read-Only Line) */}
-              {(() => {
-                const pct = syncState.duration > 0 ? (syncState.currentTime / syncState.duration) * 100 : 0;
-                return (
-                  <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
-                    <span>{formatTime(syncState.currentTime)}</span>
-                    <div
-                      className={`flex-1 h-3 bg-black/60 border border-purple-500/30 rounded-full relative p-0.5 flex items-center touch-none select-none ${
-                        syncState.isHost ? 'cursor-pointer' : 'cursor-default'
-                      }`}
-                      onPointerDown={(e) => {
-                        if (!syncState.isHost) return;
-                        e.preventDefault();
-                        const target = e.currentTarget;
-                        const rect = target.getBoundingClientRect();
-                        const updateSeek = (clientX: number) => {
-                          const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-                          syncParty.seek(pos * syncState.duration);
-                        };
-                        updateSeek(e.clientX);
-
-                        const handleMove = (moveEv: PointerEvent) => {
-                          updateSeek(moveEv.clientX);
-                        };
-                        const handleUp = () => {
-                          window.removeEventListener('pointermove', handleMove);
-                          window.removeEventListener('pointerup', handleUp);
-                        };
-                        window.addEventListener('pointermove', handleMove);
-                        window.addEventListener('pointerup', handleUp);
-                      }}
+            {/* Host Controls & Progress Bar Section (Only for Audio Tracks) */}
+            {!isVideoTrack && (
+              <div className="space-y-3 pt-2">
+                {/* Host-Only Playback Controls (Hidden for Listeners) */}
+                {syncState.isHost && (
+                  <div className="flex items-center justify-center space-x-3 bg-black/60 px-4 py-2 rounded-2xl border border-purple-500/30 shadow-inner w-fit mx-auto">
+                    <button
+                      onClick={() => syncParty.prevTrack()}
+                      className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
+                      title="Previous Track"
                     >
-                      <div
-                        className="bg-[var(--accent-sunofy)] h-full transition-all duration-75 rounded-full shadow-[0_0_8px_rgba(29,185,84,0.6)] relative"
-                        style={{ width: `${pct}%` }}
-                      >
-                        {/* Host White Draggable Knob */}
-                        {syncState.isHost && (
-                          <div
-                            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-[var(--accent-sunofy)] pointer-events-none transition-transform"
-                          />
-                        )}
-                      </div>
-                    </div>
-                    <span>{formatTime(syncState.duration)}</span>
+                      <SkipBack className="w-4.5 h-4.5" />
+                    </button>
+
+                    <button
+                      onClick={() => syncParty.togglePlayPause()}
+                      className="w-10 h-10 rounded-xl bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
+                      title={syncState.isPlaying ? 'Pause' : 'Play'}
+                    >
+                      {syncState.isPlaying ? (
+                        <Pause className="w-5 h-5 fill-black" />
+                      ) : (
+                        <Play className="w-5 h-5 fill-black ml-0.5" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => syncParty.nextTrackInQueue()}
+                      className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
+                      title="Next Track"
+                    >
+                      <SkipForward className="w-4.5 h-4.5" />
+                    </button>
                   </div>
-                );
-              })()}
-            </div>
+                )}
+
+                {/* Timeline Progress Bar (Host gets Knob & Seek; Listener gets Read-Only Line) */}
+                {(() => {
+                  const pct = syncState.duration > 0 ? (syncState.currentTime / syncState.duration) * 100 : 0;
+                  return (
+                    <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
+                      <span>{formatTime(syncState.currentTime)}</span>
+                      <div
+                        className={`flex-1 h-3 bg-black/60 border border-purple-500/30 rounded-full relative p-0.5 flex items-center touch-none select-none ${
+                          syncState.isHost ? 'cursor-pointer' : 'cursor-default'
+                        }`}
+                        onPointerDown={(e) => {
+                          if (!syncState.isHost) return;
+                          e.preventDefault();
+                          const target = e.currentTarget;
+                          const rect = target.getBoundingClientRect();
+                          const updateSeek = (clientX: number) => {
+                            const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                            syncParty.seek(pos * syncState.duration);
+                          };
+                          updateSeek(e.clientX);
+
+                          const handleMove = (moveEv: PointerEvent) => {
+                            updateSeek(moveEv.clientX);
+                          };
+                          const handleUp = () => {
+                            window.removeEventListener('pointermove', handleMove);
+                            window.removeEventListener('pointerup', handleUp);
+                          };
+                          window.addEventListener('pointermove', handleMove);
+                          window.addEventListener('pointerup', handleUp);
+                        }}
+                      >
+                        <div
+                          className="bg-[var(--accent-sunofy)] h-full transition-all duration-75 rounded-full shadow-[0_0_8px_rgba(29,185,84,0.6)] relative"
+                          style={{ width: `${pct}%` }}
+                        >
+                          {/* Host White Draggable Knob */}
+                          {syncState.isHost && (
+                            <div
+                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-[var(--accent-sunofy)] pointer-events-none transition-transform"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <span>{formatTime(syncState.duration)}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12 space-y-3 relative z-10 my-auto">
