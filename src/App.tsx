@@ -206,25 +206,27 @@ export default function App() {
   const [isCarModeOpen, setIsCarModeOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const musicSource = (() => {
-    const sourceMap: Record<string, 'jiosaavn' | 'youtube' | 'local'> = {
+    const sourceMap: Record<string, 'jiosaavn' | 'cobalt' | 'youtube' | 'local'> = {
       jiosaavn: 'jiosaavn',
-      cobalt_yt: 'youtube',
+      cobalt_yt: 'cobalt',
+      yt_music: 'youtube',
       custom_mirror: 'local',
       local: 'local'
     };
     return sourceMap[userProfile.apiSource] || 'jiosaavn';
   })();
 
-  const setMusicSource = (source: 'jiosaavn' | 'youtube' | 'local') => {
-    const profileSourceMap: Record<string, 'jiosaavn' | 'cobalt_yt' | 'custom_mirror'> = {
+  const setMusicSource = (source: 'jiosaavn' | 'cobalt' | 'youtube' | 'local') => {
+    const profileSourceMap: Record<string, 'jiosaavn' | 'cobalt_yt' | 'yt_music' | 'custom_mirror'> = {
       jiosaavn: 'jiosaavn',
-      youtube: 'cobalt_yt',
+      cobalt: 'cobalt_yt',
+      youtube: 'yt_music',
       local: 'custom_mirror'
     };
-    const mapped = profileSourceMap[source];
-    if (mapped && mapped !== userProfile.apiSource) {
-      setUserProfile((prev) => ({ ...prev, apiSource: mapped }));
-    }
+    setUserProfile((prev) => ({
+      ...prev,
+      apiSource: profileSourceMap[source] || 'jiosaavn'
+    }));
   };
 
   // Audio HTML5 element and Web Audio API Ref
@@ -782,10 +784,10 @@ export default function App() {
       const offlineCopy = downloads.find((d) => d.id === track.id);
       let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
 
-      if ((track as any).isCobalt) {
+      if ((track as any).isCobalt && musicSource === 'cobalt') {
         showToast('Extracting stream via Cobalt API...');
         try {
-          const ytUrl = `https://www.youtube.com/watch?v=${track.id}`;
+          const ytUrl = (track.downloadUrl && track.downloadUrl.startsWith('http')) ? track.downloadUrl : `https://www.youtube.com/watch?v=${track.id.replace('yt_', '')}`;
           const cobaltSrc = await musicApi.extractCobaltStream(ytUrl);
           if (cobaltSrc) {
             src = cobaltSrc;
@@ -794,7 +796,7 @@ export default function App() {
             throw new Error('Cobalt failed');
           }
         } catch (e) {
-          showToast('Cobalt failed. Falling back to high-quality native stream.');
+          showToast('Cobalt failed. Falling back to native stream.');
         }
       }
 

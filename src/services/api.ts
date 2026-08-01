@@ -6,7 +6,7 @@ interface CacheItem<T> {
 }
 
 class MusicAPI {
-  public currentSource: 'jiosaavn' | 'youtube' | 'local' = 'jiosaavn';
+  public currentSource: 'jiosaavn' | 'cobalt' | 'youtube' | 'local' = 'jiosaavn';
   
   /**
    * Cascading API mirrors for JioSaavn query execution with environment detection:

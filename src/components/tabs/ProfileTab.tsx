@@ -359,7 +359,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       <CollapsibleCard title="Music Engine & Quota" icon={Server}>
         <div className="space-y-3">
           <label className="text-xs font-semibold text-[var(--muted-sunofy)]">Select Primary Music Engine:</label>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <button
               onClick={() => {
                 onUpdateProfile({ apiSource: 'jiosaavn' });
@@ -372,11 +372,25 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   : 'bg-[var(--border-sunofy)] border-transparent text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
               }`}
             >
-              JioSaavn
+              🎧 JioSaavn
             </button>
             <button
               onClick={() => {
                 onUpdateProfile({ apiSource: 'cobalt_yt' });
+                if (onMusicSourceChange) onMusicSourceChange('cobalt');
+                onShowToast('Switched to Cobalt YT Engine');
+              }}
+              className={`text-[10px] sm:text-xs py-2 px-1 rounded-xl border font-bold transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer ${
+                musicSource === 'cobalt'
+                  ? 'bg-amber-500/15 border-amber-500/50 text-amber-500'
+                  : 'bg-[var(--border-sunofy)] border-transparent text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+              }`}
+            >
+              ⚡ Cobalt YT
+            </button>
+            <button
+              onClick={() => {
+                onUpdateProfile({ apiSource: 'yt_music' });
                 if (onMusicSourceChange) onMusicSourceChange('youtube');
                 onShowToast('Switched to YouTube Music Engine');
               }}
@@ -386,7 +400,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   : 'bg-[var(--border-sunofy)] border-transparent text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
               }`}
             >
-              🎵 YouTube Music
+              🎵 YT Music
             </button>
             <button
               onClick={() => {
@@ -396,11 +410,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               }}
               className={`text-[10px] sm:text-xs py-2 px-1 rounded-xl border font-bold transition-all flex items-center justify-center gap-1 shadow-sm cursor-pointer ${
                 musicSource === 'local'
-                  ? 'bg-amber-500/15 border-amber-500/50 text-amber-500'
+                  ? 'bg-blue-500/15 border-blue-500/50 text-blue-400'
                   : 'bg-[var(--border-sunofy)] border-transparent text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
               }`}
             >
-              Local Engine
+              💾 Local
             </button>
           </div>
         </div>
