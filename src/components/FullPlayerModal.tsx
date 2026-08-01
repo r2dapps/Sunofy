@@ -20,6 +20,7 @@ import {
   FileText,
   Trash2,
   Activity,
+  PlusCircle,
 } from 'lucide-react';
 import { Track } from '../types';
 
@@ -50,6 +51,8 @@ interface FullPlayerModalProps {
   onOpenCarMode: () => void;
   onClearQueue?: () => void;
   onRemoveQueueItem?: (index: number) => void;
+  onPlayQueueItem?: (index: number) => void;
+  onSaveQueueAsPlaylist?: () => void;
 }
 
 export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
@@ -79,6 +82,8 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
   onOpenCarMode,
   onClearQueue,
   onRemoveQueueItem,
+  onPlayQueueItem,
+  onSaveQueueAsPlaylist,
 }) => {
   const [activeTab, setActiveTab] = useState<'player' | 'lyrics' | 'queue'>('player');
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -424,16 +429,28 @@ Sunofy High Fidelity Canvas Audio Stream`}
               <h3 className="text-xs font-black text-[var(--muted-sunofy)] uppercase tracking-wider">
                 Up Next in Queue ({queue.length})
               </h3>
-              {queue.length > 0 && onClearQueue && (
-                <button
-                  onClick={onClearQueue}
-                  className="text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 cursor-pointer bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-full transition"
-                  title="Clear entire queue"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Clear Queue</span>
-                </button>
-              )}
+              <div className="flex items-center space-x-2">
+                {queue.length > 0 && onSaveQueueAsPlaylist && (
+                  <button
+                    onClick={onSaveQueueAsPlaylist}
+                    className="text-xs font-bold text-[var(--accent-sunofy)] hover:opacity-80 flex items-center gap-1.5 cursor-pointer bg-[var(--accent-sunofy)]/10 px-2.5 py-1 rounded-full border border-[var(--accent-sunofy)]/30 transition"
+                    title="Save queue as playlist"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Save as Playlist</span>
+                  </button>
+                )}
+                {queue.length > 0 && onClearQueue && (
+                  <button
+                    onClick={onClearQueue}
+                    className="text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 cursor-pointer bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-full transition"
+                    title="Clear entire queue"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Clear Queue</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {queue.length === 0 ? (
@@ -443,31 +460,58 @@ Sunofy High Fidelity Canvas Audio Stream`}
                 <p className="text-xs opacity-75">Add tracks from Discover or Playlists to play next</p>
               </div>
             ) : (
-              queue.map((track, idx) => (
-                <div
-                  key={track.id + '_' + idx}
-                  className="flex items-center space-x-3 p-3 bg-[var(--card-sunofy)]/80 backdrop-blur-md border border-[var(--border-sunofy)] rounded-2xl hover:border-[var(--accent-sunofy)] transition group"
-                >
-                  <img src={track.image} alt={track.title} className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-bold truncate text-[var(--text-sunofy)]">{track.title}</h4>
-                    <p className="text-xs text-[var(--muted-sunofy)] truncate">{track.artist}</p>
+              queue.map((track, idx) => {
+                const isCurrentlyPlaying = currentTrack
+                  ? (track.id === currentTrack.id || (track.title === currentTrack.title && track.artist === currentTrack.artist))
+                  : false;
+
+                return (
+                  <div
+                    key={track.id + '_' + idx}
+                    onClick={() => onPlayQueueItem?.(idx)}
+                    className={`flex items-center space-x-3 p-3 rounded-2xl border transition group cursor-pointer ${
+                      isCurrentlyPlaying
+                        ? 'bg-[var(--accent-sunofy)]/15 border-[var(--accent-sunofy)]/50 shadow-md'
+                        : 'bg-[var(--card-sunofy)]/80 backdrop-blur-md border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]'
+                    }`}
+                  >
+                    <div className="relative shrink-0">
+                      <img src={track.image} alt={track.title} className="w-12 h-12 rounded-xl object-cover" />
+                      {isCurrentlyPlaying && (
+                        <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+                          <span className={`w-2.5 h-2.5 rounded-full ${isPlaying ? 'bg-[var(--accent-sunofy)] animate-ping' : 'bg-amber-400'}`} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-1.5">
+                        <h4 className="text-sm font-bold truncate text-[var(--text-sunofy)]">{track.title}</h4>
+                        {isCurrentlyPlaying && (
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded-full uppercase shrink-0 ${
+                            isPlaying ? 'bg-[var(--accent-sunofy)] text-black' : 'bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                          }`}>
+                            {isPlaying ? 'PLAYING' : 'PAUSED'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[var(--muted-sunofy)] truncate">{track.artist}</p>
+                    </div>
+                    <span className="text-xs text-[var(--muted-sunofy)] font-mono font-bold mr-1">#{idx + 1}</span>
+                    {onRemoveQueueItem && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveQueueItem(idx);
+                        }}
+                        className="p-2 text-[var(--muted-sunofy)] hover:text-red-400 rounded-full hover:bg-[var(--bg-sunofy)] transition cursor-pointer"
+                        title="Remove track from queue"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  <span className="text-xs text-[var(--muted-sunofy)] font-mono font-bold mr-1">#{idx + 1}</span>
-                  {onRemoveQueueItem && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveQueueItem(idx);
-                      }}
-                      className="p-2 text-[var(--muted-sunofy)] hover:text-red-400 rounded-full hover:bg-[var(--bg-sunofy)] transition cursor-pointer"
-                      title="Remove track from queue"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

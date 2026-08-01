@@ -173,8 +173,91 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [musicVolume, setMusicVolume] = useState(100);
   const [micVolume, setMicVolume] = useState(100);
   const [activeSpeaker, setActiveSpeaker] = useState<{ name: string; timestamp: number } | null>(null);
+  const [micLevel, setMicLevel] = useState(0);
+  const voiceAudioCtxRef = React.useRef<AudioContext | null>(null);
+  const recorderIntervalRef = React.useRef<any>(null);
   const micStreamRef = React.useRef<MediaStream | null>(null);
-  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const animFrameRef = React.useRef<number | null>(null);
+
+  const startMicLevelAnalyser = (stream: MediaStream) => {
+    try {
+      const audioCtx = getVoiceAudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const updateLevel = () => {
+        if (!micStreamRef.current) {
+          setMicLevel(0);
+          return;
+        }
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        const pct = Math.min(100, Math.round((avg / 128) * 100));
+        setMicLevel(pct);
+        animFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+
+      updateLevel();
+    } catch (e) {
+      console.warn('Audio analyzer error:', e);
+    }
+  };
+
+  const stopMicLevelAnalyser = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    setMicLevel(0);
+  };
+
+  const getVoiceAudioContext = () => {
+    if (!voiceAudioCtxRef.current) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      voiceAudioCtxRef.current = new AudioCtx();
+    }
+    if (voiceAudioCtxRef.current.state === 'suspended') {
+      voiceAudioCtxRef.current.resume().catch(() => {});
+    }
+    return voiceAudioCtxRef.current;
+  };
+
+  const playVoiceChunkBuffer = async (base64Audio: string, volPct: number) => {
+    try {
+      const ctx = getVoiceAudioContext();
+      const res = await fetch(base64Audio);
+      const arrayBuffer = await res.arrayBuffer();
+      ctx.decodeAudioData(
+        arrayBuffer,
+        (decodedData) => {
+          const source = ctx.createBufferSource();
+          const gainNode = ctx.createGain();
+          gainNode.gain.value = Math.max(0, Math.min(1, volPct / 100));
+          source.buffer = decodedData;
+          source.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          source.start(0);
+        },
+        () => {
+          const fallbackAudio = new Audio(base64Audio);
+          fallbackAudio.volume = Math.max(0, Math.min(1, volPct / 100));
+          fallbackAudio.play().catch(() => {});
+        }
+      );
+    } catch (e) {
+      const fallbackAudio = new Audio(base64Audio);
+      fallbackAudio.volume = Math.max(0, Math.min(1, volPct / 100));
+      fallbackAudio.play().catch(() => {});
+    }
+  };
 
   // Subscribe to incoming remote WebRTC voice stream chunks
   React.useEffect(() => {
@@ -182,9 +265,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
     const cleanup = syncParty.listenVoiceStream((chunk) => {
       if (chunk.audio) {
-        const voiceAudio = new Audio(chunk.audio);
-        voiceAudio.volume = (micVolume / 100);
-        voiceAudio.play().catch(() => {});
+        playVoiceChunkBuffer(chunk.audio, micVolume);
         setActiveSpeaker({ name: chunk.senderName, timestamp: Date.now() });
       }
     });
@@ -209,6 +290,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const toggleMic = async () => {
     if (!isMicActive) {
       try {
+        // Unlock AudioContext on user interaction
+        getVoiceAudioContext();
+
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -218,49 +302,29 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         });
         micStreamRef.current = stream;
 
-        // Initialize MediaRecorder for transmitting real-time voice chunks
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : 'audio/mp4';
+        // Start continuous WebRTC live voice stream
+        await syncParty.startContinuousVoiceStream(stream);
+        startMicLevelAnalyser(stream);
 
-        const recorder = new MediaRecorder(stream, { mimeType });
-        mediaRecorderRef.current = recorder;
-
-        recorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const base64data = reader.result as string;
-              if (base64data) {
-                syncParty.sendVoiceAudioChunk(base64data, true);
-              }
-            };
-            reader.readAsDataURL(e.data);
-          }
-        };
-
-        recorder.start(350); // Send 350ms micro-chunks for real-time voice stream
         setIsMicActive(true);
-        syncParty.setMicSpeakingStatus(true);
         playAudioFeedbackTone('on');
         if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
-        onShowToast('🎙️ Live Voice Microphone ON - Transmitting WebRTC Voice');
+        onShowToast('🎙️ Live Voice Microphone ON - Transmitting Continuous WebRTC Voice');
       } catch (err) {
         onShowToast('Microphone access denied or unavailable');
       }
     } else {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current = null;
+      stopMicLevelAnalyser();
+      syncParty.stopContinuousVoiceStream();
+      if (recorderIntervalRef.current) {
+        clearInterval(recorderIntervalRef.current);
+        recorderIntervalRef.current = null;
       }
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((track) => track.stop());
         micStreamRef.current = null;
       }
       setIsMicActive(false);
-      syncParty.setMicSpeakingStatus(false);
       playAudioFeedbackTone('off');
       if (navigator.vibrate) navigator.vibrate([60]);
       onShowToast('🎙️ Microphone OFF - Muted & Voice Stream Closed');
@@ -269,11 +333,14 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
   React.useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
+      stopMicLevelAnalyser();
+      syncParty.stopContinuousVoiceStream();
+      if (recorderIntervalRef.current) {
+        clearInterval(recorderIntervalRef.current);
       }
       if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
       }
     };
   }, []);
@@ -913,7 +980,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     {syncState.queue.map((song, idx) => {
                       const isCurrentlyPlaying = curTrack
                         ? (song.id === curTrack.id || (song.title === curTrack.title && song.artist === curTrack.artist))
-                        : idx === 0;
+                        : false;
 
                       return (
                         <div
@@ -1326,6 +1393,34 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   {isMicActive ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
                   <span>{isMicActive ? 'MICROPHONE LIVE (TAP TO MUTE)' : 'UNMUTE MICROPHONE (TRANSMIT VOICE)'}</span>
                 </button>
+
+                {/* Live Microphone Voice Level Visualizer Meter */}
+                {isMicActive && (
+                  <div className="space-y-1.5 pt-1 animate-fade">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-emerald-400 uppercase tracking-wider px-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                        <span>Voice Audio Input Level</span>
+                      </span>
+                      <span className="font-mono">{micLevel}%</span>
+                    </div>
+                    <div className="flex items-center gap-1 h-6 bg-black/60 p-1.5 rounded-xl border border-emerald-500/30 overflow-hidden shadow-inner">
+                      {[...Array(24)].map((_, i) => {
+                        const threshold = (i + 1) * 4;
+                        const isActive = micLevel >= threshold;
+                        const barColor = threshold > 80 ? 'bg-red-500' : threshold > 60 ? 'bg-amber-400' : 'bg-emerald-400';
+                        return (
+                          <div
+                            key={i}
+                            className={`flex-1 h-full rounded-xs transition-all duration-75 ${
+                              isActive ? `${barColor} shadow-[0_0_6px_rgba(52,211,153,0.8)]` : 'bg-emerald-950/30'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* 2-Column Mixer Sliders */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">

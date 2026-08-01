@@ -391,15 +391,27 @@ export default function App() {
     }
   };
 
-  // Load Offline Downloads on startup & Listen for PWA Updates
+  // Load Offline Downloads on startup & Listen for PWA Updates / App Toast Events
   useEffect(() => {
     offlineStore.getAllOfflineTracks().then((tracks) => setDownloads(tracks));
 
     const handlePwaUpdate = () => {
       showToast('✨ New Sunofy update ready! Tap Profile -> Check Updates to reload');
     };
+
+    const handleSunofyToast = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        showToast(customEvent.detail);
+      }
+    };
+
     window.addEventListener('pwaUpdateAvailable', handlePwaUpdate);
-    return () => window.removeEventListener('pwaUpdateAvailable', handlePwaUpdate);
+    window.addEventListener('sunofyToast', handleSunofyToast);
+    return () => {
+      window.removeEventListener('pwaUpdateAvailable', handlePwaUpdate);
+      window.removeEventListener('sunofyToast', handleSunofyToast);
+    };
   }, []);
 
   // Sync Party socket subscription
@@ -425,9 +437,6 @@ export default function App() {
             } else if (!newState.isPlaying && !audioRef.current.paused) {
                audioRef.current.pause();
                setIsPlaying(false);
-            }
-            if (Math.abs(audioRef.current.currentTime - newState.currentTime) > 1.5) {
-               audioRef.current.currentTime = newState.currentTime;
             }
          }
       }
@@ -607,6 +616,11 @@ export default function App() {
     };
 
     const handleEnded = () => {
+      const state = syncParty.getState();
+      if (state.inRoom && state.isHost) {
+        syncParty.nextTrackInQueue();
+        return;
+      }
       if (repeatMode === 'one') {
         audio.currentTime = 0;
         audio.play().catch(() => {});
@@ -771,39 +785,78 @@ export default function App() {
 
   const handleNextTrack = () => {
     if (queue.length > 0) {
-      let nextIndex = 0;
       if (isShuffle) {
-        nextIndex = Math.floor(Math.random() * queue.length);
+        const nextIndex = Math.floor(Math.random() * queue.length);
+        handlePlayTrack(queue[nextIndex]);
+        return;
       }
-      const next = queue[nextIndex];
-      setQueue((prev) => prev.filter((_, i) => i !== nextIndex));
-      handlePlayTrack(next);
-    } else if (repeatMode === 'all' && originalQueue.length > 0) {
-      let nextQueue = [...originalQueue];
-      let nextIndex = 0;
-      if (isShuffle) {
-        nextIndex = Math.floor(Math.random() * nextQueue.length);
+
+      const currentIndex = currentTrack
+        ? queue.findIndex((t) => t.id === currentTrack.id || (t.title === currentTrack.title && t.artist === currentTrack.artist))
+        : -1;
+
+      if (currentIndex >= 0 && currentIndex < queue.length - 1) {
+        handlePlayTrack(queue[currentIndex + 1]);
+      } else if (currentIndex === -1) {
+        handlePlayTrack(queue[0]);
+      } else if (repeatMode === 'all') {
+        handlePlayTrack(queue[0]);
+        showToast('Repeating queue');
+      } else {
+        showToast('End of queue');
+        setIsPlaying(false);
       }
-      const next = nextQueue[nextIndex];
-      setQueue(nextQueue.filter((_, i) => i !== nextIndex));
-      handlePlayTrack(next);
-      showToast('Repeating playlist/queue');
     } else {
       showToast('End of queue');
       setIsPlaying(false);
     }
   };
 
+  const handlePlayQueueItem = (index: number) => {
+    const selectedTrack = queue[index];
+    if (!selectedTrack) return;
+    handlePlayTrack(selectedTrack);
+  };
+
+  const handleSaveQueueAsPlaylist = () => {
+    if (queue.length === 0) {
+      showToast('Queue is empty!');
+      return;
+    }
+    const name = `Queue Playlist ${playlists.length + 1}`;
+    const newPl: Playlist = {
+      id: 'pl_' + Date.now(),
+      name,
+      songs: [...queue],
+      duration: `${Math.round(queue.reduce((acc, s) => acc + (s.duration || 0), 0) / 60)} mins`,
+      createdAt: new Date().toLocaleDateString(),
+      image: queue[0]?.image,
+    };
+    setPlaylists((prev) => [...prev, newPl]);
+    showToast(`Saved ${queue.length} queue tracks as playlist "${name}"!`);
+  };
+
   const handlePrevTrack = () => {
     if (audioRef.current && audioRef.current.currentTime > 5) {
       audioRef.current.currentTime = 0;
       setCurrentTime(0);
-    } else if (history.length > 0) {
+      return;
+    }
+
+    if (queue.length > 0) {
+      const currentIndex = currentTrack
+        ? queue.findIndex((t) => t.id === currentTrack.id || (t.title === currentTrack.title && t.artist === currentTrack.artist))
+        : -1;
+
+      if (currentIndex > 0) {
+        handlePlayTrack(queue[currentIndex - 1]);
+        return;
+      }
+    }
+
+    if (history.length > 0) {
       const prev = history[history.length - 1];
       setHistory((prevList) => prevList.slice(0, -1));
-      if (currentTrack) {
-        setQueue((prevQueue) => [currentTrack, ...prevQueue]);
-      }
       // Temporarily bypass history tracking so playing this doesn't re-append history
       setCurrentTrack(prev);
       setIsPlaying(true);
@@ -1570,6 +1623,8 @@ export default function App() {
         onOpenCarMode={() => setIsCarModeOpen(true)}
         onClearQueue={() => setQueue([])}
         onRemoveQueueItem={(idx) => setQueue((prev) => prev.filter((_, i) => i !== idx))}
+        onPlayQueueItem={handlePlayQueueItem}
+        onSaveQueueAsPlaylist={handleSaveQueueAsPlaylist}
       />
 
       {/* Search Modal */}

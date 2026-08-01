@@ -100,7 +100,19 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
                 <Disc className="w-12 h-12 text-[var(--accent-sunofy)] opacity-80" />
               )}
             </div>
-            <h2 className="text-2xl font-black text-[var(--text-sunofy)]">{selectedPlaylist.name}</h2>
+            <div className="flex items-center justify-center gap-2">
+              <h2 className="text-2xl font-black text-[var(--text-sunofy)]">{selectedPlaylist.name}</h2>
+              <button
+                onClick={() => {
+                  setPlaylistNameInput(selectedPlaylist.name);
+                  setShowRenameModal(selectedPlaylist.id);
+                }}
+                className="p-1.5 rounded-full text-[var(--muted-sunofy)] hover:text-[var(--accent-sunofy)] hover:bg-[var(--bg-sunofy)] transition cursor-pointer"
+                title="Rename Playlist"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
             <p className="text-sm font-medium text-[var(--muted-sunofy)] mt-1 tracking-wide">
               {selectedPlaylist.songs?.length || 0} songs • {selectedPlaylist.duration || '0 mins'}
             </p>
@@ -343,7 +355,20 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
                 )}
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition duration-300"></div>
               </div>
-              <h3 className="font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">{pl.name}</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition min-w-0 flex-1">{pl.name}</h3>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPlaylistNameInput(pl.name);
+                    setShowRenameModal(pl.id);
+                  }}
+                  className="p-1 rounded-full text-[var(--muted-sunofy)] hover:text-[var(--accent-sunofy)] hover:bg-[var(--bg-sunofy)] transition cursor-pointer shrink-0 ml-1 opacity-80 group-hover:opacity-100"
+                  title="Rename Playlist"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <p className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted-sunofy)] mt-1">
                 {pl.songs?.length || 0} TRACKS
               </p>

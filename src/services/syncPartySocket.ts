@@ -39,6 +39,12 @@ class SyncPartyManager {
   private localChannel: BroadcastChannel | null = null;
   private pingInterval: any = null;
 
+  // Continuous WebRTC Audio Engine
+  private peerConnections: Record<string, RTCPeerConnection> = {};
+  private localAudioStream: MediaStream | null = null;
+  private remoteAudioElements: Record<string, HTMLAudioElement> = {};
+  private signalUnsubscribes: (() => void)[] = [];
+
   constructor() {
     this.initBroadcastChannel();
     if (typeof window !== 'undefined') {
@@ -79,6 +85,12 @@ class SyncPartyManager {
 
   private notify() {
     this.listeners.forEach((fn) => fn({ ...this.state }));
+  }
+
+  private notifyToast(msg: string) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sunofyToast', { detail: msg }));
+    }
   }
 
   getState(): SyncPartyState {
@@ -185,6 +197,7 @@ class SyncPartyManager {
        }
     });
 
+    this.initWebRTCSignaling();
     this.notify();
   }
 
@@ -237,7 +250,7 @@ class SyncPartyManager {
           const mData = snap.val();
           if (mData && mData.kicked) {
              this.leaveRoom();
-             alert('You were removed from the room.');
+             this.notifyToast('🚪 You were removed from the room.');
           }
         });
 
@@ -266,7 +279,7 @@ class SyncPartyManager {
         onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/closed`), (snap) => {
           if (snap.val() === true) {
             this.leaveRoom();
-            alert("The Host has ended the party room.");
+            this.notifyToast('👋 The Host has ended the party room. Back to solo mode.');
           }
         });
 
@@ -275,7 +288,7 @@ class SyncPartyManager {
           onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/members/${this.myPeerId}/kicked`), (snap) => {
             if (snap.val() === true) {
               this.leaveRoom();
-              alert("You were removed from the room by the Host.");
+              this.notifyToast('🚪 You were removed from the room by the Host.');
             }
           });
         }
@@ -302,14 +315,22 @@ class SyncPartyManager {
         });
 
         this.startPingMonitor();
+        this.initWebRTCSignaling();
         this.notify();
       } else {
-        alert("Room not found!");
+        this.notifyToast('⚠️ Party Room not found! Please check the room code.');
       }
     });
   }
 
   leaveRoom() {
+    this.stopContinuousVoiceStream();
+
+    if (this.signalUnsubscribes.length > 0) {
+      this.signalUnsubscribes.forEach((fn) => fn());
+      this.signalUnsubscribes = [];
+    }
+
     if (this.myMemberRef) {
       remove(this.myMemberRef);
     }
@@ -456,15 +477,11 @@ class SyncPartyManager {
     if (!this.state.isHost || index < 0 || index >= this.state.queue.length) return;
     
     const selected = this.state.queue[index];
-    this.state.queue.splice(index, 1);
-    this.state.queue.unshift(selected);
     this.state.currentTrack = selected;
     this.state.currentTime = 0;
     this.state.isPlaying = true;
     
     this.broadcastState();
-    const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
-    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
     this.notify();
   }
 
@@ -484,25 +501,50 @@ class SyncPartyManager {
 
   nextTrackInQueue() {
     if (!this.state.isHost) return;
-    if (this.state.queue.length > 1) {
-      this.state.queue.shift();
-      this.state.currentTrack = this.state.queue[0];
-      this.state.currentTime = 0;
-      this.broadcastState();
-    } else {
-      this.state.queue = [];
+    if (this.state.queue.length === 0) {
       this.state.currentTrack = null;
       this.state.isPlaying = false;
       this.broadcastState();
+      this.notify();
+      return;
     }
-    const cleanQueue = JSON.parse(JSON.stringify(this.state.queue));
-    set(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/queue`), cleanQueue);
+
+    const currentIndex = this.state.currentTrack
+      ? this.state.queue.findIndex((t) => t.id === this.state.currentTrack?.id || t.title === this.state.currentTrack?.title)
+      : -1;
+
+    if (currentIndex >= 0 && currentIndex < this.state.queue.length - 1) {
+      this.state.currentTrack = this.state.queue[currentIndex + 1];
+      this.state.currentTime = 0;
+      this.state.isPlaying = true;
+    } else if (currentIndex === -1 && this.state.queue.length > 0) {
+      this.state.currentTrack = this.state.queue[0];
+      this.state.currentTime = 0;
+      this.state.isPlaying = true;
+    } else {
+      this.state.isPlaying = false;
+    }
+
+    this.broadcastState();
     this.notify();
   }
 
   prevTrack() {
     if (!this.state.isHost) return;
-    this.state.currentTime = 0;
+    if (this.state.currentTime > 3) {
+      this.state.currentTime = 0;
+    } else {
+      const currentIndex = this.state.currentTrack
+        ? this.state.queue.findIndex((t) => t.id === this.state.currentTrack?.id || t.title === this.state.currentTrack?.title)
+        : -1;
+      if (currentIndex > 0) {
+        this.state.currentTrack = this.state.queue[currentIndex - 1];
+        this.state.currentTime = 0;
+        this.state.isPlaying = true;
+      } else {
+        this.state.currentTime = 0;
+      }
+    }
     this.broadcastState();
     this.notify();
   }
@@ -543,6 +585,189 @@ class SyncPartyManager {
     if (!this.state.isHost || !this.roomRef) return;
     update(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/members/${memberId}`), { kicked: true });
     this.sendMessage(`A member was removed from the room by Host.`, 'System');
+  }
+
+  // Initialize WebRTC Signaling Listener over Firebase Realtime DB
+  private initWebRTCSignaling() {
+    if (!this.state.inRoom || !this.state.roomCode || !this.myPeerId) return;
+
+    const signalRef = ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/signals/${this.myPeerId}`);
+    const unsub = onChildAdded(signalRef, async (snapshot) => {
+      const data = snapshot.val();
+      const key = snapshot.key;
+      if (!data || data.from === this.myPeerId) return;
+
+      const fromPeerId = data.from;
+
+      try {
+        if (data.type === 'offer') {
+          await this.handleWebRTCOffer(fromPeerId, data.sdp);
+        } else if (data.type === 'answer') {
+          await this.handleWebRTCAnswer(fromPeerId, data.sdp);
+        } else if (data.type === 'candidate') {
+          await this.handleWebRTCCandidate(fromPeerId, data.candidate);
+        } else if (data.type === 'voice_stop') {
+          this.closePeerConnection(fromPeerId);
+        }
+      } catch (err) {
+        console.warn('WebRTC signal processing error:', err);
+      }
+
+      if (key) {
+        remove(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/signals/${this.myPeerId}/${key}`)).catch(() => {});
+      }
+    });
+
+    this.signalUnsubscribes.push(() => {
+      unsub();
+      remove(signalRef).catch(() => {});
+    });
+  }
+
+  private sendSignal(targetPeerId: string, signalData: any) {
+    if (!this.state.inRoom || !this.state.roomCode || !this.myPeerId) return;
+    const targetRef = push(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/signals/${targetPeerId}`));
+    set(targetRef, {
+      from: this.myPeerId,
+      senderName: this.getUserName(),
+      timestamp: Date.now(),
+      ...signalData,
+    });
+  }
+
+  private getOrCreatePeerConnection(targetPeerId: string): RTCPeerConnection {
+    if (this.peerConnections[targetPeerId]) {
+      return this.peerConnections[targetPeerId];
+    }
+
+    const pc = new RTCPeerConnection(WEBRTC_ICE_SERVERS);
+
+    // Attach local stream tracks if mic is active
+    if (this.localAudioStream) {
+      this.localAudioStream.getAudioTracks().forEach((track) => {
+        pc.addTrack(track, this.localAudioStream!);
+      });
+    }
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        this.sendSignal(targetPeerId, {
+          type: 'candidate',
+          candidate: event.candidate.toJSON(),
+        });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      const stream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream([event.track]);
+      this.attachRemoteStream(targetPeerId, stream);
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed' || pc.connectionState === 'disconnected') {
+        this.closePeerConnection(targetPeerId);
+      }
+    };
+
+    this.peerConnections[targetPeerId] = pc;
+    return pc;
+  }
+
+  private async handleWebRTCOffer(fromPeerId: string, sdp: RTCSessionDescriptionInit) {
+    const pc = this.getOrCreatePeerConnection(fromPeerId);
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    this.sendSignal(fromPeerId, {
+      type: 'answer',
+      sdp: pc.localDescription,
+    });
+  }
+
+  private async handleWebRTCAnswer(fromPeerId: string, sdp: RTCSessionDescriptionInit) {
+    const pc = this.peerConnections[fromPeerId];
+    if (pc && pc.signalingState !== 'stable') {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    }
+  }
+
+  private async handleWebRTCCandidate(fromPeerId: string, candidate: RTCIceCandidateInit) {
+    const pc = this.peerConnections[fromPeerId];
+    if (pc) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {}
+    }
+  }
+
+  private attachRemoteStream(peerId: string, stream: MediaStream) {
+    let audio = this.remoteAudioElements[peerId];
+    if (!audio) {
+      audio = document.createElement('audio');
+      audio.id = `sunofy-voice-peer-${peerId}`;
+      audio.autoplay = true;
+      audio.style.display = 'none';
+      document.body.appendChild(audio);
+      this.remoteAudioElements[peerId] = audio;
+    }
+    audio.srcObject = stream;
+    audio.play().catch(() => {});
+  }
+
+  private closePeerConnection(peerId: string) {
+    if (this.peerConnections[peerId]) {
+      try {
+        this.peerConnections[peerId].close();
+      } catch (e) {}
+      delete this.peerConnections[peerId];
+    }
+    if (this.remoteAudioElements[peerId]) {
+      try {
+        this.remoteAudioElements[peerId].srcObject = null;
+        this.remoteAudioElements[peerId].remove();
+      } catch (e) {}
+      delete this.remoteAudioElements[peerId];
+    }
+  }
+
+  // Start continuous live WebRTC voice streaming (invoked when user explicitly toggles Mic ON)
+  async startContinuousVoiceStream(micStream: MediaStream) {
+    if (!this.state.inRoom) return;
+
+    this.localAudioStream = micStream;
+    this.setMicSpeakingStatus(true);
+
+    // Connect to all other room members
+    const otherMembers = this.state.members.filter((m) => m.id !== this.myPeerId);
+    for (const member of otherMembers) {
+      try {
+        const pc = this.getOrCreatePeerConnection(member.id);
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        this.sendSignal(member.id, {
+          type: 'offer',
+          sdp: pc.localDescription,
+        });
+      } catch (e) {
+        console.warn(`Failed to connect WebRTC voice stream to member ${member.id}:`, e);
+      }
+    }
+  }
+
+  // Stop continuous live WebRTC voice streaming (invoked when user toggles Mic OFF or exits)
+  stopContinuousVoiceStream() {
+    if (this.localAudioStream) {
+      this.localAudioStream.getTracks().forEach((track) => track.stop());
+      this.localAudioStream = null;
+    }
+
+    this.setMicSpeakingStatus(false);
+
+    // Notify peers that voice has stopped
+    Object.keys(this.peerConnections).forEach((peerId) => {
+      this.sendSignal(peerId, { type: 'voice_stop' });
+      this.closePeerConnection(peerId);
+    });
   }
 
   setMicSpeakingStatus(isSpeaking: boolean) {
