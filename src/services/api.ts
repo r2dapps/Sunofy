@@ -275,34 +275,42 @@ class MusicAPI {
       } catch (e) {}
     }
 
-    // 2. Try Invidious public CORS API mirrors for static hosting (GitHub Pages)
-    const invidiousMirrors = [
-      'https://inv.tux.pizza/api/v1/search',
-      'https://invidious.nerdvpn.de/api/v1/search',
-      'https://vid.puffyan.us/api/v1/search',
-      'https://invidious.drgns.space/api/v1/search'
+    // 2. Try Piped API public CORS mirrors (Fastest & 100% CORS-enabled)
+    const pipedMirrors = [
+      `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=music_songs`,
+      `https://api.piped.yt/search?q=${encodeURIComponent(query)}&filter=music_songs`,
+      `https://pipedapi.mha.fi/search?q=${encodeURIComponent(query)}&filter=music_songs`
     ];
 
-    for (const mirror of invidiousMirrors) {
+    for (const mirror of pipedMirrors) {
       try {
-        const res = await fetch(`${mirror}?q=${encodeURIComponent(query)}&type=video`);
+        const res = await fetch(mirror, { headers: { 'Accept': 'application/json' } });
         if (res.ok) {
-          const items = await res.json();
+          const pData = await res.json();
+          const items = pData.items || pData;
           if (Array.isArray(items) && items.length > 0) {
-            const tracks: Track[] = items.slice(0, 25).map((item: any) => ({
-              id: `yt_${item.videoId}`,
-              title: item.title,
-              artist: item.author || 'YouTube Music',
-              album: 'YouTube Music Live',
-              image: item.videoThumbnails?.find((t: any) => t.quality === 'medium' || t.quality === 'high')?.url || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
-              duration: item.lengthSeconds || 200,
-              downloadUrl: `https://www.youtube.com/watch?v=${item.videoId}`,
-              mediaType: 'video',
-              isVideo: true,
-              isCobalt: true,
-            }));
-            this.setCache(cacheKey, tracks);
-            return tracks;
+            const tracks: Track[] = items
+              .filter((it: any) => it.type === 'stream' || it.url || it.videoId)
+              .slice(0, 25)
+              .map((it: any) => {
+                const videoId = it.url ? it.url.replace('/watch?v=', '') : (it.videoId || 'yt_id');
+                return {
+                  id: `yt_${videoId}`,
+                  title: it.title || 'YouTube Song',
+                  artist: it.uploaderName || 'YouTube Artist',
+                  album: 'YouTube Music Live',
+                  image: it.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+                  duration: it.duration || 210,
+                  downloadUrl: `https://www.youtube.com/watch?v=${videoId}`,
+                  mediaType: 'video',
+                  isVideo: true,
+                  isCobalt: true,
+                };
+              });
+            if (tracks.length > 0) {
+              this.setCache(cacheKey, tracks);
+              return tracks;
+            }
           }
         }
       } catch (e) {}
@@ -320,30 +328,69 @@ class MusicAPI {
   }
 
   async extractCobaltStream(url: string): Promise<string | null> {
-    try {
-      // Connect directly to Cobalt API from client side for static hosting (Git Pages)
-      const res = await fetch('https://api.cobalt.tools/', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: url,
-          videoQuality: 'audio',
-          audioFormat: 'mp3',
-          audioBitrate: '320'
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.url) {
-          return data.url;
-        }
+    const extractYtId = (link: string): string => {
+      const match = link.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+      return match ? match[1] : '';
+    };
+
+    const videoId = extractYtId(url);
+
+    // 1. Try Piped Streams API (100% CORS-enabled direct audio stream extraction)
+    if (videoId) {
+      const pipedStreamUrls = [
+        `https://pipedapi.kavin.rocks/streams/${videoId}`,
+        `https://api.piped.yt/streams/${videoId}`,
+        `https://pipedapi.mha.fi/streams/${videoId}`
+      ];
+
+      for (const pUrl of pipedStreamUrls) {
+        try {
+          const res = await fetch(pUrl);
+          if (res.ok) {
+            const data = await res.json();
+            const audioStreams = data.audioStreams || [];
+            if (audioStreams.length > 0) {
+              const bestStream = audioStreams.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0];
+              if (bestStream && bestStream.url) {
+                return bestStream.url;
+              }
+            }
+          }
+        } catch (e) {}
       }
-    } catch (err) {
-      console.error('Cobalt extraction failed:', err);
     }
+
+    // 2. Try Cobalt API instances with updated payload schema
+    const cobaltInstances = [
+      'https://api.cobalt.tools/',
+      'https://co.wuk.sh/api/json',
+      'https://cobalt.qtfy.dev/'
+    ];
+
+    for (const cobUrl of cobaltInstances) {
+      try {
+        const res = await fetch(cobUrl, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: url,
+            downloadMode: 'audio',
+            audioFormat: 'mp3',
+            videoQuality: 'audio'
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && (data.url || data.audio)) {
+            return data.url || data.audio;
+          }
+        }
+      } catch (err) {}
+    }
+
     return null;
   }
 
