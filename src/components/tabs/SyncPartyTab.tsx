@@ -562,22 +562,22 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       )}
 
-      {/* Top Room Banner Bar with Exit to Solo Mode button */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-3 flex items-center justify-between shadow-xl sticky top-0 z-20 backdrop-blur-md bg-opacity-95">
+      {/* Top Room Banner Bar with Member Avatars HUD & Actions */}
+      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-3 flex items-center justify-between shadow-xl sticky top-0 z-20 backdrop-blur-md bg-opacity-95 flex-wrap gap-2">
         <div className="flex items-center space-x-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)]">
-            <Radio className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
+          <div className="w-9 h-9 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shrink-0 shadow-inner">
+            <Radio className="w-4.5 h-4.5 animate-spin" style={{ animationDuration: '6s' }} />
           </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center space-x-1.5 text-xs font-bold text-[var(--text-sunofy)]">
               <span className="truncate">Sync Room</span>
               {syncState.isHost ? (
-                <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 font-mono font-bold uppercase flex items-center gap-1">
+                <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 font-mono font-bold uppercase flex items-center gap-1 shrink-0">
                   <span>HOST</span>
                   <Crown className="w-3 h-3 text-amber-400 rotate-12" />
                 </span>
               ) : (
-                <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/40 font-mono font-bold uppercase">
+                <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/40 font-mono font-bold uppercase shrink-0">
                   LISTENER
                 </span>
               )}
@@ -592,18 +592,43 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           </div>
         </div>
 
+        {/* Center Live Members Overlapping Avatars HUD */}
+        <div className="hidden sm:flex items-center -space-x-2 overflow-hidden px-2 py-1 bg-black/30 rounded-full border border-[var(--border-sunofy)]/40">
+          {syncState.members.slice(0, 5).map((m) => (
+            <div
+              key={m.id}
+              className={`w-7 h-7 rounded-full bg-[var(--bg-sunofy)] border-2 flex items-center justify-center text-xs select-none shadow-sm relative ${
+                m.isMicSpeaking
+                  ? 'border-emerald-400 ring-2 ring-emerald-400/50 animate-pulse'
+                  : 'border-[var(--card-sunofy)] text-[var(--text-sunofy)]'
+              }`}
+              title={`${m.name} ${m.isHost ? '(Host)' : ''} ${m.isMicSpeaking ? '- Speaking Live' : ''}`}
+            >
+              <span>{m.avatarIcon || (m.isHost ? '👑' : '🎧')}</span>
+              {m.isMicSpeaking && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-black" />
+              )}
+            </div>
+          ))}
+          {syncState.members.length > 5 && (
+            <div className="w-7 h-7 rounded-full bg-[var(--card-sunofy)] border-2 border-[var(--border-sunofy)] flex items-center justify-center text-[9px] font-bold text-[var(--accent-sunofy)]">
+              +{syncState.members.length - 5}
+            </div>
+          )}
+        </div>
+
         {/* Action Icons */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 shrink-0">
           <button
             onClick={() => setShowQrModal(true)}
-            className="w-8 h-8 rounded-xl bg-[var(--border-sunofy)] flex items-center justify-center text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer"
+            className="w-8.5 h-8.5 rounded-xl bg-[var(--border-sunofy)] flex items-center justify-center text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer"
             title="Show Room QR Code"
           >
             <QrCode className="w-4 h-4" />
           </button>
           <button
             onClick={handleShareLink}
-            className="w-8 h-8 rounded-xl bg-[var(--border-sunofy)] flex items-center justify-center text-[var(--text-sunofy)] hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer"
+            className="w-8.5 h-8.5 rounded-xl bg-[var(--border-sunofy)] flex items-center justify-center text-[var(--text-sunofy)] hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer"
             title="Share Room"
           >
             <Share2 className="w-4 h-4" />
@@ -617,7 +642,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             title="Exit to Solo Mode"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Exit Room</span>
+            <span>Exit</span>
           </button>
         </div>
       </div>
