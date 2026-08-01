@@ -169,6 +169,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Track[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [customReaction, setCustomReaction] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [musicVolume, setMusicVolume] = useState(100);
@@ -1403,20 +1404,49 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 <div ref={chatBottomRef} />
               </div>
 
-              {/* Emoji Reaction Bar */}
-              <div className="flex items-center gap-1.5 px-1 pt-1.5 border-t border-[var(--border-sunofy)]/50">
-                <span className="text-[9px] font-bold text-[var(--muted-sunofy)] uppercase tracking-wider mr-1">React:</span>
-                {['🔥', '❤️', '👏', '😂', '🎉', '🚀'].map((emoji) => (
+              {/* Emoji Reaction Bar with Custom Reaction Support */}
+              <div className="flex items-center gap-1.5 px-1 pt-1.5 border-t border-[var(--border-sunofy)]/50 flex-wrap">
+                <span className="text-[9px] font-bold text-[var(--muted-sunofy)] uppercase tracking-wider mr-1 shrink-0">React:</span>
+                {['🔥', '❤️', '👏', '😂', '🎉', '🚀', '💯', '⚡', '👑', '🤩'].map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => {
                       syncParty.sendEmojiReaction(emoji);
                     }}
-                    className="text-sm p-1 hover:scale-125 hover:bg-[var(--border-sunofy)] rounded-lg transition active:scale-95 cursor-pointer"
+                    className="text-sm p-1 hover:scale-125 hover:bg-[var(--border-sunofy)] rounded-lg transition active:scale-95 cursor-pointer shrink-0"
                   >
                     {emoji}
                   </button>
                 ))}
+
+                {/* Custom Reaction Quick Input */}
+                <div className="flex items-center space-x-1 ml-auto shrink-0 mt-0.5 sm:mt-0">
+                  <input
+                    type="text"
+                    value={customReaction}
+                    onChange={(e) => setCustomReaction(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customReaction.trim()) {
+                        syncParty.sendEmojiReaction(customReaction.trim());
+                        setCustomReaction('');
+                      }
+                    }}
+                    placeholder="Custom emoji..."
+                    className="w-24 sm:w-28 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-lg px-2 py-0.5 text-[10px] text-[var(--text-sunofy)] focus:outline-none focus:border-[var(--accent-sunofy)]"
+                  />
+                  <button
+                    onClick={() => {
+                      if (customReaction.trim()) {
+                        syncParty.sendEmojiReaction(customReaction.trim());
+                        setCustomReaction('');
+                      }
+                    }}
+                    className="px-2 py-0.5 bg-[var(--accent-sunofy)] text-black font-bold text-[10px] rounded-lg hover:scale-105 transition cursor-pointer"
+                    title="Send Custom Reaction"
+                  >
+                    React
+                  </button>
+                </div>
               </div>
 
               {/* Chat Bar */}
@@ -1595,11 +1625,11 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   </div>
                 )}
 
-                {/* 2-Column Mixer Sliders */}
+                {/* Unified 2-Column Mixer Sliders (Room Media vs Voice Stream) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
-                      <span className="flex items-center gap-1.5"><Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" /> Room Music Volume</span>
+                      <span className="flex items-center gap-1.5"><Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" /> Room Media Volume (Music & Video)</span>
                       <span className="text-[var(--accent-sunofy)] font-mono font-bold">{musicVolume}%</span>
                     </div>
                     <input
@@ -1629,7 +1659,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
                   <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
-                      <span className="flex items-center gap-1.5"><Mic className="w-4 h-4 text-emerald-400" /> Voice Stream Volume</span>
+                      <span className="flex items-center gap-1.5"><Mic className="w-4 h-4 text-emerald-400" /> Voice Stream Volume (Microphones)</span>
                       <span className="text-emerald-400 font-mono font-bold">{micVolume}%</span>
                     </div>
                     <input
