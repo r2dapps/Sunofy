@@ -170,6 +170,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [searchResults, setSearchResults] = useState<Track[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [customReaction, setCustomReaction] = useState('');
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [musicVolume, setMusicVolume] = useState(100);
@@ -724,24 +725,29 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     {ytId ? (
                       <iframe
                         key={ytId + '_' + startSec}
-                        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=${syncState.isPlaying ? 1 : 0}&start=${startSec}&enablejsapi=1&origin=${window.location.origin}`}
-                        className="w-full h-full border-0"
+                        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=${syncState.isPlaying ? 1 : 0}&start=${startSec}&controls=${syncState.isHost ? 1 : 0}&disablekb=1&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`}
+                        className={`w-full h-full border-0 ${!syncState.isHost ? 'pointer-events-none select-none' : ''}`}
                         allow="autoplay; encrypted-media; picture-in-picture"
                         allowFullScreen
                       />
                     ) : (
                       <video
                         src={curTrack.downloadUrl || curTrack.url}
-                        className="w-full h-full object-contain"
+                        className={`w-full h-full object-contain ${!syncState.isHost ? 'pointer-events-none select-none' : ''}`}
                         controls={syncState.isHost}
                         autoPlay={syncState.isPlaying}
                       />
                     )}
 
+                    {/* Transparent protection shield for listeners so they cannot click/scrub YouTube controls */}
+                    {!syncState.isHost && (
+                      <div className="absolute inset-0 bg-transparent z-20 pointer-events-auto" />
+                    )}
+
                     {/* Individual Fullscreen Overlay Button for any member */}
                     <button
                       onClick={handleToggleFullscreen}
-                      className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-purple-600/80 text-white rounded-xl backdrop-blur-md border border-white/20 transition cursor-pointer shadow-lg z-30"
+                      className="absolute top-2 right-2 p-2 bg-black/80 hover:bg-purple-600/90 text-white rounded-xl backdrop-blur-md border border-white/20 transition cursor-pointer shadow-2xl z-40 pointer-events-auto"
                       title="Toggle Individual Fullscreen Theatre Mode"
                     >
                       <Maximize2 className="w-4 h-4" />
@@ -1418,7 +1424,16 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                             </span>
                           </div>
                         )}
-                        <p className="font-semibold leading-relaxed">{c.text}</p>
+                        {c.text.startsWith('http') && (c.text.includes('.gif') || c.text.includes('giphy.com') || c.text.includes('tenor.com') || c.text.includes('media.giphy.com')) ? (
+                          <img
+                            src={c.text}
+                            alt="GIF Reaction"
+                            className="rounded-xl max-w-[200px] max-h-[140px] object-cover shadow-md my-1 border border-purple-500/40 hover:scale-105 transition shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <p className="font-semibold leading-relaxed">{c.text}</p>
+                        )}
                       </div>
                     );
                   })
@@ -1471,8 +1486,61 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 </div>
               </div>
 
+              {/* GIF Reaction Selector Drawer */}
+              {showGifPicker && (
+                <div className="bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-2 space-y-2 animate-fade shadow-xl">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider">Select GIF Reaction</span>
+                    <button
+                      onClick={() => setShowGifPicker(false)}
+                      className="text-xs text-[var(--muted-sunofy)] hover:text-white cursor-pointer px-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* Preset Trending GIFs Grid */}
+                  <div className="grid grid-cols-3 gap-1.5 max-h-[120px] overflow-y-auto pr-1">
+                    {[
+                      { name: 'Vibe Cat 🐱', url: 'https://media.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif' },
+                      { name: 'Party 🕺', url: 'https://media.giphy.com/media/l3vR1v8L3tW9FvRZC/giphy.gif' },
+                      { name: 'Mind Blown 🤯', url: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
+                      { name: 'Lit Fire 🔥', url: 'https://media.giphy.com/media/3o72FfM5HJydzaMpfO/giphy.gif' },
+                      { name: 'Popcorn 🍿', url: 'https://media.giphy.com/media/hVTouq08y8fzW/giphy.gif' },
+                      { name: 'Cheers 🍻', url: 'https://media.giphy.com/media/BPJmthQ3YRwD6QqcVD/giphy.gif' },
+                    ].map((gif) => (
+                      <button
+                        key={gif.url}
+                        onClick={() => {
+                          syncParty.sendMessage(gif.url);
+                          setShowGifPicker(false);
+                        }}
+                        className="relative rounded-xl overflow-hidden aspect-video border border-purple-500/30 hover:border-[var(--accent-sunofy)] hover:scale-105 transition cursor-pointer group"
+                      >
+                        <img src={gif.url} alt={gif.name} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-bold text-white text-center py-0.5 truncate group-hover:bg-purple-600/80">
+                          {gif.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Chat Bar */}
               <div className="flex space-x-2 pt-2">
+                <button
+                  onClick={() => setShowGifPicker(!showGifPicker)}
+                  className={`px-2.5 py-2 rounded-xl border font-black text-[10px] transition cursor-pointer flex items-center gap-1 shrink-0 ${
+                    showGifPicker
+                      ? 'bg-purple-600 text-white border-purple-400 shadow-md'
+                      : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] text-purple-300 hover:text-white hover:bg-purple-600/20'
+                  }`}
+                  title="Attach Animated GIF Reaction"
+                >
+                  <span>🎞️</span>
+                  <span>GIF</span>
+                </button>
                 <input
                   type="text"
                   value={chatInput}
