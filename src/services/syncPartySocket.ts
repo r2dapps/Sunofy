@@ -281,14 +281,18 @@ class SyncPartyManager {
           }
         });
 
-        // Listen to Host State
+        // Listen to Host State with Latency Transit Compensation
         onValue(ref(db, `sunofy_vibe_rooms/${cleanCode}/state`), (stateSnap) => {
           const stateData = stateSnap.val();
           if (stateData) {
             this.state.currentTrack = stateData.track;
-            this.state.currentTime = stateData.currentTime;
             this.state.isPlaying = stateData.isPlaying;
             this.state.duration = stateData.duration || (stateData.track ? stateData.track.duration : 0);
+            
+            // Adjust currentTime for transit latency across cities
+            const transitSec = stateData.timestamp ? Math.max(0, (Date.now() - stateData.timestamp) / 1000) : 0;
+            const realTime = stateData.isPlaying ? stateData.currentTime + transitSec : stateData.currentTime;
+            this.state.currentTime = Math.max(0, realTime);
             this.notify();
           }
         });

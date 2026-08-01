@@ -512,18 +512,19 @@ export default function App() {
         }
         setIsPlaying(true);
 
-        // Seek / Drift correction for Host and Listeners
+        // Seek / Drift correction for Host and Listeners (Smooth Latency Catchup)
         if (!isNewTrack && syncState.currentTime >= 0) {
           const drift = Math.abs(audio.currentTime - syncState.currentTime);
-          if (drift > 1.5) {
-            // Hard seek if out of sync or if new seek position received
+          const hardSeekThreshold = syncState.isHost ? 1.5 : 3.5;
+          if (drift > hardSeekThreshold) {
+            // Hard seek if significantly out of sync (e.g. host manually jumped to a new seek position)
             try {
               audio.currentTime = syncState.currentTime;
               audio.playbackRate = 1.0;
             } catch (e) {}
-          } else if (!syncState.isHost && drift > 0.5) {
-            // Minor drift for Listeners: smoothly adjust playback speed to catch up silently
-            audio.playbackRate = audio.currentTime < syncState.currentTime ? 1.02 : 0.98;
+          } else if (!syncState.isHost && drift > 0.4) {
+            // Minor drift across cities: smoothly adjust playback speed (1.025x / 0.975x) to catch up silently without audio jumping
+            audio.playbackRate = audio.currentTime < syncState.currentTime ? 1.025 : 0.975;
           } else {
             audio.playbackRate = 1.0;
           }
