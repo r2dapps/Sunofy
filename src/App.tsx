@@ -1628,8 +1628,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Mini Player - Hidden when in active Sync Party room, Videos tab, or Full Player Modal */}
-      {!(currentTab === 'Sync Party' && syncState.inRoom) && currentTab !== 'Videos' && !isFullPlayerOpen && (
+      {/* Mini Player - Hidden when locked, in active Sync Party room, Videos tab, or Full Player Modal */}
+      {!isAppLocked && !(currentTab === 'Sync Party' && syncState.inRoom) && currentTab !== 'Videos' && !isFullPlayerOpen && (
         <MiniPlayer
           currentTrack={currentTrack}
           isPlaying={isPlaying}
@@ -1650,9 +1650,9 @@ export default function App() {
         />
       )}
 
-      {/* Full Player Modal */}
+      {/* Full Player Modal - never shown when app is locked */}
       <FullPlayerModal
-        isOpen={isFullPlayerOpen}
+        isOpen={isFullPlayerOpen && !isAppLocked}
         onClose={() => setIsFullPlayerOpen(false)}
         currentTrack={currentTrack}
         isPlaying={isPlaying}
