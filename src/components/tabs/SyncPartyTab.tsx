@@ -553,7 +553,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
 
   return (
-    <div className="space-y-3 animate-fade pb-6 text-[var(--text-sunofy)] select-none relative">
+    <div className="space-y-3 animate-fade pb-2 text-[var(--text-sunofy)] select-none relative flex flex-col h-[calc(100vh-110px)] sm:h-auto min-h-[580px]">
       {/* Live Voice Active Speaker Floating Indicator */}
       {activeSpeaker && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-black font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce-subtle backdrop-blur-md border border-emerald-300">
@@ -563,7 +563,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
       )}
 
       {/* Top Room Banner Bar with Member Avatars HUD & Actions */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-3 flex items-center justify-between shadow-xl sticky top-0 z-20 backdrop-blur-md bg-opacity-95 flex-wrap gap-2">
+      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-3 flex items-center justify-between shadow-xl sticky top-0 z-20 backdrop-blur-md bg-opacity-95 flex-wrap gap-2 shrink-0">
         <div className="flex items-center space-x-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shrink-0 shadow-inner">
             <Radio className="w-4.5 h-4.5 animate-spin" style={{ animationDuration: '6s' }} />
@@ -647,8 +647,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       </div>
 
-      {/* Grander Vanilla Live Audio Stage Box (Optimized for Mobile Height & Desktop) */}
-      <div className="bg-gradient-to-b from-purple-950/90 via-[#0a0d18] to-[var(--card-sunofy)] border border-purple-500/40 rounded-3xl p-3.5 sm:p-6 space-y-2.5 sm:space-y-4 shadow-2xl relative overflow-hidden min-h-[260px] sm:min-h-[420px] flex flex-col justify-between text-center">
+      {/* Grander Live Audio Stage Box (Dynamic Height Full View) */}
+      <div className={`bg-gradient-to-b from-purple-950/90 via-[#0a0d18] to-[var(--card-sunofy)] border border-purple-500/40 rounded-3xl p-3.5 sm:p-6 space-y-2.5 sm:space-y-4 shadow-2xl relative overflow-hidden flex flex-col justify-between text-center transition-all duration-300 ${
+        isConsoleMinimized ? 'flex-1 min-h-[340px]' : 'h-[42vh] sm:h-[48%] min-h-[220px] shrink-0'
+      }`}>
         {/* Blended Background Ambient Art & Pulsing Particles Glow */}
         {curTrack?.image && (
           <div className="absolute inset-0 opacity-30 pointer-events-none">
@@ -841,8 +843,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         )}
       </div>
 
-      {/* Bottom Sub-Tabs Console (6 Consolidated Sub-Tabs with Tooltips & Minimizable Card) */}
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl overflow-hidden shadow-xl flex flex-col transition-all duration-300">
+      {/* Bottom Sub-Tabs Console (Minimizable Split-View Card) */}
+      <div className={`bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl overflow-hidden shadow-xl flex flex-col transition-all duration-300 ${
+        isConsoleMinimized ? 'shrink-0' : 'flex-1 min-h-0'
+      }`}>
         {/* Icon-Only Tab Header Bar with Fixed Minimize Toggle */}
         <div className="bg-[var(--bg-sunofy)] border-b border-[var(--border-sunofy)] p-1.5 flex items-center justify-between gap-1.5">
           {/* Scrollable sub-tabs container */}
@@ -972,7 +976,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
         {/* Tab Body View (Hidden when console is minimized) */}
         {!isConsoleMinimized && (
-          <div className="p-3 sm:p-4 space-y-3 max-h-[300px] sm:max-h-[460px] overflow-y-auto">
+          <div className="p-3 sm:p-4 space-y-3 flex-1 overflow-y-auto min-h-0">
             {/* SUB-TAB 1: Party Queue */}
             {activeTab === 'queue' && (
               <div className="space-y-2 animate-fade">

@@ -368,6 +368,10 @@ class SyncPartyManager {
     }
     if (this.roomRef && this.state.isHost) {
       update(this.roomRef, { closed: true, roomActive: false });
+      const currentRoomRef = this.roomRef;
+      setTimeout(() => {
+        remove(currentRoomRef).catch(() => {});
+      }, 4000);
     }
     
     localStorage.removeItem('sunofy_sync_room_code');
