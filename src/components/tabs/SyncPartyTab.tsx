@@ -794,27 +794,42 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
                     <span>{formatTime(syncState.currentTime)}</span>
                     <div
-                      className={`flex-1 h-2 bg-black/60 border border-purple-500/30 rounded-full overflow-hidden relative ${
+                      className={`flex-1 h-3 bg-black/60 border border-purple-500/30 rounded-full relative p-0.5 flex items-center touch-none select-none ${
                         syncState.isHost ? 'cursor-pointer' : 'cursor-default'
                       }`}
-                      onClick={(e) => {
+                      onPointerDown={(e) => {
                         if (!syncState.isHost) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const pos = (e.clientX - rect.left) / rect.width;
-                        syncParty.seek(pos * syncState.duration);
+                        e.preventDefault();
+                        const target = e.currentTarget;
+                        const rect = target.getBoundingClientRect();
+                        const updateSeek = (clientX: number) => {
+                          const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                          syncParty.seek(pos * syncState.duration);
+                        };
+                        updateSeek(e.clientX);
+
+                        const handleMove = (moveEv: PointerEvent) => {
+                          updateSeek(moveEv.clientX);
+                        };
+                        const handleUp = () => {
+                          window.removeEventListener('pointermove', handleMove);
+                          window.removeEventListener('pointerup', handleUp);
+                        };
+                        window.addEventListener('pointermove', handleMove);
+                        window.addEventListener('pointerup', handleUp);
                       }}
                     >
                       <div
-                        className="bg-[var(--accent-sunofy)] h-full transition-all rounded-full shadow-sm"
+                        className="bg-[var(--accent-sunofy)] h-full transition-all duration-75 rounded-full shadow-[0_0_8px_rgba(29,185,84,0.6)] relative"
                         style={{ width: `${pct}%` }}
-                      />
-                      {/* Host White Draggable Knob */}
-                      {syncState.isHost && (
-                        <div
-                          className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md border border-neutral-300 pointer-events-none transition-all"
-                          style={{ left: `calc(${pct}% - 7px)` }}
-                        />
-                      )}
+                      >
+                        {/* Host White Draggable Knob */}
+                        {syncState.isHost && (
+                          <div
+                            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-[var(--accent-sunofy)] pointer-events-none transition-transform"
+                          />
+                        )}
+                      </div>
                     </div>
                     <span>{formatTime(syncState.duration)}</span>
                   </div>

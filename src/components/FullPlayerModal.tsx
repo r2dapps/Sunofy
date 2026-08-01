@@ -315,18 +315,37 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
               </div>
             </div>
 
-            {/* Scrubber Section */}
+            {/* Pointer-Tracking Smooth Timeline Progress Scrubber */}
             <div className="w-full space-y-2 mt-4 shrink-0">
               <div
-                className="w-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] h-2 rounded-full cursor-pointer relative shadow-inner group"
-                onClick={handleScrub}
+                className="w-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] h-3 rounded-full cursor-pointer relative shadow-inner group touch-none select-none p-0.5 flex items-center"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  const target = e.currentTarget;
+                  const rect = target.getBoundingClientRect();
+                  const updateScrub = (clientX: number) => {
+                    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                    onSeek(pos * duration);
+                  };
+                  updateScrub(e.clientX);
+
+                  const handleMove = (moveEv: PointerEvent) => {
+                    updateScrub(moveEv.clientX);
+                  };
+                  const handleUp = () => {
+                    window.removeEventListener('pointermove', handleMove);
+                    window.removeEventListener('pointerup', handleUp);
+                  };
+                  window.addEventListener('pointermove', handleMove);
+                  window.addEventListener('pointerup', handleUp);
+                }}
               >
                 <div
-                  className="bg-[var(--accent-sunofy)] h-full transition-all duration-100 rounded-full relative"
+                  className="bg-[var(--accent-sunofy)] h-full rounded-full relative transition-all duration-75 shadow-[0_0_8px_rgba(29,185,84,0.6)]"
                   style={{ width: `${progressPct}%` }}
                 >
-                  {/* Glowing Slider Circular Nob/Thumb */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-[var(--accent-sunofy)] shadow-md group-hover:scale-125 transition-transform" />
+                  {/* Glowing Slider Circular Knob/Thumb */}
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4.5 h-4.5 rounded-full bg-white border-2 border-[var(--accent-sunofy)] shadow-lg scale-110 group-hover:scale-130 transition-transform" />
                 </div>
               </div>
               <div className="flex justify-between text-xs font-mono font-bold text-[var(--muted-sunofy)]">
