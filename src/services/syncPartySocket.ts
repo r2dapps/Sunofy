@@ -833,6 +833,60 @@ class SyncPartyManager {
     }
   }
 
+  sendEmojiReaction(emoji: string) {
+    if (!this.state.inRoom || !this.state.roomCode) return;
+
+    const payload = {
+      emoji,
+      senderId: this.myPeerId,
+      senderName: this.getUserName(),
+      timestamp: Date.now(),
+    };
+
+    // Broadcast over local BroadcastChannel
+    if (this.localChannel) {
+      this.localChannel.postMessage({ type: 'EMOJI_REACTION_EVENT', payload });
+    }
+
+    // Push to Firebase Realtime DB
+    const reactRef = push(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/reactions`), payload);
+    setTimeout(() => {
+      remove(reactRef).catch(() => {});
+    }, 4000);
+  }
+
+  listenEmojiReactions(callback: (emoji: string, senderName: string) => void) {
+    if (!this.state.inRoom || !this.state.roomCode) return () => {};
+
+    // 1. Firebase Listener
+    const reactNodeRef = ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/reactions`);
+    const unsubscribeFb = onChildAdded(reactNodeRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val && val.emoji && val.timestamp > Date.now() - 5000) {
+        callback(val.emoji, val.senderName || 'Member');
+      }
+    });
+
+    // 2. Local BroadcastChannel Listener
+    const handleLocalMsg = (event: MessageEvent) => {
+      const data = event.data;
+      if (data && data.type === 'EMOJI_REACTION_EVENT' && data.payload && data.payload.emoji) {
+        callback(data.payload.emoji, data.payload.senderName || 'Member');
+      }
+    };
+
+    if (this.localChannel) {
+      this.localChannel.addEventListener('message', handleLocalMsg);
+    }
+
+    return () => {
+      unsubscribeFb();
+      if (this.localChannel) {
+        this.localChannel.removeEventListener('message', handleLocalMsg);
+      }
+    };
+  }
+
   sendVoiceAudioChunk(audioDataBase64: string, isSpeaking: boolean = true) {
     if (!this.state.inRoom || !this.state.roomCode) return;
 

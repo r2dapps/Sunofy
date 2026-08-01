@@ -368,20 +368,14 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     }
   }, [syncState.isHost, syncState.allowMemberMics, isMicActive]);
 
-  // Ref to track last chat count for triggering floating emoji sync reactions
-  const lastMessageCountRef = React.useRef(syncState.chat.length);
-
+  // Listen to real-time floating emoji reaction events (confetti particles without chat message clutter)
   React.useEffect(() => {
-    if (syncState.chat.length > lastMessageCountRef.current) {
-      const newMessages = syncState.chat.slice(lastMessageCountRef.current);
-      newMessages.forEach((msg) => {
-        if (!msg.isSystem && ['🔥', '❤️', '👏', '😂', '🎉', '🚀'].includes(msg.text)) {
-          spawnFloatingEmoji(msg.text);
-        }
-      });
-    }
-    lastMessageCountRef.current = syncState.chat.length;
-  }, [syncState.chat]);
+    if (!syncState.inRoom) return;
+    const cleanup = syncParty.listenEmojiReactions((emoji) => {
+      spawnFloatingEmoji(emoji);
+    });
+    return () => cleanup();
+  }, [syncState.inRoom, syncState.roomCode]);
 
   // Active sub-tab inside the consolidated Sync Party console
   const [activeTab, setActiveTab] = useState<'queue' | 'search_music' | 'library' | 'video_search' | 'chat' | 'members' | 'voice'>('queue');
@@ -716,8 +710,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       <button
                         key={emoji}
                         onClick={() => {
-                          syncParty.sendMessage(emoji);
-                          spawnFloatingEmoji(emoji);
+                          syncParty.sendEmojiReaction(emoji);
                         }}
                         className="w-9.5 h-9.5 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-lg flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
                       >
@@ -1319,8 +1312,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   <button
                     key={emoji}
                     onClick={() => {
-                      syncParty.sendMessage(emoji);
-                      spawnFloatingEmoji(emoji);
+                      syncParty.sendEmojiReaction(emoji);
                     }}
                     className="text-sm p-1 hover:scale-125 hover:bg-[var(--border-sunofy)] rounded-lg transition active:scale-95 cursor-pointer"
                   >
@@ -1507,10 +1499,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
                 {/* 2-Column Mixer Sliders */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-1.5">
+                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
                       <span className="flex items-center gap-1.5"><Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" /> Room Music Volume</span>
-                      <span className="text-[var(--accent-sunofy)] font-mono">{musicVolume}%</span>
+                      <span className="text-[var(--accent-sunofy)] font-mono font-bold">{musicVolume}%</span>
                     </div>
                     <input
                       type="range"
@@ -1520,12 +1512,27 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       onChange={(e) => setMusicVolume(Number(e.target.value))}
                       className="w-full accent-[var(--accent-sunofy)] h-1.5 bg-[var(--border-sunofy)] rounded-lg cursor-pointer"
                     />
+                    <div className="flex items-center justify-between gap-1 pt-0.5">
+                      {[100, 50, 0].map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setMusicVolume(v)}
+                          className={`flex-1 py-1 rounded text-[9px] font-mono font-bold transition cursor-pointer ${
+                            musicVolume === v
+                              ? 'bg-[var(--accent-sunofy)] text-black'
+                              : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                          }`}
+                        >
+                          {v === 0 ? 'Mute' : `${v}%`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-1.5">
+                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
                       <span className="flex items-center gap-1.5"><Mic className="w-4 h-4 text-emerald-400" /> Voice Stream Volume</span>
-                      <span className="text-emerald-400 font-mono">{micVolume}%</span>
+                      <span className="text-emerald-400 font-mono font-bold">{micVolume}%</span>
                     </div>
                     <input
                       type="range"
@@ -1535,6 +1542,21 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       onChange={(e) => setMicVolume(Number(e.target.value))}
                       className="w-full accent-emerald-400 h-1.5 bg-[var(--border-sunofy)] rounded-lg cursor-pointer"
                     />
+                    <div className="flex items-center justify-between gap-1 pt-0.5">
+                      {[100, 50, 0].map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setMicVolume(v)}
+                          className={`flex-1 py-1 rounded text-[9px] font-mono font-bold transition cursor-pointer ${
+                            micVolume === v
+                              ? 'bg-emerald-500 text-black'
+                              : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                          }`}
+                        >
+                          {v === 0 ? 'Mute' : `${v}%`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
