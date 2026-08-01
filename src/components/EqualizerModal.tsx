@@ -293,30 +293,58 @@ export const EqualizerModal: React.FC<EqualizerModalProps> = ({
 
             {/* Vertical Sliders */}
             <div className="flex justify-between items-end h-48 overflow-x-auto no-scrollbar gap-2.5 pt-4 relative z-10">
-              {bands.map((band, idx) => (
-                <div key={band.freq} className="flex flex-col items-center h-full justify-between min-w-[42px] flex-1">
-                  {/* Gain Indicator */}
-                  <span className="text-[10px] text-[var(--accent-sunofy)] font-black font-mono">
-                    {band.gain > 0 ? `+${band.gain}` : band.gain}
-                  </span>
-                  
-                  {/* Slider Input */}
-                  <div className="relative h-28 flex items-center justify-center">
-                    <input
-                      type="range"
-                      min="-12"
-                      max="12"
-                      step="1"
-                      value={band.gain}
-                      onChange={(e) => onBandChange(idx, Number(e.target.value))}
-                      className="accent-[var(--accent-sunofy)] cursor-pointer h-1 w-24 -rotate-90 origin-center"
-                    />
+              {bands.map((band, idx) => {
+                const fillPct = Math.round(((band.gain + 12) / 24) * 100);
+                return (
+                  <div key={band.freq} className="flex flex-col items-center h-full justify-between min-w-[42px] flex-1 select-none">
+                    {/* Gain Indicator */}
+                    <span className="text-[10px] text-[var(--accent-sunofy)] font-black font-mono">
+                      {band.gain > 0 ? `+${band.gain}` : band.gain}
+                    </span>
+                    
+                    {/* Custom Pointer-Tracking Smooth Scrubber */}
+                    <div
+                      className="relative h-28 w-5.5 bg-[var(--card-sunofy)] rounded-full flex items-end justify-center cursor-pointer overflow-hidden p-1 touch-none select-none border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/50 transition-colors shadow-inner"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        const target = e.currentTarget;
+                        const rect = target.getBoundingClientRect();
+                        const updateGain = (clientY: number) => {
+                          const relativeY = rect.bottom - clientY;
+                          const ratio = Math.max(0, Math.min(1, relativeY / rect.height));
+                          const newGain = Math.round(ratio * 24 - 12);
+                          onBandChange(idx, newGain);
+                        };
+                        updateGain(e.clientY);
+
+                        const handleMove = (moveEv: PointerEvent) => {
+                          updateGain(moveEv.clientY);
+                        };
+                        const handleUp = () => {
+                          window.removeEventListener('pointermove', handleMove);
+                          window.removeEventListener('pointerup', handleUp);
+                        };
+                        window.addEventListener('pointermove', handleMove);
+                        window.addEventListener('pointerup', handleUp);
+                      }}
+                    >
+                      {/* Active Accent Color Filled Track Bar */}
+                      <div
+                        className="w-full bg-[var(--accent-sunofy)] rounded-full transition-all duration-75 shadow-[0_0_8px_rgba(29,185,84,0.6)]"
+                        style={{ height: `${fillPct}%` }}
+                      />
+                      {/* White Slider Knob */}
+                      <div
+                        className="absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-2 border-[var(--accent-sunofy)] rounded-full shadow-md pointer-events-none"
+                        style={{ bottom: `calc(${Math.max(4, Math.min(96, fillPct))}% - 8px)` }}
+                      />
+                    </div>
+                    
+                    {/* Freq Label */}
+                    <span className="text-[10px] text-[var(--text-sunofy)] font-bold tracking-tight">{band.label}</span>
                   </div>
-                  
-                  {/* Freq Label */}
-                  <span className="text-[10px] text-[var(--text-sunofy)] font-bold tracking-tight">{band.label}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

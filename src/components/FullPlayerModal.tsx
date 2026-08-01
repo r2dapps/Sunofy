@@ -429,25 +429,23 @@ Sunofy High Fidelity Canvas Audio Stream`}
               <h3 className="text-xs font-black text-[var(--muted-sunofy)] uppercase tracking-wider">
                 Up Next in Queue ({queue.length})
               </h3>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5">
                 {queue.length > 0 && onSaveQueueAsPlaylist && (
                   <button
                     onClick={onSaveQueueAsPlaylist}
-                    className="text-xs font-bold text-[var(--accent-sunofy)] hover:opacity-80 flex items-center gap-1.5 cursor-pointer bg-[var(--accent-sunofy)]/10 px-2.5 py-1 rounded-full border border-[var(--accent-sunofy)]/30 transition"
-                    title="Save queue as playlist"
+                    className="p-2 text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)]/20 rounded-full border border-[var(--accent-sunofy)]/30 transition cursor-pointer"
+                    title="Save Queue as Playlist"
                   >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Save as Playlist</span>
+                    <PlusCircle className="w-4 h-4" />
                   </button>
                 )}
                 {queue.length > 0 && onClearQueue && (
                   <button
                     onClick={onClearQueue}
-                    className="text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 cursor-pointer bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-full transition"
-                    title="Clear entire queue"
+                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-full border border-red-500/30 transition cursor-pointer"
+                    title="Clear Entire Queue"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Clear Queue</span>
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
