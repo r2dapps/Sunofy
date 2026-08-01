@@ -42,8 +42,8 @@ interface ProfileTabProps {
   onImportLocalFiles?: (files: FileList) => void;
   onClearLocalFolderTracks?: () => void;
   onPlayTrack?: (track: Track) => void;
-  musicSource?: 'jiosaavn' | 'youtube' | 'local';
-  onMusicSourceChange?: (source: 'jiosaavn' | 'youtube' | 'local') => void;
+  musicSource?: 'jiosaavn' | 'cobalt' | 'youtube' | 'local';
+  onMusicSourceChange?: (source: 'jiosaavn' | 'cobalt' | 'youtube' | 'local') => void;
 }
 
 
@@ -85,7 +85,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   onImportLocalFiles,
   onClearLocalFolderTracks,
   onPlayTrack,
-  musicSource = 'jiosaavn',
+  musicSource = 'jiosaavn' as 'jiosaavn' | 'cobalt' | 'youtube' | 'local',
   onMusicSourceChange,
 }) => {
   const [showPinModal, setShowPinModal] = useState(false);

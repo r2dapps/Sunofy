@@ -23,8 +23,8 @@ interface DiscoverTabProps {
   onAddSongToPlaylist?: (playlistId: string, song: Track) => void;
   onCreatePlaylist?: (name: string) => void;
   onImportCollectionAsPlaylist?: (name: string, query: string, image?: string) => void;
-  musicSource?: 'jiosaavn' | 'youtube' | 'local';
-  onMusicSourceChange?: (source: 'jiosaavn' | 'youtube' | 'local') => void;
+  musicSource?: 'jiosaavn' | 'cobalt' | 'youtube' | 'local';
+  onMusicSourceChange?: (source: 'jiosaavn' | 'cobalt' | 'youtube' | 'local') => void;
   discoverQuery?: string;
   onClearDiscoverQuery?: () => void;
   onImportLocalFiles?: (files: FileList) => void;
@@ -48,7 +48,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
   onAddSongToPlaylist,
   onCreatePlaylist,
   onImportCollectionAsPlaylist,
-  musicSource = 'jiosaavn',
+  musicSource = 'jiosaavn' as 'jiosaavn' | 'cobalt' | 'youtube' | 'local',
   onMusicSourceChange,
   discoverQuery = '',
   onClearDiscoverQuery,
@@ -112,7 +112,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
         const query = selectedTag ? `${selectedTag} Music` : 'Top Telugu Hits';
         let tracks: Track[] = [];
         
-        if (musicSource === 'youtube') {
+        if (musicSource === 'youtube' || musicSource === 'cobalt') {
            tracks = await musicApi.searchYoutubeCobalt(query);
         } else if (musicSource === 'local') {
            const offlineList = downloads || [];

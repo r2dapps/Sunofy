@@ -784,6 +784,15 @@ export default function App() {
       const offlineCopy = downloads.find((d) => d.id === track.id);
       let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
 
+      // YouTube Music tracks (YT Music engine) — play via iframe stage embed, NOT <audio>
+      // Skip loading into audioRef to prevent YouTube CORS errors and wrong lock screen URL
+      const isYtMusicTrack = musicSource === 'youtube' && ((track as any).isVideo || (track as any).isCobalt || (src && (src.includes('youtube.com') || src.includes('youtu.be'))));
+      if (isYtMusicTrack) {
+        // Track will play via stage YouTube iframe embed — just update metadata
+        showToast('YouTube Music 🎵 Playing via Stage embed');
+        return;
+      }
+
       if ((track as any).isCobalt && musicSource === 'cobalt') {
         showToast('Extracting stream via Cobalt API...');
         try {
