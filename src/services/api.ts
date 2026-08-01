@@ -247,7 +247,7 @@ class MusicAPI {
       return cached;
     }
 
-    // 1. Try local Express proxy endpoint first if running on localhost
+    // 1. If running on local server proxy, use YouTube search endpoint
     const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     if (isLocalHost) {
       try {
@@ -275,30 +275,7 @@ class MusicAPI {
       } catch (e) {}
     }
 
-    // 2. Try iTunes Search API (100% CORS allowed, zero 502/404 errors, high-speed worldwide CDN)
-    try {
-      const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=25`;
-      const res = await fetch(itunesUrl);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.results && Array.isArray(data.results) && data.results.length > 0) {
-          const tracks: Track[] = data.results.map((item: any) => ({
-            id: `yt_${item.trackId || Math.random().toString(36).substring(2, 9)}`,
-            title: item.trackName || 'YouTube Song',
-            artist: item.artistName || 'YouTube Artist',
-            album: item.collectionName || 'YouTube Music',
-            image: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : './favicon.ico',
-            duration: Math.floor((item.trackTimeMillis || 210000) / 1000),
-            downloadUrl: item.previewUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3',
-            isCobalt: true,
-          }));
-          this.setCache(cacheKey, tracks);
-          return tracks;
-        }
-      }
-    } catch (e) {}
-
-    // 3. Fallback to JioSaavn API with YouTube Music tag if iTunes is unreachable
+    // 2. Direct Saavn API Engine with YouTube Music tag for static hosting (GitHub Pages)
     const tracks = await this.searchSongs(query);
     return tracks.map(t => ({
       ...t,
@@ -308,69 +285,29 @@ class MusicAPI {
   }
 
   async extractCobaltStream(url: string): Promise<string | null> {
-    const extractYtId = (link: string): string => {
-      const match = link.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-      return match ? match[1] : '';
-    };
-
-    const videoId = extractYtId(url);
-
-    // 1. Try Piped Streams API (100% CORS-enabled direct audio stream extraction)
-    if (videoId) {
-      const pipedStreamUrls = [
-        `https://pipedapi.kavin.rocks/streams/${videoId}`,
-        `https://api.piped.yt/streams/${videoId}`,
-        `https://pipedapi.mha.fi/streams/${videoId}`
-      ];
-
-      for (const pUrl of pipedStreamUrls) {
-        try {
-          const res = await fetch(pUrl);
-          if (res.ok) {
-            const data = await res.json();
-            const audioStreams = data.audioStreams || [];
-            if (audioStreams.length > 0) {
-              const bestStream = audioStreams.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0];
-              if (bestStream && bestStream.url) {
-                return bestStream.url;
-              }
-            }
-          }
-        } catch (e) {}
-      }
-    }
-
-    // 2. Try Cobalt API instances with updated payload schema
-    const cobaltInstances = [
-      'https://api.cobalt.tools/',
-      'https://co.wuk.sh/api/json',
-      'https://cobalt.qtfy.dev/'
-    ];
-
-    for (const cobUrl of cobaltInstances) {
-      try {
-        const res = await fetch(cobUrl, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: url,
-            downloadMode: 'audio',
-            audioFormat: 'mp3',
-            videoQuality: 'audio'
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && (data.url || data.audio)) {
-            return data.url || data.audio;
-          }
+    try {
+      const res = await fetch('https://api.cobalt.tools/', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: url,
+          videoQuality: 'audio',
+          audioFormat: 'mp3',
+          audioBitrate: '320'
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.url) {
+          return data.url;
         }
-      } catch (err) {}
+      }
+    } catch (err) {
+      console.error('Cobalt extraction failed:', err);
     }
-
     return null;
   }
 
