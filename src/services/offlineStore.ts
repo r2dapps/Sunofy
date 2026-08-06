@@ -181,7 +181,7 @@ class OfflineStore {
           if (corruptedIds.length > 0) {
             console.info(`🧹 Auto-cleaned up ${corruptedIds.length} corrupted or partial offline downloads.`);
             setTimeout(() => {
-              corruptedIds.forEach(id => this.deleteOfflineTrack(id).catch(console.error));
+              corruptedIds.forEach(id => this.removeOfflineTrack(id).catch(console.error));
             }, 1000);
           }
 

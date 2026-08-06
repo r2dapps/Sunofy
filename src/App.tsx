@@ -879,7 +879,7 @@ export default function App() {
           const cobaltSrc = await musicApi.extractCobaltStream(ytUrl);
           if (cobaltSrc) {
             src = cobaltSrc;
-            showToast(musicSource === 'youtube' ? 'YouTube Music 🎵 Playing' : 'Cobalt Stream Active ⚡');
+            showToast('Cobalt Stream Active ⚡');
           } else {
             throw new Error('Cobalt failed');
           }
