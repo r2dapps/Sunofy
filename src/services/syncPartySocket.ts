@@ -791,7 +791,15 @@ class SyncPartyManager {
       this.remoteAudioElements[peerId] = audio;
     }
     audio.srcObject = stream;
-    audio.play().catch(() => {});
+    audio.play().catch(e => console.warn('Remote voice autoplay failed:', e));
+  }
+
+  setRemoteVoiceVolume(volume: number) {
+    Object.values(this.remoteAudioElements).forEach((audio) => {
+      if (audio) {
+        audio.volume = Math.max(0, Math.min(1, volume));
+      }
+    });
   }
 
   private closePeerConnection(peerId: string) {

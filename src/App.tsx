@@ -222,11 +222,21 @@ export default function App() {
         setCurrentTab(customEvent.detail);
       }
     };
+    
+    const handleSetVolume = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      if (customEvent.detail !== undefined) {
+        setVolume(customEvent.detail);
+      }
+    };
+
     window.addEventListener('sunofy:switch_tab', handleSwitchTab);
+    window.addEventListener('sunofy:set_volume', handleSetVolume);
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('sunofy:switch_tab', handleSwitchTab);
+      window.removeEventListener('sunofy:set_volume', handleSetVolume);
     };
   }, []);
 

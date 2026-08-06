@@ -446,6 +446,33 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     });
   }, [syncState.currentTime]);
 
+  // Sync musicVolume to global App player and Video Iframe
+  React.useEffect(() => {
+    const vol = musicVolume / 100;
+    window.dispatchEvent(new CustomEvent('sunofy:set_volume', { detail: vol }));
+    
+    // Attempt to sync youtube iframe if present
+    if (videoContainerRef.current) {
+      const iframe = videoContainerRef.current.querySelector('iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'setVolume',
+          args: [musicVolume]
+        }), '*');
+      }
+      const vid = videoContainerRef.current.querySelector('video');
+      if (vid) {
+        vid.volume = vol;
+      }
+    }
+  }, [musicVolume]);
+
+  // Sync micVolume to remote voice streams
+  React.useEffect(() => {
+    syncParty.setRemoteVoiceVolume(micVolume / 100);
+  }, [micVolume]);
+
   // Smooth local ticking for the progress bar
   React.useEffect(() => {
     let animationFrameId: number;
