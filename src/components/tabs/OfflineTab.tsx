@@ -139,9 +139,8 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
     document.body.removeChild(a);
   };
 
-  const handleBulkExport = async () => {
-    if (selectedIds.size === 0) return;
-    const tracksToExport = downloads.filter(d => selectedIds.has(d.id) && d.offlineBlobUrl);
+  const exportTracksToFolder = async (tracksToExport: DownloadTrack[]) => {
+    if (tracksToExport.length === 0) return;
     
     if ('showDirectoryPicker' in window) {
       try {
@@ -162,8 +161,6 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
           }
         }
         window.dispatchEvent(new CustomEvent('sunofyToast', { detail: `✅ Saved ${tracksToExport.length} tracks to folder!` }));
-        setSelectedIds(new Set());
-        setIsSelectMode(false);
       } catch (err: any) {
         if (err.name !== 'AbortError') {
            console.error(err);
@@ -176,10 +173,16 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
          tracksToExport.forEach((track, index) => {
             setTimeout(() => handleExportTrack(track), index * 500);
          });
-         setSelectedIds(new Set());
-         setIsSelectMode(false);
       }
     }
+  };
+
+  const handleBulkExport = async () => {
+    if (selectedIds.size === 0) return;
+    const tracksToExport = downloads.filter(d => selectedIds.has(d.id) && d.offlineBlobUrl);
+    await exportTracksToFolder(tracksToExport);
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
   };
 
   const totalSize = downloads.reduce((acc, curr) => acc + (curr.sizeBytes || 0), 0);
@@ -416,12 +419,20 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                       <p className="text-[10px] text-[var(--muted-sunofy)]">{viewingTracks.length} tracks</p>
                     </div>
                     {viewingTracks.length > 0 && (
-                      <button
-                        onClick={() => handlePlayPlaylist(viewingPlaylist)}
-                        className="px-4 py-2 rounded-xl bg-[var(--accent-sunofy)] text-black font-bold text-xs flex items-center gap-1.5 shadow cursor-pointer"
-                      >
-                        <Play className="w-3.5 h-3.5" fill="currentColor" /> Play All
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => exportTracksToFolder(viewingTracks)}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/50 text-[var(--text-sunofy)] font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer transition"
+                        >
+                          <Save className="w-3.5 h-3.5" /> Save All
+                        </button>
+                        <button
+                          onClick={() => handlePlayPlaylist(viewingPlaylist)}
+                          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-[var(--accent-sunofy)] text-black font-bold text-xs flex items-center gap-1.5 shadow cursor-pointer transition hover:scale-105"
+                        >
+                          <Play className="w-3.5 h-3.5" fill="currentColor" /> Play All
+                        </button>
+                      </div>
                     )}
                   </div>
                   {viewingTracks.length === 0 ? (
@@ -441,12 +452,22 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                             <div className="text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)]">{song.title}</div>
                             <div className="text-xs text-[var(--muted-sunofy)] truncate">{song.artist}</div>
                           </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleRemoveTrackFromPlaylist(viewingPlaylist.id, song.id); }}
-                            className="p-1.5 rounded-full text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleExportTrack(song); }}
+                              className="p-1.5 rounded-full text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)]/10 transition cursor-pointer"
+                              title="Export to Device"
+                            >
+                              <Save className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRemoveTrackFromPlaylist(viewingPlaylist.id, song.id); }}
+                              className="p-1.5 rounded-full text-red-500 hover:bg-red-500/10 transition cursor-pointer"
+                              title="Remove from Playlist"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
