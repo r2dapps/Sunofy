@@ -185,7 +185,7 @@ class MusicAPI {
     for (let i = 0; i < this.apiMirrors.length; i++) {
       const base = this.apiMirrors[i];
       try {
-        const res = await fetch(`${base}/playlists?id=${encodeURIComponent(id)}`);
+        const res = await fetch(`${base}/playlists?id=${encodeURIComponent(id)}&limit=200`);
         if (res.ok) {
           const json = await res.json();
           const data = json.data || json;
@@ -348,7 +348,7 @@ class MusicAPI {
     for (let i = 0; i < this.apiMirrors.length; i++) {
       const base = this.apiMirrors[i];
       try {
-        const res = await fetch(`${base}/albums?id=${encodeURIComponent(id)}`);
+        const res = await fetch(`${base}/albums?id=${encodeURIComponent(id)}&limit=200`);
         if (res.ok) {
           const json = await res.json();
           const data = json.data || json;

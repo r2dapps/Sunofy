@@ -97,9 +97,9 @@ async function startServer() {
       return;
     }
     const mirrors = [
-      `https://saavn.sumit.co/api/playlists?id=${encodeURIComponent(id)}`,
-      `https://saavn-api.vercel.app/playlists?id=${encodeURIComponent(id)}`,
-      `https://saavn.dev/api/playlists?id=${encodeURIComponent(id)}`,
+      `https://saavn.sumit.co/api/playlists?id=${encodeURIComponent(id)}&limit=200`,
+      `https://saavn-api.vercel.app/playlists?id=${encodeURIComponent(id)}&limit=200`,
+      `https://saavn.dev/api/playlists?id=${encodeURIComponent(id)}&limit=200`,
     ];
 
     for (const mirrorUrl of mirrors) {
