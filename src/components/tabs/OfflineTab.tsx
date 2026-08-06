@@ -44,7 +44,7 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [viewingPlaylistId, setViewingPlaylistId] = useState<string | null>(null);
-  const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState<string | null>(null);
+  const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState<string | string[] | null>(null);
   const [editingPlaylistId, setEditingPlaylistId] = useState<string | null>(null);
   const [editingPlaylistName, setEditingPlaylistName] = useState('');
 
@@ -69,10 +69,21 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
     loadPlaylists();
   };
 
-  const handleAddTrackToPlaylist = async (playlistId: string, trackId: string) => {
-    await offlineStore.addTrackToOfflinePlaylist(playlistId, trackId);
-    setAddToPlaylistTrackId(null);
-    loadPlaylists();
+  const handleAddTrackToPlaylist = async (playlistId: string, trackIds: string | string[]) => {
+    try {
+      const ids = Array.isArray(trackIds) ? trackIds : [trackIds];
+      for (const id of ids) {
+        await offlineStore.addTrackToOfflinePlaylist(playlistId, id);
+      }
+      loadPlaylists();
+      setAddToPlaylistTrackId(null);
+      if (Array.isArray(trackIds)) {
+        setSelectedIds(new Set());
+        setIsSelectMode(false);
+      }
+    } catch (error) {
+      console.error('Failed to add track to playlist', error);
+    }
   };
 
   const handleRemoveTrackFromPlaylist = async (playlistId: string, trackId: string) => {
@@ -106,6 +117,14 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
     selectedIds.forEach(id => onRemoveDownload(id));
     setSelectedIds(new Set());
     setIsSelectMode(false);
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm('Are you sure you want to delete ALL offline cache?')) {
+      downloads.forEach(d => onRemoveDownload(d.id));
+      setSelectedIds(new Set());
+      setIsSelectMode(false);
+    }
   };
 
   const handleExportTrack = (song: DownloadTrack) => {
@@ -236,20 +255,40 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                       >
                         {selectedIds.size === downloads.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                       </button>
-                      <button onClick={() => setIsSelectMode(false)} className="text-xs font-bold text-[var(--muted-sunofy)] hover:text-white cursor-pointer px-2">Cancel</button>
+                      <button onClick={() => setIsSelectMode(false)} className="text-xs font-bold text-[var(--muted-sunofy)] hover:text-white cursor-pointer px-2 hidden sm:block">Cancel</button>
+                      
                       {selectedIds.size > 0 && (
-                        <button onClick={handleBulkDelete} className="text-xs font-bold bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition cursor-pointer flex items-center gap-1 shadow">
-                          <Trash2 className="w-3.5 h-3.5" /> Delete ({selectedIds.size})
-                        </button>
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <button
+                            onClick={() => setAddToPlaylistTrackId(Array.from(selectedIds))}
+                            className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold flex items-center gap-1 shadow cursor-pointer text-[10px] sm:text-xs hover:scale-105 transition"
+                          >
+                            <ListPlus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Playlist
+                          </button>
+                          <button
+                            onClick={handleBulkDelete}
+                            className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-red-500 text-white font-bold flex items-center gap-1 shadow cursor-pointer text-[10px] sm:text-xs hover:scale-105 transition"
+                          >
+                            <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Delete
+                          </button>
+                        </div>
                       )}
                     </div>
                   ) : (
-                    <button
-                      onClick={() => { setIsSelectMode(true); setSelectedIds(new Set()); }}
-                      className="text-xs font-bold text-red-500 hover:bg-red-500/10 px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Select
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleClearAll}
+                        className="text-xs font-bold text-red-500 hover:text-red-400 transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Clear All
+                      </button>
+                      <button
+                        onClick={() => setIsSelectMode(true)}
+                        className="text-xs font-bold text-[var(--accent-sunofy)] hover:text-white transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5" /> Select
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl overflow-hidden shadow-sm">
@@ -282,7 +321,7 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                         </div>
                       </div>
                       {!isSelectMode && (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                           <button
                             onClick={(e) => { e.stopPropagation(); setAddToPlaylistTrackId(song.id); }}
                             className="p-2 rounded-full text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)]/10 transition cursor-pointer"
@@ -558,7 +597,7 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                     key={pl.id}
                     onClick={() => handleAddTrackToPlaylist(pl.id, addToPlaylistTrackId)}
                     className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition cursor-pointer text-left ${
-                      pl.trackIds.includes(addToPlaylistTrackId)
+                      pl.trackIds.includes(Array.isArray(addToPlaylistTrackId) ? addToPlaylistTrackId[0] : addToPlaylistTrackId)
                         ? 'bg-[var(--accent-sunofy)]/15 border-[var(--accent-sunofy)] text-[var(--accent-sunofy)]'
                         : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] text-[var(--text-sunofy)] hover:border-[var(--accent-sunofy)]/40'
                     }`}
@@ -568,7 +607,7 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                       <div className="text-xs font-bold truncate">{pl.name}</div>
                       <div className="text-[10px] text-[var(--muted-sunofy)]">{pl.trackIds.length} tracks</div>
                     </div>
-                    {pl.trackIds.includes(addToPlaylistTrackId) && <span className="text-[10px] font-bold">Added ✓</span>}
+                    {pl.trackIds.includes(Array.isArray(addToPlaylistTrackId) ? addToPlaylistTrackId[0] : addToPlaylistTrackId) && <span className="text-[10px] font-bold">Added ✓</span>}
                   </button>
                 ))}
               </div>

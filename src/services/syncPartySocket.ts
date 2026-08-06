@@ -132,7 +132,13 @@ class SyncPartyManager {
 
   createRoom(roomCode?: string) {
     const code = roomCode || 'SUNO-' + Math.floor(1000 + Math.random() * 9000);
-    this.myPeerId = `host_${Date.now()}`;
+    
+    let storedId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('sunofy_sync_peer_id') : null;
+    if (!storedId) {
+       storedId = `host_${Date.now()}`;
+       if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('sunofy_sync_peer_id', storedId);
+    }
+    this.myPeerId = storedId;
     
     this.state = {
       ...this.state,
@@ -247,7 +253,13 @@ class SyncPartyManager {
 
   joinRoom(roomCode: string) {
     const cleanCode = roomCode.trim().toUpperCase();
-    this.myPeerId = `member_${Date.now()}`;
+    
+    let storedId = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('sunofy_sync_peer_id') : null;
+    if (!storedId || storedId.startsWith('host_')) {
+       storedId = `member_${Date.now()}`;
+       if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('sunofy_sync_peer_id', storedId);
+    }
+    this.myPeerId = storedId;
     
     this.roomRef = ref(db, `sunofy_vibe_rooms/${cleanCode}`);
     
