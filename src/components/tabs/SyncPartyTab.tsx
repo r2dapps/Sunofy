@@ -542,26 +542,8 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   };
 
   const handleGifSearch = async (query: string) => {
+    // Disabled due to API key restrictions on public apps
     setGifSearchQuery(query);
-    if (!query.trim()) {
-      setGifSearchResults([]);
-      return;
-    }
-    setIsSearchingGifs(true);
-    try {
-      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(query)}&limit=12&rating=g`);
-      const data = await res.json();
-      if (data.data) {
-        setGifSearchResults(data.data.map((r: any) => ({
-          name: r.title || 'GIF',
-          url: r.images.fixed_height_small.url
-        })));
-      }
-    } catch (e) {
-      console.error('GIF search failed:', e);
-    } finally {
-      setIsSearchingGifs(false);
-    }
   };
 
   const handleSyncVideoSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1555,44 +1537,35 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   </div>
                   
                   <div className="px-1 pb-1">
-                    <input
-                      type="text"
-                      placeholder="Search GIFs..."
-                      value={gifSearchQuery}
-                      onChange={(e) => handleGifSearch(e.target.value)}
-                      className="w-full bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
-                    />
-                  </div>
+                  <div className="space-y-3">
+                  <p className="text-xs text-[var(--muted-sunofy)]">Select a GIF to send. (Search is temporarily disabled due to API limits)</p>
                   
                   {/* GIFs Grid */}
                   <div className="grid grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
-                    {isSearchingGifs ? (
-                      <div className="col-span-3 text-center py-4 text-xs text-[var(--muted-sunofy)]">Searching...</div>
-                    ) : ((gifSearchResults.length > 0 ? gifSearchResults : [
-                      { name: 'Vibe Cat 🐱', url: 'https://media.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif' },
-                      { name: 'Party 🕺', url: 'https://media.giphy.com/media/l3vR1v8L3tW9FvRZC/giphy.gif' },
-                      { name: 'Mind Blown 🤯', url: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
-                      { name: 'Lit Fire 🔥', url: 'https://media.giphy.com/media/3o72FfM5HJydzaMpfO/giphy.gif' },
-                      { name: 'Popcorn 🍿', url: 'https://media.giphy.com/media/hVTouq08y8fzW/giphy.gif' },
-                      { name: 'Cheers 🍻', url: 'https://media.giphy.com/media/BPJmthQ3YRwD6QqcVD/giphy.gif' },
-                    ]).map((gif) => (
+                    {[
+                      { name: 'Happy Dance 🕺', url: 'https://media.tenor.com/DJLxTbr5SfEAAAAM/friday-happy-dance.gif' },
+                      { name: 'Cat Vibe 🐱', url: 'https://media.tenor.com/TccvUFJ7WiAAAAAM/dancing-cat-cat.gif' },
+                      { name: 'Dance Moves ✨', url: 'https://media.tenor.com/4RQau55ngC4AAAAM/dance-dance-moves.gif' },
+                      { name: 'Party Pub 🍻', url: 'https://media.tenor.com/m9Gn2a0r7W0AAAAM/dance-party-pub.gif' },
+                      { name: 'Kido 🎈', url: 'https://media.tenor.com/8QP4JDPp85UAAAAM/kido.gif' },
+                      { name: 'Celebrate 🎉', url: 'https://media.tenor.com/0DHbRl45awkAAAAM/aallooz-com-animated-indian-gifs.gif' },
+                    ].map((gif) => (
                       <button
                         key={gif.url}
                         onClick={() => {
                           syncParty.sendMessage(gif.url);
                           setShowGifPicker(false);
-                          setGifSearchQuery('');
-                          setGifSearchResults([]);
                         }}
-                        className="relative rounded-xl overflow-hidden aspect-video border border-purple-500/30 hover:border-[var(--accent-sunofy)] hover:scale-105 transition cursor-pointer group"
+                        className="relative rounded-xl overflow-hidden aspect-video border border-purple-500/30 hover:border-[var(--accent-sunofy)] hover:scale-105 transition cursor-pointer group bg-black/20"
                       >
                         <img src={gif.url} alt={gif.name} className="w-full h-full object-cover" />
                         <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-bold text-white text-center py-0.5 truncate group-hover:bg-purple-600/80">
                           {gif.name}
                         </span>
                       </button>
-                    )))}
+                    ))}
                   </div>
+                </div>
                 </div>
               )}
 
