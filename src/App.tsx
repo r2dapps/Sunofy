@@ -1159,56 +1159,41 @@ export default function App() {
     }
   };
 
-  const handleDownloadCollection = async (query: string, name: string) => {
-    showToast(`Fetching tracks for "${name}" to cache offline...`);
+  const handleDownloadCollection = async (tracks: Track[], name: string) => {
+    if (!tracks || tracks.length === 0) {
+      showToast(`No tracks found in "${name}"`);
+      return;
+    }
+    showToast(`Caching ${tracks.length} tracks for "${name}"...`);
     try {
-      let tracks: Track[] = [];
-      if (musicSource === 'youtube' || musicSource === 'cobalt') {
-        tracks = await musicApi.searchYoutubeCobalt(query);
-      } else {
-        tracks = await musicApi.searchSongs(query);
-      }
-      
-      if (tracks.length === 0) {
-        showToast(`No tracks found in "${name}" to download`);
-        return;
-      }
-      showToast(`Downloading ${tracks.length} tracks from "${name}"...`);
+      let count = 0;
       for (const track of tracks) {
-        await offlineStore.saveTrackForOffline(track);
+        try {
+          await handleDownloadTrack(track);
+          count++;
+        } catch (e) {
+          console.warn('Failed to download track in collection', track.id);
+        }
       }
-      const updated = await offlineStore.getAllOfflineTracks();
-      setDownloads(updated);
-      showToast(`Successfully downloaded "${name}" (${tracks.length} tracks)`);
-    } catch (e) {
-      showToast(`Failed to download "${name}"`);
+      showToast(`Successfully cached ${count} tracks from "${name}"`);
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to download collection');
     }
   };
 
-  const handleAddCollectionToQueue = async (query: string, name: string) => {
-    showToast(`Fetching tracks for "${name}" to queue...`);
-    try {
-      let tracks: Track[] = [];
-      if (musicSource === 'youtube' || musicSource === 'cobalt') {
-        tracks = await musicApi.searchYoutubeCobalt(query);
-      } else {
-        tracks = await musicApi.searchSongs(query);
-      }
-
-      if (tracks.length === 0) {
-        showToast(`No tracks found in "${name}"`);
-        return;
-      }
-      setQueue((prev) => {
-        const combined = [...prev, ...tracks];
-        return combined.filter((track, index, self) =>
-          self.findIndex((t) => t.id === track.id) === index
-        );
-      });
-      showToast(`Added ${tracks.length} tracks from "${name}" to queue`);
-    } catch (e) {
-      showToast(`Failed to add "${name}" to queue`);
+  const handleAddCollectionToQueue = (tracks: Track[], name: string) => {
+    if (!tracks || tracks.length === 0) {
+      showToast(`No tracks found in "${name}"`);
+      return;
     }
+    setQueue((prev) => {
+      const combined = [...prev, ...tracks];
+      return combined.filter((track, index, self) =>
+        self.findIndex((t) => t.id === track.id) === index
+      );
+    });
+    showToast(`Added ${tracks.length} tracks from "${name}" to queue`);
   };
 
   const handleRemoveFavoriteAlbum = (albumId: string) => {

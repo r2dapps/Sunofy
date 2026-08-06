@@ -318,6 +318,37 @@ class MusicAPI {
     return [];
   }
 
+  async getAlbumDetails(id: string): Promise<{ name: string; songs: Track[] } | null> {
+    if (!id) return null;
+    const cacheKey = `albumdetail_${id}`;
+    const cached = this.getCached<{ name: string; songs: Track[] }>(cacheKey);
+    if (cached) return cached;
+
+    // Iterate through configured apiMirrors for album details
+    for (let i = 0; i < this.apiMirrors.length; i++) {
+      const base = this.apiMirrors[i];
+      try {
+        const res = await fetch(`${base}/albums?id=${encodeURIComponent(id)}`);
+        if (res.ok) {
+          const json = await res.json();
+          const data = json.data || json;
+          const songsRaw = data.songs || data.results || [];
+          if (Array.isArray(songsRaw) && songsRaw.length > 0) {
+            const result = {
+              name: data.name || data.title || 'Album',
+              songs: songsRaw.map((s: any) => this.formatSong(s)),
+            };
+            this.setCache(cacheKey, result);
+            return result;
+          }
+        }
+      } catch (e) {
+        console.warn(`Mirror ${base} failed for album details:`, e);
+      }
+    }
+    return null;
+  }
+
   async extractCobaltStream(url: string): Promise<string | null> {
     // Community-hosted Cobalt instances (api.cobalt.tools blocks third-party use)
     const cobaltInstances = [

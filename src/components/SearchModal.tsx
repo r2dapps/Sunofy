@@ -20,8 +20,8 @@ export interface SearchModalProps {
   onToggleFavorite?: (track: Track) => void;
   onToggleFavoritePlaylist?: (playlist: Playlist) => void;
   onToggleFavoriteAlbum?: (album: { id: string; title: string; artist: string; image: string; trackCount?: string }) => void;
-  onDownloadCollection?: (query: string, name: string) => void;
-  onAddCollectionToQueue?: (query: string, name: string) => void;
+  onDownloadCollection?: (tracks: Track[], name: string) => void;
+  onAddCollectionToQueue?: (tracks: Track[], name: string) => void;
   onDownloadTrack?: (track: Track) => void;
   downloads?: DownloadTrack[];
   localFolderTracks?: Track[];
@@ -58,6 +58,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [searchTab, setSearchTab] = useState<'songs' | 'playlists' | 'albums'>('songs');
   const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState<Track | null>(null);
+  const [realPlaylists, setRealPlaylists] = useState<any[]>([]);
+  const [realAlbums, setRealAlbums] = useState<any[]>([]);
   const [addedPlaylistIds, setAddedPlaylistIds] = useState<Record<string, boolean>>({});
   const [isFocused, setIsFocused] = useState(false);
   const [engineConflict, setEngineConflict] = useState(false);
@@ -185,39 +187,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     setNewPlaylistName(`${query.trim() || 'Search'} Collection`);
   };
 
-  // Mock generated playlist / album collections derived from query
-  const searchPlaylists = results.length > 0 ? [
-    {
-      id: 'spl_1',
-      name: `${query || 'Top'} Melodies Mix`,
-      trackCount: `${results.length} tracks`,
-      image: results[0]?.image || './icon-192.png',
-    },
-    {
-      id: 'spl_2',
-      name: `${query || 'Best'} Essential Anthems`,
-      trackCount: `${Math.min(15, results.length * 2)} tracks`,
-      image: results[1]?.image || results[0]?.image || './icon-192.png',
-    }
-  ] : [];
-
-  const searchAlbums = results.length > 0 ? [
-    {
-      id: 'salb_1',
-      name: `${results[0]?.title || query} Official Album`,
-      artist: results[0]?.artist || 'Various Artists',
-      trackCount: '12 tracks',
-      image: results[0]?.image || './icon-192.png',
-    },
-    {
-      id: 'salb_2',
-      name: `${query || 'Hits'} Remastered Edition`,
-      artist: results[1]?.artist || results[0]?.artist || 'Soundtrack Studio',
-      trackCount: '18 tracks',
-      image: results[1]?.image || results[0]?.image || './icon-192.png',
-    }
-  ] : [];
-
+  
   const handlePlayCollection = (tracks: Track[]) => {
     if (tracks.length > 0) {
       onPlayTrack(tracks[0]);
@@ -228,37 +198,41 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     }
   };
 
-  const handlePlayCollectionQuery = async (colQuery: string) => {
+  const handlePlayRealCollection = async (id: string, type: 'playlist'|'album'|'youtube_playlist') => {
+    if (type === 'youtube_playlist') {
+       handlePlayCollection(results);
+       return;
+    }
     setLoading(true);
     try {
-      let tracks: Track[] = [];
-      if (musicSource === 'youtube' || musicSource === 'cobalt') {
-        tracks = await musicApi.searchYoutubeCobalt(colQuery);
-      } else if (musicSource === 'local') {
-        const lower = colQuery.toLowerCase();
-        const allLocal = [...downloads, ...(localFolderTracks || [])];
-        tracks = allLocal.filter((t) => 
-          (t.title && t.title.toLowerCase().includes(lower)) || 
-          (t.artist && t.artist.toLowerCase().includes(lower)) ||
-          (t.album && t.album.toLowerCase().includes(lower))
-        );
-      } else {
-        tracks = await musicApi.searchSongs(colQuery);
-      }
-
-      if (tracks.length > 0) {
-        onPlayTrack(tracks[0]);
-        if (onSetQueue && tracks.length > 1) {
-          onSetQueue(tracks.slice(1));
-        }
-        onClose();
-      } else {
-        // If no tracks found, we could show a toast here if we had access to onShowToast
-      }
-    } catch (e) {
-      console.error('Failed to play collection', e);
+       const details = type === 'playlist' ? await musicApi.getPlaylistDetails(id) : await musicApi.getAlbumDetails(id);
+       if (details && details.songs && details.songs.length > 0) {
+          handlePlayCollection(details.songs);
+       } else {
+          console.warn('Empty collection');
+       }
+    } catch(e) {
+       console.error(e);
     } finally {
-      setLoading(false);
+       setLoading(false);
+    }
+  };
+
+  const handleAddRealCollectionToQueue = async (id: string, name: string, type: 'playlist'|'album'|'youtube_playlist') => {
+    if (type === 'youtube_playlist') {
+       onAddCollectionToQueue?.(results, name);
+       return;
+    }
+    setLoading(true);
+    try {
+       const details = type === 'playlist' ? await musicApi.getPlaylistDetails(id) : await musicApi.getAlbumDetails(id);
+       if (details && details.songs && details.songs.length > 0) {
+          onAddCollectionToQueue?.(details.songs, name);
+       }
+    } catch(e) {
+       console.error(e);
+    } finally {
+       setLoading(false);
     }
   };
 
@@ -574,10 +548,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         {/* PLAYLISTS VIEW */}
         {!loading && searchTab === 'playlists' && (
           <div className="space-y-3">
-            {searchPlaylists.map((pl) => (
+            {realPlaylists.map((pl) => (
               <div
                 key={pl.id}
-                onClick={() => handlePlayCollectionQuery(pl.name)}
+                onClick={() => handlePlayRealCollection(pl.id, pl.isActualTracks ? 'youtube_playlist' : 'playlist')}
                 className="flex items-center justify-between p-3 bg-[var(--card-sunofy)] rounded-2xl border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)] transition group cursor-pointer"
               >
                 <div className="flex items-center space-x-3 min-w-0 flex-1">
@@ -594,7 +568,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={() => handlePlayCollectionQuery(pl.name)}
+                    onClick={() => handlePlayRealCollection(pl.id, pl.isActualTracks ? 'youtube_playlist' : 'playlist')}
                     className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--accent-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
                     title="Play Playlist"
                   >
@@ -603,7 +577,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
                   {onAddCollectionToQueue && (
                     <button
-                      onClick={() => onAddCollectionToQueue(pl.name, pl.name)}
+                      onClick={() => handleAddRealCollectionToQueue(pl.id, pl.name, pl.isActualTracks ? 'youtube_playlist' : 'playlist')}
                       className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
                       title="Add to Queue"
                     >
@@ -635,7 +609,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 </div>
               </div>
             ))}
-            {searchPlaylists.length === 0 && results.length === 0 && (
+            {realPlaylists.length === 0 && results.length === 0 && (
               <div className="text-center py-10 text-xs text-[var(--muted-sunofy)]">
                 Search for an artist or genre to discover playlists.
               </div>
@@ -646,10 +620,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         {/* ALBUMS VIEW */}
         {!loading && searchTab === 'albums' && (
           <div className="space-y-3">
-            {searchAlbums.map((album) => (
+            {realAlbums.map((album) => (
               <div
                 key={album.id}
-                onClick={() => handlePlayCollectionQuery(album.name)}
+                onClick={() => handlePlayRealCollection(album.id, 'album')}
                 className="flex items-center justify-between p-3 bg-[var(--card-sunofy)] rounded-2xl border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)] transition group cursor-pointer"
               >
                 <div className="flex items-center space-x-3 min-w-0 flex-1">
@@ -669,7 +643,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={() => handlePlayCollectionQuery(album.name)}
+                    onClick={() => handlePlayRealCollection(album.id, 'album')}
                     className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--accent-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
                     title="Play Album"
                   >
@@ -678,7 +652,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
                   {onAddCollectionToQueue && (
                     <button
-                      onClick={() => onAddCollectionToQueue(album.name, album.name)}
+                      onClick={() => handleAddRealCollectionToQueue(album.id, album.name, 'album')}
                       className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
                       title="Add to Queue"
                     >
@@ -710,7 +684,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 </div>
               </div>
             ))}
-            {searchAlbums.length === 0 && results.length === 0 && (
+            {realAlbums.length === 0 && results.length === 0 && (
               <div className="text-center py-10 text-xs text-[var(--muted-sunofy)]">
                 Search for an artist or album title to view albums.
               </div>
