@@ -1551,18 +1551,18 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   {/* GIFs Grid */}
                   <div className="grid grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
                     {[
+                      { name: 'Sensual Kiss 💋', url: 'https://media.tenor.com/VKXJHuLm0FsAAAAM/desire-kiss.gif' },
+                      { name: 'Romantic Kiss 💏', url: 'https://media.tenor.com/JrLJ41e5UiIAAAAM/romantic-couple-romantic.gif' },
+                      { name: 'Davydoff Love 🌹', url: 'https://media.tenor.com/TDJcCbgS3lYAAAAM/davydoff-love.gif' },
+                      { name: 'Passionate 🤗', url: 'https://media.tenor.com/EPzQ0Vxskw8AAAAM/sarilmak.gif' },
+                      { name: 'Goodnight Hug 🫂', url: 'https://media.tenor.com/HwXv_6YDDAIAAAAM/good-night-love-couple-kiss.gif' },
+                      { name: 'Tight Hug 🥰', url: 'https://media.tenor.com/PyZKzvjzD9YAAAAM/hugs-and-kisses.gif' },
+                      { name: 'Cuddle Love 🥺', url: 'https://media.tenor.com/PETaPxZJuJUAAAAM/cuddle-love.gif' },
+                      { name: 'Forehead Kiss 😘', url: 'https://media.tenor.com/KLS4sVt8zSQAAAAM/forehead-kiss.gif' },
+                      { name: 'Love You 💖', url: 'https://media.tenor.com/TAjLQk5o3OQAAAAM/love-you.gif' },
                       { name: 'Happy Dance 🕺', url: 'https://media.tenor.com/DJLxTbr5SfEAAAAM/friday-happy-dance.gif' },
                       { name: 'Cat Vibe 🐱', url: 'https://media.tenor.com/TccvUFJ7WiAAAAAM/dancing-cat-cat.gif' },
-                      { name: 'Dance Moves ✨', url: 'https://media.tenor.com/4RQau55ngC4AAAAM/dance-dance-moves.gif' },
-                      { name: 'Kiss 💋', url: 'https://media.tenor.com/eCNrTq7wOpgAAAAM/kiss.gif' },
-                      { name: 'Couple Kiss 💏', url: 'https://media.tenor.com/yo8aSVqTZh0AAAAM/couple-kiss.gif' },
-                      { name: 'Big Hug 🤗', url: 'https://media.tenor.com/aN5FmNADcYwAAAAM/hug.gif' },
-                      { name: 'Cuddle 🥰', url: 'https://media.tenor.com/0PPpG_KDQ60AAAAM/couple-cuddle-cuddle.gif' },
-                      { name: 'Snuggle 🥺', url: 'https://media.tenor.com/m-t78i6TAPoAAAAM/sidku-prachku.gif' },
                       { name: 'Cute Slap ✋', url: 'https://media.tenor.com/NJmtSRZ1Jd8AAAAM/peach-and-goma-peach-cat.gif' },
-                      { name: 'Playful Slap 😂', url: 'https://media.tenor.com/CphtLU7B4uUAAAAM/haha-playing.gif' },
-                      { name: 'Romantic 🌹', url: 'https://media.tenor.com/6Ue3VqxF3pQAAAAM/yash-kiara-advani.gif' },
-                      { name: 'Bubu Kisses 😽', url: 'https://media.tenor.com/5T24_rbk7vYAAAAM/bubu-dudu-kisses.gif' },
                     ].map((gif) => (
                       <button
                         key={gif.url}
