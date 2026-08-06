@@ -243,50 +243,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     return voiceAudioCtxRef.current;
   };
 
-  const playVoiceChunkBuffer = async (base64Audio: string, volPct: number) => {
-    try {
-      const ctx = getVoiceAudioContext();
-      const res = await fetch(base64Audio);
-      const arrayBuffer = await res.arrayBuffer();
-      ctx.decodeAudioData(
-        arrayBuffer,
-        (decodedData) => {
-          const source = ctx.createBufferSource();
-          const gainNode = ctx.createGain();
-          gainNode.gain.value = Math.max(0, Math.min(1, volPct / 100));
-          source.buffer = decodedData;
-          source.connect(gainNode);
-          gainNode.connect(ctx.destination);
-          source.start(0);
-        },
-        () => {
-          const fallbackAudio = new Audio(base64Audio);
-          fallbackAudio.volume = Math.max(0, Math.min(1, volPct / 100));
-          fallbackAudio.play().catch(() => {});
-        }
-      );
-    } catch (e) {
-      const fallbackAudio = new Audio(base64Audio);
-      fallbackAudio.volume = Math.max(0, Math.min(1, volPct / 100));
-      fallbackAudio.play().catch(() => {});
-    }
-  };
-
-  // Subscribe to incoming remote WebRTC voice stream chunks
+  // Subscribe to incoming remote WebRTC active speakers
   React.useEffect(() => {
     if (!syncState.inRoom) return;
 
-    const cleanup = syncParty.listenVoiceStream((chunk) => {
-      if (chunk.audio) {
-        playVoiceChunkBuffer(chunk.audio, micVolume);
-        setActiveSpeaker({ name: chunk.senderName, timestamp: Date.now() });
-      }
-    });
-
-    return () => {
-      cleanup();
-    };
-  }, [syncState.inRoom, syncState.roomCode, micVolume]);
+    const speakingMember = syncState.members.find((m: any) => m.isMicSpeaking && m.id !== syncParty.myId);
+    if (speakingMember) {
+      setActiveSpeaker({ name: speakingMember.name, timestamp: Date.now() });
+    }
+  }, [syncState.members, syncState.inRoom]);
 
   // Auto-hide active speaker toast after 3s
   React.useEffect(() => {

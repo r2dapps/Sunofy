@@ -416,11 +416,7 @@ class SyncPartyManager {
     this.state.isPlaying = isPlaying;
     if (duration && duration > 0) this.state.duration = duration;
 
-    const now = Date.now();
-    if (force || now - this.lastBroadcastTime > 2000) {
-      this.lastBroadcastTime = now;
-      this.broadcastState();
-    }
+    this.broadcastState();
   }
 
   private broadcastState() {
@@ -901,62 +897,7 @@ class SyncPartyManager {
     };
   }
 
-  sendVoiceAudioChunk(audioDataBase64: string, isSpeaking: boolean = true) {
-    if (!this.state.inRoom || !this.state.roomCode) return;
 
-    const payload = {
-      senderId: this.myPeerId,
-      senderName: this.getUserName(),
-      audio: audioDataBase64,
-      isSpeaking,
-      timestamp: Date.now(),
-    };
-
-    // Broadcast over local channel for same-device tabs
-    if (this.localChannel) {
-      this.localChannel.postMessage({ type: 'VOICE_STREAM_CHUNK', payload });
-    }
-
-    // Broadcast over Firebase Realtime DB
-    if (audioDataBase64) {
-      const voiceRef = push(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/voice_stream`), payload);
-      // Auto-remove voice chunk after 5 seconds to keep DB ultra-light
-      setTimeout(() => {
-        remove(voiceRef).catch(() => {});
-      }, 5000);
-    }
-  }
-
-  listenVoiceStream(callback: (chunk: { senderId: string; senderName: string; audio: string; isSpeaking: boolean }) => void) {
-    if (!this.state.inRoom || !this.state.roomCode) return () => {};
-
-    // 1. Firebase listener
-    const voiceNodeRef = ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/voice_stream`);
-    const unsubscribeFb = onChildAdded(voiceNodeRef, (snapshot) => {
-      const val = snapshot.val();
-      if (val && val.senderId !== this.myPeerId && val.audio && val.timestamp > Date.now() - 6000) {
-        callback(val);
-      }
-    });
-
-    // 2. BroadcastChannel listener for local tabs
-    const handleLocalMsg = (event: MessageEvent) => {
-      const data = event.data;
-      if (data && data.type === 'VOICE_STREAM_CHUNK' && data.payload && data.payload.senderId !== this.myPeerId) {
-        callback(data.payload);
-      }
-    };
-
-    if (this.localChannel) {
-      this.localChannel.addEventListener('message', handleLocalMsg);
-    }
-
-    return () => {
-      if (this.localChannel) {
-        this.localChannel.removeEventListener('message', handleLocalMsg);
-      }
-    };
-  }
 
   private getUserName(): string {
     const profileStr = typeof localStorage !== 'undefined' ? localStorage.getItem('sunofy_user_profile') : null;

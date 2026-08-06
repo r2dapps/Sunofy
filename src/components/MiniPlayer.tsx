@@ -42,25 +42,6 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
   onToggleRepeat,
   onOpenFullPlayer,
 }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  // Determine if this is a YT Music track playable via iframe
-  const ytId = musicSource === 'youtube'
-    ? extractYtId((currentTrack as any)?.downloadUrl || (currentTrack as any)?.url)
-    : null;
-
-  const isYtMusic = !!ytId;
-
-  // Send play/pause commands to the YouTube IFrame Player via postMessage
-  useEffect(() => {
-    if (!isYtMusic || !iframeRef.current) return;
-    const cmd = isPlaying ? 'playVideo' : 'pauseVideo';
-    iframeRef.current.contentWindow?.postMessage(
-      JSON.stringify({ event: 'command', func: cmd, args: [] }),
-      '*'
-    );
-  }, [isPlaying, isYtMusic]);
-
   if (!currentTrack) return null;
 
   return (
@@ -71,28 +52,16 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
       {/* Artwork & Track Info */}
       <div className="flex items-center space-x-2.5 md:space-x-4 min-w-0 flex-1">
         <div className="relative w-10 h-10 md:w-11 md:h-11 rounded-full p-[1.5px] bg-gradient-to-tr from-red-500 via-purple-500 to-pink-500 flex items-center justify-center shrink-0 shadow-md overflow-hidden">
-          {isYtMusic && ytId ? (
-            /* YouTube iframe clipped to circular disc shape */
-            <iframe
-              ref={iframeRef}
-              src={`https://www.youtube.com/embed/${ytId}?autoplay=${isPlaying ? 1 : 0}&controls=0&disablekb=1&modestbranding=1&playsinline=1&enablejsapi=1&mute=0&loop=1&playlist=${ytId}`}
-              className="w-full h-full rounded-full object-cover border-2 border-[#0e101d]"
-              style={{ borderRadius: '50%', pointerEvents: 'none' }}
-              allow="autoplay; encrypted-media"
-              title={currentTrack.title}
+          <>
+            <img
+              src={currentTrack.image}
+              className={`w-full h-full rounded-full object-cover border-2 border-[#0e101d] spinning-art ${isPlaying ? 'playing' : ''}`}
+              alt={currentTrack.title}
             />
-          ) : (
-            <>
-              <img
-                src={currentTrack.image}
-                className={`w-full h-full rounded-full object-cover border-2 border-[#0e101d] spinning-art ${isPlaying ? 'playing' : ''}`}
-                alt={currentTrack.title}
-              />
-              <div className="w-2.5 h-2.5 rounded-full bg-[#0e101d] border border-gray-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 shadow-inner" />
-            </>
-          )}
+            <div className="w-2.5 h-2.5 rounded-full bg-[#0e101d] border border-gray-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 shadow-inner" />
+          </>
           {/* YT Music badge */}
-          {isYtMusic && (
+          {((currentTrack as any)?.isCobalt || currentTrack?.url?.includes('youtube.com') || currentTrack?.downloadUrl?.includes('youtube.com')) && (
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-red-600 rounded-full border border-[#0e101d] z-20 flex items-center justify-center">
               <span className="text-[5px] text-white font-black">▶</span>
             </div>
@@ -101,7 +70,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
         <div className="min-w-0 flex-1">
           <h4 className="text-xs md:text-sm font-bold truncate text-white">{currentTrack.title}</h4>
           <p className="text-[10px] md:text-xs font-medium text-gray-400 truncate">
-            {isYtMusic ? '🎵 YT Music · ' : ''}{currentTrack.artist}
+            {((currentTrack as any)?.isCobalt || currentTrack?.url?.includes('youtube.com') || currentTrack?.downloadUrl?.includes('youtube.com')) ? '🎵 YT Music · ' : ''}{currentTrack.artist}
           </p>
         </div>
       </div>

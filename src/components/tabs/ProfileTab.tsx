@@ -356,10 +356,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       </div>
 
       {/* MUSIC ENGINE PROVIDER & QUOTA HEALTH DASHBOARD */}
-      <CollapsibleCard title="Music Engine & Quota" icon={Server}>
-        <div className="space-y-3">
-          <label className="text-xs font-semibold text-[var(--muted-sunofy)]">Select Primary Music Engine:</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+      <div id="engine-switcher">
+        <CollapsibleCard title="Music Engine & Quota" icon={Server}>
+          <div className="space-y-3">
+            <label className="text-xs font-semibold text-[var(--muted-sunofy)]">Select Primary Music Engine:</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <button
               onClick={() => {
                 onUpdateProfile({ apiSource: 'jiosaavn' });
@@ -558,6 +559,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           </button>
         </div>
       </CollapsibleCard>
+      </div>
 
       {/* App Lock & Security Profile */}
       <CollapsibleCard title="App Lock & Security" icon={ShieldCheck}>

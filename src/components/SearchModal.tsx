@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Play, Plus, Music, FolderPlus, Check, FolderOpen, Disc, ListPlus, Bookmark, Headphones, Heart, Download } from 'lucide-react';
+import { ArrowLeft, Search, Play, Plus, Music, FolderPlus, Check, FolderOpen, Disc, ListPlus, Bookmark, Headphones, Heart, Download, X } from 'lucide-react';
 import { musicApi } from '../services/api';
 import { Track, Playlist, Favorites, DownloadTrack } from '../types';
 
@@ -60,8 +60,21 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState<Track | null>(null);
   const [addedPlaylistIds, setAddedPlaylistIds] = useState<Record<string, boolean>>({});
   const [isFocused, setIsFocused] = useState(false);
+  const [engineConflict, setEngineConflict] = useState(false);
   const [saveCollectionModal, setSaveCollectionModal] = useState<{ name: string; query: string; image: string } | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sunofy_recent_searches') || '[]'); } catch { return []; }
+  });
+
+  const saveRecentSearch = (term: string) => {
+    if (!term.trim() || term.includes('youtube.com/playlist')) return;
+    setRecentSearches(prev => {
+      const newArr = [term.trim(), ...prev.filter(s => s !== term.trim())].slice(0, 10);
+      localStorage.setItem('sunofy_recent_searches', JSON.stringify(newArr));
+      return newArr;
+    });
+  };
 
   const isFavorited = (track: Track) => favorites?.songs.some((s) => s.id === track.id);
   const isDownloaded = (track: Track) => downloads?.some((s) => s.id === track.id);
@@ -97,6 +110,36 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     setLoading(true);
     setSuggestions([]);
     try {
+      if (searchTerm.includes('youtube.com') || searchTerm.includes('youtu.be')) {
+        if (musicSource !== 'cobalt' && musicSource !== 'youtube') {
+          setEngineConflict(true);
+          setResults([]);
+          setLoading(false);
+          return;
+        }
+        setEngineConflict(false);
+        
+        if (searchTerm.includes('playlist?list=')) {
+        let listId = '';
+        try {
+          const urlObj = new URL(searchTerm);
+          listId = urlObj.searchParams.get('list') || '';
+        } catch(e) {
+          listId = searchTerm.split('list=')[1]?.split('&')[0] || '';
+        }
+        if (listId) {
+          const tracks = await musicApi.getYoutubePlaylist(listId);
+          setResults(tracks);
+          setLoading(false);
+          return;
+        }
+      }
+
+      }
+
+      setEngineConflict(false);
+      saveRecentSearch(searchTerm);
+
       if (musicSource === 'local') {
         const lower = searchTerm.toLowerCase();
         const allLocal = [...downloads, ...localFolderTracks];
@@ -188,13 +231,29 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   const handlePlayCollectionQuery = async (colQuery: string) => {
     setLoading(true);
     try {
-      const tracks = await musicApi.searchSongs(colQuery);
+      let tracks: Track[] = [];
+      if (musicSource === 'youtube' || musicSource === 'cobalt') {
+        tracks = await musicApi.searchYoutubeCobalt(colQuery);
+      } else if (musicSource === 'local') {
+        const lower = colQuery.toLowerCase();
+        const allLocal = [...downloads, ...(localFolderTracks || [])];
+        tracks = allLocal.filter((t) => 
+          (t.title && t.title.toLowerCase().includes(lower)) || 
+          (t.artist && t.artist.toLowerCase().includes(lower)) ||
+          (t.album && t.album.toLowerCase().includes(lower))
+        );
+      } else {
+        tracks = await musicApi.searchSongs(colQuery);
+      }
+
       if (tracks.length > 0) {
         onPlayTrack(tracks[0]);
         if (onSetQueue && tracks.length > 1) {
           onSetQueue(tracks.slice(1));
         }
         onClose();
+      } else {
+        // If no tracks found, we could show a toast here if we had access to onShowToast
       }
     } catch (e) {
       console.error('Failed to play collection', e);
@@ -219,11 +278,22 @@ export const SearchModal: React.FC<SearchModalProps> = ({
             type="text"
             value={query}
             onChange={handleInputChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') triggerSearch(query);
+            }}
             onFocus={() => setIsFocused(true)}
-            placeholder="Search songs, albums, artists on JioSaavn..."
-            className="w-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl pl-10 pr-4 py-2 text-xs text-[var(--text-sunofy)] focus:outline-none focus:border-[var(--accent-sunofy)] transition placeholder-[#a7a7a7]"
+            placeholder="Search songs, albums, YT playlists..."
+            className="w-full bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl pl-10 pr-10 py-2 text-xs text-[var(--text-sunofy)] focus:outline-none focus:border-[var(--accent-sunofy)] transition placeholder-[#a7a7a7]"
             autoFocus
           />
+          {query.trim() !== '' && (
+            <button
+              onClick={() => { setQuery(''); setResults([]); setSuggestions([]); }}
+              className="absolute right-3 p-1 text-[var(--muted-sunofy)] hover:text-white transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -238,27 +308,34 @@ export const SearchModal: React.FC<SearchModalProps> = ({
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                setIsFocused(false);
+                if (query.trim() === '') setRecentSearches([]);
+                else setIsFocused(false);
               }}
               className="text-[10px] text-[var(--accent-sunofy)] hover:underline cursor-pointer px-2 py-0.5 rounded bg-[var(--bg-sunofy)]"
             >
-              Close
+              {query.trim() === '' ? 'Clear All' : 'Close'}
             </button>
           </div>
           {query.trim() === '' ? (
-            ['Sid Sriram', 'Anirudh Beats', 'Tollywood 2026', 'Telugu Moonlight Melodies', 'Devi Sri Prasad Mass Hits'].map((sug, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  triggerSearch(sug);
-                  setIsFocused(false);
-                }}
-                className="w-full text-left py-1.5 px-2 text-xs text-[var(--text-sunofy)] hover:bg-[var(--hover-sunofy)] rounded-lg transition font-medium flex items-center justify-between cursor-pointer"
-              >
-                <span>{sug}</span>
-                <Search className="w-3 h-3 text-[var(--muted-sunofy)] opacity-50" />
-              </button>
-            ))
+            recentSearches.length > 0 ? (
+              recentSearches.map((sug, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    triggerSearch(sug);
+                    setIsFocused(false);
+                  }}
+                  className="w-full text-left py-1.5 px-2 text-xs text-[var(--text-sunofy)] hover:bg-[var(--hover-sunofy)] rounded-lg transition font-medium flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Search className="w-3 h-3 text-[var(--muted-sunofy)] opacity-50" />
+                    <span>{sug}</span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="py-3 text-center text-[10px] text-[var(--muted-sunofy)] italic">No recent searches</div>
+            )
           ) : (
             suggestions.map((sug, i) => (
               <button
@@ -367,11 +444,35 @@ export const SearchModal: React.FC<SearchModalProps> = ({
           </div>
         )}
 
-        {!loading && query.trim() !== '' && results.length === 0 && (
+        {!loading && query.trim() !== '' && results.length === 0 && !engineConflict && (
           <div className="text-center text-[var(--muted-sunofy)] py-16">
             <Music className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm font-semibold">No tracks found for "{query}"</p>
             <p className="text-xs mt-1">Try another keyword or artist name.</p>
+          </div>
+        )}
+
+        {!loading && engineConflict && (
+          <div className="text-center text-[var(--muted-sunofy)] py-16 px-4">
+            <div className="w-16 h-16 bg-[var(--card-sunofy)] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[var(--border-sunofy)]">
+              <span className="text-2xl font-black text-red-500">▶</span>
+            </div>
+            <p className="text-sm font-semibold text-[var(--text-sunofy)] mb-2">Engine Conflict Detected</p>
+            <p className="text-xs mt-1 mb-6 leading-relaxed max-w-[280px] mx-auto text-[var(--muted-sunofy)]">
+              You're trying to search a YouTube link, but your active music engine is set to JioSaavn.
+            </p>
+            <button
+              onClick={() => {
+                onClose();
+                window.dispatchEvent(new CustomEvent('sunofy:switch_tab', { detail: 'Profile' }));
+                setTimeout(() => {
+                  document.getElementById('engine-switcher')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 150);
+              }}
+              className="px-6 py-2.5 rounded-xl bg-[var(--accent-sunofy)] text-black font-bold shadow-md hover:scale-105 transition flex items-center justify-center gap-2 mx-auto cursor-pointer"
+            >
+              Go to Engine Settings
+            </button>
           </div>
         )}
 
@@ -731,7 +832,24 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       key={pl.id}
                       onClick={async () => {
                         try {
-                          const tracks = await musicApi.searchSongs(saveCollectionModal.query);
+                          let tracks: Track[] = [];
+                          if (saveCollectionModal.query.includes('youtube.com/playlist?list=')) {
+                            let listId = '';
+                            try {
+                              const urlObj = new URL(saveCollectionModal.query);
+                              listId = urlObj.searchParams.get('list') || '';
+                            } catch(e) {
+                              listId = saveCollectionModal.query.split('list=')[1]?.split('&')[0] || '';
+                            }
+                            if (!listId) {
+                              listId = saveCollectionModal.query.replace('https://music.youtube.com/playlist?list=', '').split('&')[0];
+                            }
+                            if (listId) {
+                              tracks = await musicApi.getYoutubePlaylist(listId);
+                            }
+                          } else {
+                            tracks = await musicApi.searchSongs(saveCollectionModal.query);
+                          }
                           if (tracks && tracks.length > 0 && onAddSongToPlaylist) {
                             tracks.forEach((t) => onAddSongToPlaylist(pl.id, t));
                           }

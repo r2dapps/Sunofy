@@ -60,6 +60,13 @@ const ThemeInjector: React.FC<{ themeId: string }> = ({ themeId }) => {
   );
 };
 
+/** Extract YouTube video ID from a youtube.com / youtu.be / music.youtube.com URL */
+function extractYtId(url?: string): string | null {
+  if (!url) return null;
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 export default function App() {
   // Navigation State
   const [currentTab, setCurrentTab] = useState<TabName>('Discover');
@@ -137,6 +144,66 @@ export default function App() {
   // App Initial Boot Loading State
   const [isBootLoading, setIsBootLoading] = useState(true);
 
+  // Global YouTube Iframe Integration
+  const ytIframeRef = useRef<HTMLIFrameElement>(null);
+
+  const globalYtId = currentTrack && (((currentTrack as any).isCobalt) || (currentTrack as any).url?.includes('youtube.com') || currentTrack.downloadUrl?.includes('youtube'))
+    ? extractYtId(currentTrack.downloadUrl || (currentTrack as any).url) || currentTrack.id.replace('yt_', '')
+    : null;
+
+  useEffect(() => {
+    if (!globalYtId || !ytIframeRef.current) return;
+    const cmd = isPlaying ? 'playVideo' : 'pauseVideo';
+    ytIframeRef.current.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: cmd, args: [] }),
+      '*'
+    );
+  }, [isPlaying, globalYtId]);
+
+  // Sync duration when track changes
+  useEffect(() => {
+    if (currentTrack && currentTrack.duration) {
+      setDuration(currentTrack.duration);
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === 'infoDelivery' && data.info) {
+          if (data.info.currentTime) {
+            setCurrentTime(data.info.currentTime);
+          }
+          if (data.info.duration && data.info.duration > 0 && duration === 0) {
+            setDuration(data.info.duration);
+          }
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('message', handleMessage);
+    
+    // Poll the iframe for time updates every 500ms since we don't have the YT wrapper
+    const interval = setInterval(() => {
+      if (ytIframeRef.current && isPlaying && globalYtId) {
+        // Fallback manual tick in case infoDelivery fails (CORS or JS API changes)
+        setCurrentTime((prev) => {
+          if (duration && prev >= duration) return duration;
+          return prev + 0.5;
+        });
+        ytIframeRef.current.contentWindow?.postMessage(
+          JSON.stringify({ event: 'listening', id: 1 }),
+          '*'
+        );
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearInterval(interval);
+    };
+  }, [isPlaying, globalYtId, duration, currentTrack]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsBootLoading(false);
@@ -148,7 +215,19 @@ export default function App() {
         setTimeout(() => setToastMsg(`Auto-joined Sync Party #${partyCode}`), 500);
       }
     }, 1400);
-    return () => clearTimeout(timer);
+
+    const handleSwitchTab = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        setCurrentTab(customEvent.detail);
+      }
+    };
+    window.addEventListener('sunofy:switch_tab', handleSwitchTab);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('sunofy:switch_tab', handleSwitchTab);
+    };
   }, []);
 
   // First-Time Startup Onboarding Screen
@@ -522,21 +601,15 @@ export default function App() {
         }
         setIsPlaying(true);
 
-        // Seek / Drift correction for Host and Listeners (Smooth Latency Catchup)
+        // Seek / Drift correction for Host and Listeners
+        // We removed the aggressive "time-jumping" reloop logic that caused stuttering.
+        // Listeners will only hard-seek if they are massively out of sync (e.g. Host manually scrubbed the timeline > 5 seconds)
         if (!isNewTrack && syncState.currentTime >= 0) {
           const drift = Math.abs(audio.currentTime - syncState.currentTime);
-          const hardSeekThreshold = syncState.isHost ? 1.5 : 3.5;
-          if (drift > hardSeekThreshold) {
-            // Hard seek if significantly out of sync (e.g. host manually jumped to a new seek position)
+          if (drift > 5) {
             try {
               audio.currentTime = syncState.currentTime;
-              audio.playbackRate = 1.0;
             } catch (e) {}
-          } else if (!syncState.isHost && drift > 0.4) {
-            // Minor drift across cities: smoothly adjust playback speed (1.025x / 0.975x) to catch up silently without audio jumping
-            audio.playbackRate = audio.currentTime < syncState.currentTime ? 1.025 : 0.975;
-          } else {
-            audio.playbackRate = 1.0;
           }
         }
       } else {
@@ -551,18 +624,12 @@ export default function App() {
     }
   }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying, syncState.currentTime]);
 
-  // Host Audio Timeupdate Sync Engine (Throttled once per 2 seconds during playback)
+  // Host Audio Timeupdate
   useEffect(() => {
     if (!syncState.inRoom || !syncState.isHost || !audioRef.current) return;
     const audio = audioRef.current;
 
-    let lastSync = 0;
     const handleTimeUpdate = () => {
-      const now = Date.now();
-      if (now - lastSync > 2000) {
-        lastSync = now;
-        syncParty.syncAudioState(audio.currentTime, !audio.paused);
-      }
       setCurrentTime(audio.currentTime);
     };
 
@@ -572,17 +639,32 @@ export default function App() {
     };
   }, [syncState.inRoom, syncState.isHost]);
 
+  // Mic Audio Ducking
+  useEffect(() => {
+    if (audioRef.current && syncState.inRoom) {
+      const isAnyoneSpeaking = syncState.members.some(m => m.isMicSpeaking || (m as any).isMicActive);
+      audioRef.current.volume = isAnyoneSpeaking ? 0.15 : volume;
+    } else if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [syncState.members, syncState.inRoom, volume]);
+
   // Restore last played track & timestamp on startup
   useEffect(() => {
     if (audioRef.current && currentTrack) {
       const offlineCopy = downloads.find((d) => d.id === currentTrack.id);
       const src = offlineCopy?.offlineBlobUrl || currentTrack.downloadUrl;
+      const isYoutubeTrack = (currentTrack as any)?.isCobalt || (currentTrack as any)?.url?.includes('youtube.com') || currentTrack?.downloadUrl?.includes('youtube.com');
       if (src && audioRef.current.src !== src) {
-        audioRef.current.src = src;
-        if (savedPlayerState?.currentTime) {
-          try {
-            audioRef.current.currentTime = savedPlayerState.currentTime;
-          } catch (e) {}
+        if (isYoutubeTrack && !offlineCopy && musicSource !== 'cobalt' && musicSource !== 'youtube') {
+           // Skip native audio loading to let iframe handle it without throwing CORS
+        } else {
+          audioRef.current.src = src;
+          if (savedPlayerState?.currentTime) {
+            try {
+              audioRef.current.currentTime = savedPlayerState.currentTime;
+            } catch (e) {}
+          }
         }
       }
     }
@@ -784,10 +866,10 @@ export default function App() {
       const offlineCopy = downloads.find((d) => d.id === track.id);
       let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
 
-      // For both Cobalt YT and YT Music engines: extract direct audio stream via Cobalt API
-      // This bypasses YouTube's CORS restriction — Cobalt returns a CDN audio link that plays in <audio>
-      const needsCobaltExtraction = ((track as any).isCobalt) && (musicSource === 'cobalt' || musicSource === 'youtube');
-      if (needsCobaltExtraction) {
+      const isYoutubeTrack = ((track as any).isCobalt) || (track as any).url?.includes('youtube.com') || track.downloadUrl?.includes('youtube');
+      const needsCobaltExtraction = isYoutubeTrack && (musicSource === 'cobalt' || musicSource === 'youtube');
+      
+      if (needsCobaltExtraction && !offlineCopy) {
         showToast('Extracting audio stream...');
         try {
           const ytUrl = (track.downloadUrl && track.downloadUrl.startsWith('http') && !track.downloadUrl.includes('saavncdn'))
@@ -802,9 +884,13 @@ export default function App() {
           }
         } catch (e) {
           showToast('Stream extraction failed. Check Cobalt API.');
-          // Don't fall back to YouTube URL (would CORS-fail) — just stop here
           return;
         }
+      } else if (isYoutubeTrack && !offlineCopy) {
+         // If it's a YT track but we're in JioSaavn mode, bypass native <audio> completely
+         // The MiniPlayer's hidden iframe will handle the playback instead
+         audioRef.current.pause();
+         return;
       }
 
       audioRef.current.src = src;
@@ -819,20 +905,31 @@ export default function App() {
   const handleTogglePlayPause = () => {
     if (!currentTrack) return;
     if (isPlaying) {
-      audioRef.current?.pause();
+      if (globalYtId) {
+        ytIframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+      } else {
+        audioRef.current?.pause();
+      }
       setIsPlaying(false);
     } else {
-      audioRef.current?.play().then(() => {
-        if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-          audioCtxRef.current.resume();
-        }
-      }).catch(() => {});
+      if (globalYtId) {
+        ytIframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+      } else {
+        audioRef.current?.play().then(() => {
+          if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume();
+          }
+        }).catch(() => {});
+      }
       setIsPlaying(true);
     }
   };
 
   const handleSeek = (timeSecs: number) => {
-    if (audioRef.current) {
+    if (globalYtId && ytIframeRef.current) {
+      ytIframeRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [timeSecs, true] }), '*');
+      setCurrentTime(timeSecs);
+    } else if (audioRef.current) {
       audioRef.current.currentTime = timeSecs;
       setCurrentTime(timeSecs);
     }
@@ -1064,7 +1161,13 @@ export default function App() {
   const handleDownloadCollection = async (query: string, name: string) => {
     showToast(`Fetching tracks for "${name}" to cache offline...`);
     try {
-      const tracks = await musicApi.searchSongs(query);
+      let tracks: Track[] = [];
+      if (musicSource === 'youtube' || musicSource === 'cobalt') {
+        tracks = await musicApi.searchYoutubeCobalt(query);
+      } else {
+        tracks = await musicApi.searchSongs(query);
+      }
+      
       if (tracks.length === 0) {
         showToast(`No tracks found in "${name}" to download`);
         return;
@@ -1084,7 +1187,13 @@ export default function App() {
   const handleAddCollectionToQueue = async (query: string, name: string) => {
     showToast(`Fetching tracks for "${name}" to queue...`);
     try {
-      const tracks = await musicApi.searchSongs(query);
+      let tracks: Track[] = [];
+      if (musicSource === 'youtube' || musicSource === 'cobalt') {
+        tracks = await musicApi.searchYoutubeCobalt(query);
+      } else {
+        tracks = await musicApi.searchSongs(query);
+      }
+
       if (tracks.length === 0) {
         showToast(`No tracks found in "${name}"`);
         return;
@@ -1156,7 +1265,25 @@ export default function App() {
   const handleImportCollectionAsPlaylist = async (name: string, query: string, image?: string) => {
     showToast(`Saving collection "${name}"...`);
     try {
-      const tracks = await musicApi.searchSongs(query);
+      let tracks: Track[] = [];
+      if (query.includes('youtube.com/playlist?list=')) {
+        let listId = '';
+        try {
+          const urlObj = new URL(query);
+          listId = urlObj.searchParams.get('list') || '';
+        } catch(e) {
+          listId = query.split('list=')[1]?.split('&')[0] || '';
+        }
+        if (!listId) {
+          listId = query.replace('https://music.youtube.com/playlist?list=', '').split('&')[0];
+        }
+        if (listId) {
+          tracks = await musicApi.getYoutubePlaylist(listId);
+        }
+      } else {
+        tracks = await musicApi.searchSongs(query);
+      }
+      
       if (tracks.length === 0) {
         showToast(`Could not find any tracks in "${name}"`);
         return;
@@ -1792,6 +1919,16 @@ export default function App() {
             <span className="truncate max-w-[280px] sm:max-w-md tracking-wide text-gray-100">{toastMsg}</span>
           </div>
         </div>
+      )}
+      {/* Global YouTube Iframe for Background/Seamless Playback */}
+      {globalYtId && (
+        <iframe
+          ref={ytIframeRef}
+          src={`https://www.youtube.com/embed/${globalYtId}?autoplay=${isPlaying ? 1 : 0}&controls=0&disablekb=1&modestbranding=1&playsinline=1&enablejsapi=1&mute=0&loop=1&playlist=${globalYtId}`}
+          className="fixed bottom-0 left-0 w-1 h-1 opacity-0 pointer-events-none z-[-1]"
+          allow="autoplay; encrypted-media"
+          title="YouTube Background Player"
+        />
       )}
     </div>
   );

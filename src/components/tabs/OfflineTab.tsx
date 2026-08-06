@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Download, Play, Trash2, FolderOpen, HardDrive, WifiOff, Music, FileAudio, Info, ListPlus } from 'lucide-react';
+import { Download, Play, Trash2, FolderOpen, HardDrive, WifiOff, Music, FileAudio, Info, ListPlus, CheckSquare, Square, CheckCircle2 } from 'lucide-react';
 import { DownloadTrack, Track } from '../../types';
 
 interface OfflineTabProps {
@@ -30,6 +30,21 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedIds(newSet);
+  };
+
+  const handleBulkDelete = () => {
+    selectedIds.forEach(id => onRemoveDownload(id));
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
+  };
 
   const totalSize = downloads.reduce((acc, curr) => acc + (curr.sizeBytes || 0), 0);
   const sizeMb = (totalSize / (1024 * 1024)).toFixed(1);
@@ -123,42 +138,104 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
               </button>
             </div>
           ) : (
-            <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl overflow-hidden shadow-sm">
-              {downloads.map((song, idx) => (
-                <div
-                  key={song.id}
-                  className={`flex items-center justify-between p-3 sm:p-4 hover:bg-[var(--hover-sunofy)] transition group cursor-pointer ${
-                    idx !== 0 ? 'border-t border-[var(--border-sunofy)]' : ''
-                  }`}
-                  onClick={() => onPlayTrack(song)}
-                >
-                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                    <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-sm">
-                      <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                        <Play className="w-5 h-5 text-white ml-0.5" fill="currentColor" />
-                      </div>
-                      <div className="absolute top-1 right-1 bg-[var(--bg-sunofy)]/80 p-0.5 rounded-full border border-[var(--border-sunofy)] backdrop-blur-sm shadow-sm">
-                         <Download className="w-2.5 h-2.5 text-[var(--accent-sunofy)]" />
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">{song.title}</div>
-                      <div className="text-xs font-medium text-[var(--muted-sunofy)] truncate mt-0.5">{song.artist}</div>
-                    </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold text-[var(--muted-sunofy)] uppercase tracking-wider">
+                  Cached Songs ({downloads.length})
+                </span>
+                {isSelectMode ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (selectedIds.size === downloads.length) {
+                          setSelectedIds(new Set());
+                        } else {
+                          setSelectedIds(new Set(downloads.map(d => d.id)));
+                        }
+                      }}
+                      className="text-[var(--muted-sunofy)] hover:text-white transition cursor-pointer p-1 rounded-md"
+                      title={selectedIds.size === downloads.length ? "Deselect All" : "Select All"}
+                    >
+                      {selectedIds.size === downloads.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => setIsSelectMode(false)}
+                      className="text-xs font-bold text-[var(--muted-sunofy)] hover:text-white cursor-pointer px-2"
+                    >
+                      Cancel
+                    </button>
+                    {selectedIds.size > 0 && (
+                      <button
+                        onClick={handleBulkDelete}
+                        className="text-xs font-bold bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition cursor-pointer flex items-center gap-1 shadow"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete ({selectedIds.size})
+                      </button>
+                    )}
                   </div>
+                ) : (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveDownload(song.id);
-                    }}
-                    className="p-2.5 rounded-full text-red-500 hover:bg-red-500/10 transition opacity-0 group-hover:opacity-100 cursor-pointer"
-                    title="Remove Download"
+                    onClick={() => { setIsSelectMode(true); setSelectedIds(new Set()); }}
+                    className="text-xs font-bold text-red-500 hover:bg-red-500/10 px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1"
+                    title="Select multiple songs to delete"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" /> Select
                   </button>
-                </div>
-              ))}
+                )}
+              </div>
+              <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl overflow-hidden shadow-sm">
+                {downloads.map((song, idx) => (
+                  <div
+                    key={song.id}
+                    className={`flex items-center justify-between p-3 sm:p-4 hover:bg-[var(--hover-sunofy)] transition group cursor-pointer ${
+                      idx !== 0 ? 'border-t border-[var(--border-sunofy)]' : ''
+                    } ${isSelectMode && selectedIds.has(song.id) ? 'bg-red-500/10 border-red-500/20' : ''}`}
+                    onClick={() => {
+                      if (isSelectMode) toggleSelection(song.id);
+                      else onPlayTrack(song);
+                    }}
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                      {isSelectMode && (
+                        <div className="text-[var(--muted-sunofy)] flex-shrink-0">
+                          {selectedIds.has(song.id) ? (
+                            <CheckSquare className="w-5 h-5 text-red-500" />
+                          ) : (
+                            <Square className="w-5 h-5" />
+                          )}
+                        </div>
+                      )}
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-sm">
+                        <img src={song.image} alt={song.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
+                        {!isSelectMode && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                            <Play className="w-5 h-5 text-white ml-0.5" fill="currentColor" />
+                          </div>
+                        )}
+                        <div className="absolute top-1 right-1 bg-[var(--bg-sunofy)]/80 p-0.5 rounded-full border border-[var(--border-sunofy)] backdrop-blur-sm shadow-sm">
+                           <Download className="w-2.5 h-2.5 text-[var(--accent-sunofy)]" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">{song.title}</div>
+                        <div className="text-xs font-medium text-[var(--muted-sunofy)] truncate mt-0.5">{song.artist}</div>
+                      </div>
+                    </div>
+                    {!isSelectMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveDownload(song.id);
+                        }}
+                        className="p-2.5 rounded-full text-red-500 hover:bg-red-500/10 transition opacity-100 sm:opacity-0 group-hover:opacity-100 cursor-pointer"
+                        title="Remove Download"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </>

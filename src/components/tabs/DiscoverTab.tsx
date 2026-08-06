@@ -71,6 +71,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
   const [trendingTracks, setTrendingTracks] = useState<Track[]>([]);
   const [featuredTrack, setFeaturedTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   const handleImageError = (id: string) => {
@@ -108,6 +109,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     let isMounted = true;
     async function loadTracks() {
       setLoading(true);
+      setApiError(false);
       try {
         const query = selectedTag ? `${selectedTag} Music` : 'Top Telugu Hits';
         let tracks: Track[] = [];
@@ -199,6 +201,9 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
         }
         
         if (isMounted) {
+          if (tracks.length === 0 && musicSource !== 'local') {
+            setApiError(true);
+          }
           setTrendingTracks(tracks);
           if (tracks.length > 0) {
             setFeaturedTrack(tracks[0]);
@@ -208,18 +213,25 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
 
           if (plist.length > 0) {
             setDynamicPlaylists(plist);
+          } else if (apiError || (tracks.length === 0 && musicSource !== 'local')) {
+            setDynamicPlaylists([]);
           } else {
             setDynamicPlaylists(curatedPlaylists);
           }
 
           if (alist.length > 0) {
             setDynamicAlbums(alist);
+          } else if (apiError || (tracks.length === 0 && musicSource !== 'local')) {
+            setDynamicAlbums([]);
           } else {
             setDynamicAlbums(curatedAlbums);
           }
         }
       } catch (err) {
         console.error('Failed to load discover tracks', err);
+        if (isMounted && musicSource !== 'local') {
+          setApiError(true);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -346,8 +358,37 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
         })}
       </div>
 
+      {apiError && !loading && (
+        <div className="flex flex-col items-center justify-center p-8 bg-[var(--card-sunofy)] border border-red-500/30 rounded-3xl mx-4 text-center space-y-3 animate-fade shadow-2xl">
+          <Server className="w-10 h-10 text-red-500 mb-2 opacity-80" />
+          <h2 className="text-lg font-black text-[var(--text-sunofy)]">Unable to Connect</h2>
+          <p className="text-xs text-[var(--muted-sunofy)] max-w-sm">
+            The music server is currently unreachable or failed to load tracks. Please check your internet connection.
+          </p>
+          <div className="pt-4 flex gap-3">
+            <button
+              onClick={() => {
+                if (onMusicSourceChange) onMusicSourceChange('local');
+              }}
+              className="px-4 py-2 bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] hover:border-emerald-500 text-xs font-bold text-[var(--text-sunofy)] rounded-xl transition flex items-center gap-2 cursor-pointer"
+            >
+              <HardDrive className="w-4 h-4 text-emerald-400" /> Use Offline Storage
+            </button>
+            <button
+              onClick={() => {
+                setLoading(true);
+                setSelectedTag(selectedTag + ' '); // force re-trigger
+              }}
+              className="px-4 py-2 bg-[var(--accent-sunofy)] text-black text-xs font-black rounded-xl transition cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Featured Release Hero Card */}
-      {featuredTrack && (
+      {featuredTrack && !apiError && (
         <div className="relative rounded-3xl overflow-hidden border border-[var(--border-sunofy)] shadow-2xl bg-[var(--card-sunofy)] group transition-all duration-500">
           <div className="absolute inset-0 z-0 opacity-30 group-hover:scale-105 transition-transform duration-700">
             <img src={featuredTrack.image} alt="" className="w-full h-full object-cover blur-lg" />
@@ -439,6 +480,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
       )}
 
       {/* Consolidated Discovery Engine Panel */}
+      {!apiError && (
       <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl p-4 sm:p-6 shadow-2xl space-y-5">
         
 
@@ -813,6 +855,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
         )}
 
       </div>
+      )}
 
       {/* Quick Moods & Playlists Grid */}
       <div className="space-y-3">

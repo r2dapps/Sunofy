@@ -274,6 +274,129 @@ async function startServer() {
     });
   });
 
+  // 1b1. Dedicated YouTube Playlist Scraper
+  app.get('/api/youtube/playlist', async (req: Request, res: Response) => {
+    const listId = req.query.id as string;
+    if (!listId) {
+      res.status(400).json({ success: false, message: 'Missing playlist id' });
+      return;
+    }
+    try {
+      const ytUrl = `https://www.youtube.com/playlist?list=${encodeURIComponent(listId)}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const ytRes = await fetch(ytUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      });
+      clearTimeout(timeout);
+
+      if (ytRes.ok) {
+        const html = await ytRes.text();
+        const match = html.match(/var ytInitialData = ({.*?});<\/script>/s) || html.match(/window\["ytInitialData"\] = ({.*?});/s);
+        if (match && match[1]) {
+          const parsed = JSON.parse(match[1]);
+          const tabs = parsed.contents?.twoColumnBrowseResultsRenderer?.tabs || [];
+          let contents = [];
+          let mixContents = [];
+          
+          for (const tab of tabs) {
+             if (tab.tabRenderer?.content?.sectionListRenderer?.contents) {
+                const sectionContents = tab.tabRenderer.content.sectionListRenderer.contents;
+                for (const sec of sectionContents) {
+                   if (sec.itemSectionRenderer?.contents) {
+                      for (const item of sec.itemSectionRenderer.contents) {
+                         if (item.playlistVideoListRenderer?.contents) {
+                            contents = item.playlistVideoListRenderer.contents;
+                         } else if (item.lockupViewModel && item.lockupViewModel.contentType === 'LOCKUP_CONTENT_TYPE_VIDEO') {
+                            mixContents.push(item);
+                         }
+                      }
+                   }
+                }
+             }
+          }
+
+          const results: any[] = [];
+          // Normal playlist parsing
+          for (const item of contents) {
+            const v = item.playlistVideoRenderer;
+            if (v && v.videoId && v.isPlayable) {
+              const durText = v.lengthText?.simpleText || '3:30';
+              const title = v.title?.runs?.[0]?.text || 'YouTube Song';
+              const author = v.shortBylineText?.runs?.[0]?.text || 'YouTube Artist';
+              const thumbUrl = v.thumbnail?.thumbnails?.slice(-1)[0]?.url || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
+              
+              results.push({
+                id: v.videoId,
+                type: 'video',
+                videoId: v.videoId,
+                title: title,
+                artist: author,
+                author: author,
+                lengthSeconds: parseDurationSeconds(durText),
+                duration: durText,
+                durationText: durText,
+                videoThumbnails: [{ url: thumbUrl }],
+                thumbnail: thumbUrl,
+                image: thumbUrl,
+                downloadUrl: `/api/youtube/stream?id=${v.videoId}`,
+                videoUrl: `https://www.youtube.com/watch?v=${v.videoId}`,
+                embedUrl: `https://www.youtube.com/embed/${v.videoId}?autoplay=1&enablejsapi=1`,
+              });
+            }
+          }
+
+          // Mix playlist parsing (RD...)
+          for (const item of mixContents) {
+             const v = item.lockupViewModel;
+             if (v && v.contentId) {
+                const title = v.metadata?.lockupMetadataViewModel?.title?.content || 'YouTube Song';
+                let author = 'YouTube Artist';
+                let durText = '3:30';
+                
+                const parts = v.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows?.[0]?.metadataParts;
+                if (parts && parts.length > 0) {
+                    author = parts[0]?.text?.content || author;
+                }
+
+                const thumbUrl = v.image?.imageViewModel?.image?.sources?.[0]?.url || `https://i.ytimg.com/vi/${v.contentId}/hqdefault.jpg`;
+                
+                results.push({
+                   id: v.contentId,
+                   type: 'video',
+                   videoId: v.contentId,
+                   title: title,
+                   artist: author,
+                   author: author,
+                   lengthSeconds: parseDurationSeconds(durText),
+                   duration: durText,
+                   durationText: durText,
+                   videoThumbnails: [{ url: thumbUrl }],
+                   thumbnail: thumbUrl,
+                   image: thumbUrl,
+                   downloadUrl: `/api/youtube/stream?id=${v.contentId}`,
+                   videoUrl: `https://www.youtube.com/watch?v=${v.contentId}`,
+                   embedUrl: `https://www.youtube.com/embed/${v.contentId}?autoplay=1&enablejsapi=1`,
+                });
+             }
+          }
+
+          if (results.length > 0) {
+            res.json({ success: true, results, items: results });
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('YouTube playlist scraping failed', err);
+    }
+    res.status(500).json({ success: false, message: 'Failed to extract playlist' });
+  });
+
   // 1b2. Dedicated YouTube Stream Link Resolver (Tries Piped, Cobalt & Invidious)
   app.get('/api/youtube/stream', async (req: Request, res: Response) => {
     const videoId = (req.query.id as string) || (req.query.videoId as string);

@@ -263,7 +263,7 @@ class MusicAPI {
               album: 'YouTube Music Live',
               image: item.image || item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
               duration: item.lengthSeconds || 210,
-              downloadUrl: item.videoUrl || `https://www.youtube.com/watch?v=${item.videoId}`,
+              downloadUrl: item.downloadUrl || item.videoUrl || `https://www.youtube.com/watch?v=${item.videoId}`,
               mediaType: 'video',
               isVideo: true,
               isCobalt: true,
@@ -282,6 +282,40 @@ class MusicAPI {
       artist: t.artist + ' (YouTube Music)',
       isCobalt: true
     }));
+  }
+
+  async getYoutubePlaylist(playlistId: string): Promise<Track[]> {
+    if (!playlistId) return [];
+    const cacheKey = `yt_pl_${playlistId}`;
+    const cached = this.getCached<Track[]>(cacheKey);
+    if (cached && cached.length > 0) return cached;
+
+    try {
+      const res = await fetch(`/api/youtube/playlist?id=${encodeURIComponent(playlistId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const items = data.results || data.items || [];
+        if (items.length > 0) {
+          const tracks: Track[] = items.map((item: any, idx: number) => ({
+            id: `yt_${item.videoId || item.id || idx}`,
+            title: item.title,
+            artist: item.artist || item.author || 'YouTube Music',
+            album: 'YouTube Playlist',
+            image: item.image || item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`,
+            duration: item.lengthSeconds || 210,
+            downloadUrl: item.downloadUrl || item.videoUrl || `https://www.youtube.com/watch?v=${item.videoId}`,
+            mediaType: 'video',
+            isVideo: true,
+            isCobalt: true,
+          }));
+          this.setCache(cacheKey, tracks);
+          return tracks;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch YouTube playlist', e);
+    }
+    return [];
   }
 
   async extractCobaltStream(url: string): Promise<string | null> {
