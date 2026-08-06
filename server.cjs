@@ -104,9 +104,9 @@ async function startServer() {
       return;
     }
     const mirrors = [
-      `https://saavn.sumit.co/api/playlists?id=${encodeURIComponent(id)}`,
-      `https://saavn-api.vercel.app/playlists?id=${encodeURIComponent(id)}`,
-      `https://saavn.dev/api/playlists?id=${encodeURIComponent(id)}`
+      `https://saavn.sumit.co/api/playlists?id=${encodeURIComponent(id)}&limit=200`,
+      `https://saavn-api.vercel.app/playlists?id=${encodeURIComponent(id)}&limit=200`,
+      `https://saavn.dev/api/playlists?id=${encodeURIComponent(id)}&limit=200`
     ];
     for (const mirrorUrl of mirrors) {
       try {
@@ -153,10 +153,11 @@ async function startServer() {
   });
   app.get("/api/youtube/search", async (req, res) => {
     const query = req.query.q || req.query.query || "Telugu Hits";
+    const filter = req.query.filter || "music_songs";
     const pipedInstances = [
-      `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=music_songs`,
-      `https://api.piped.yt/search?q=${encodeURIComponent(query)}&filter=music_songs`,
-      `https://pipedapi.mha.fi/search?q=${encodeURIComponent(query)}&filter=music_songs`
+      `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=${filter}`,
+      `https://api.piped.yt/search?q=${encodeURIComponent(query)}&filter=${filter}`,
+      `https://pipedapi.mha.fi/search?q=${encodeURIComponent(query)}&filter=${filter}`
     ];
     for (const pipedUrl of pipedInstances) {
       try {
@@ -263,6 +264,116 @@ async function startServer() {
       items: []
     });
   });
+  app.get("/api/youtube/playlist", async (req, res) => {
+    const listId = req.query.id;
+    if (!listId) {
+      res.status(400).json({ success: false, message: "Missing playlist id" });
+      return;
+    }
+    try {
+      const ytUrl = `https://www.youtube.com/playlist?list=${encodeURIComponent(listId)}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6e3);
+      const ytRes = await fetch(ytUrl, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9"
+        }
+      });
+      clearTimeout(timeout);
+      if (ytRes.ok) {
+        const html = await ytRes.text();
+        const match = html.match(/var ytInitialData = ({.*?});<\/script>/s) || html.match(/window\["ytInitialData"\] = ({.*?});/s);
+        if (match && match[1]) {
+          const parsed = JSON.parse(match[1]);
+          const tabs = parsed.contents?.twoColumnBrowseResultsRenderer?.tabs || [];
+          let contents = [];
+          let mixContents = [];
+          for (const tab of tabs) {
+            if (tab.tabRenderer?.content?.sectionListRenderer?.contents) {
+              const sectionContents = tab.tabRenderer.content.sectionListRenderer.contents;
+              for (const sec of sectionContents) {
+                if (sec.itemSectionRenderer?.contents) {
+                  for (const item of sec.itemSectionRenderer.contents) {
+                    if (item.playlistVideoListRenderer?.contents) {
+                      contents = item.playlistVideoListRenderer.contents;
+                    } else if (item.lockupViewModel && item.lockupViewModel.contentType === "LOCKUP_CONTENT_TYPE_VIDEO") {
+                      mixContents.push(item);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          const results = [];
+          for (const item of contents) {
+            const v = item.playlistVideoRenderer;
+            if (v && v.videoId && v.isPlayable) {
+              const durText = v.lengthText?.simpleText || "3:30";
+              const title = v.title?.runs?.[0]?.text || "YouTube Song";
+              const author = v.shortBylineText?.runs?.[0]?.text || "YouTube Artist";
+              const thumbUrl = v.thumbnail?.thumbnails?.slice(-1)[0]?.url || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
+              results.push({
+                id: v.videoId,
+                type: "video",
+                videoId: v.videoId,
+                title,
+                artist: author,
+                author,
+                lengthSeconds: parseDurationSeconds(durText),
+                duration: durText,
+                durationText: durText,
+                videoThumbnails: [{ url: thumbUrl }],
+                thumbnail: thumbUrl,
+                image: thumbUrl,
+                downloadUrl: `/api/youtube/stream?id=${v.videoId}`,
+                videoUrl: `https://www.youtube.com/watch?v=${v.videoId}`,
+                embedUrl: `https://www.youtube.com/embed/${v.videoId}?autoplay=1&enablejsapi=1`
+              });
+            }
+          }
+          for (const item of mixContents) {
+            const v = item.lockupViewModel;
+            if (v && v.contentId) {
+              const title = v.metadata?.lockupMetadataViewModel?.title?.content || "YouTube Song";
+              let author = "YouTube Artist";
+              let durText = "3:30";
+              const parts = v.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows?.[0]?.metadataParts;
+              if (parts && parts.length > 0) {
+                author = parts[0]?.text?.content || author;
+              }
+              const thumbUrl = v.image?.imageViewModel?.image?.sources?.[0]?.url || `https://i.ytimg.com/vi/${v.contentId}/hqdefault.jpg`;
+              results.push({
+                id: v.contentId,
+                type: "video",
+                videoId: v.contentId,
+                title,
+                artist: author,
+                author,
+                lengthSeconds: parseDurationSeconds(durText),
+                duration: durText,
+                durationText: durText,
+                videoThumbnails: [{ url: thumbUrl }],
+                thumbnail: thumbUrl,
+                image: thumbUrl,
+                downloadUrl: `/api/youtube/stream?id=${v.contentId}`,
+                videoUrl: `https://www.youtube.com/watch?v=${v.contentId}`,
+                embedUrl: `https://www.youtube.com/embed/${v.contentId}?autoplay=1&enablejsapi=1`
+              });
+            }
+          }
+          if (results.length > 0) {
+            res.json({ success: true, results, items: results });
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("YouTube playlist scraping failed", err);
+    }
+    res.status(500).json({ success: false, message: "Failed to extract playlist" });
+  });
   app.get("/api/youtube/stream", async (req, res) => {
     const videoId = req.query.id || req.query.videoId;
     if (!videoId) {
@@ -328,7 +439,7 @@ async function startServer() {
       } catch (e) {
       }
     }
-    res.redirect("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
+    res.status(404).send("YouTube streaming is no longer supported via proxy. Please use Cobalt or the official YouTube Music engine.");
   });
   app.get("/api/suggestions", async (req, res) => {
     const q = req.query.q || req.query.query || "";

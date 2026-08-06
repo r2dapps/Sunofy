@@ -2,15 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Sunofy Music - Dive into Musical World</title>
     <meta name="description" content="Sunofy is a high-fidelity web music player featuring JioSaavn & YouTube integration, real-time Sync Party listening rooms, equalizer, lyrics, and custom themes." />
     
     <!-- PWA & Favicons -->
-    <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <meta name="theme-color" content="#1db954" />
+    <meta name="theme-color" content="#0a0a0c" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -29,8 +29,8 @@
     <meta name="twitter:image" content="./icon-512.png" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script type="module" crossorigin src="/Sunofy/assets/index-CSs-0UsA.js"></script>
-    <link rel="stylesheet" crossorigin href="/Sunofy/assets/index-CVVGZbvY.css">
+    <script type="module" crossorigin src="./assets/index-BoxtP1fC.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BHFKhuoN.css">
   </head>
   <body>
     <div id="root"></div>
@@ -41,8 +41,32 @@
       });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').catch((err) => {
+          const swPath = window.location.pathname.endsWith('/') 
+            ? window.location.pathname + 'sw.js' 
+            : window.location.pathname + '/sw.js';
+          navigator.serviceWorker.register(swPath).then((reg) => {
+            reg.update();
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    window.hasPwaUpdate = true;
+                    window.dispatchEvent(new CustomEvent('pwaUpdateAvailable'));
+                  }
+                });
+              }
+            });
+          }).catch((err) => {
             console.log('SW registration failed: ', err);
+          });
+          
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
           });
         });
       }
