@@ -1537,8 +1537,16 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   </div>
                   
                   <div className="px-1 pb-1">
-                  <div className="space-y-3">
-                  <p className="text-xs text-[var(--muted-sunofy)]">Select a GIF to send. (Search is temporarily disabled due to API limits)</p>
+                    <p className="text-xs text-[var(--muted-sunofy)] mb-2">Select a GIF to send. (Search is temporarily disabled due to API limits)</p>
+                    <input
+                      type="text"
+                      placeholder="Search GIFs..."
+                      disabled={true}
+                      value={gifSearchQuery}
+                      onChange={(e) => handleGifSearch(e.target.value)}
+                      className="w-full bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
+                    />
+                  </div>
                   
                   {/* GIFs Grid */}
                   <div className="grid grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
@@ -1823,6 +1831,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           )}
         </div>
       )}
+      </div>
 
       {/* QR Code Scan Modal */}
       {showQrModal && (
