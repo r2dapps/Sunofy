@@ -223,15 +223,30 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     };
   }, [selectedTag, musicSource, downloads, localFolderTracks, isAppLocked]);
 
-  const topTags = [
-    { label: 'Telugu Melodies', icon: <Music className="w-3.5 h-3.5" />, query: 'Telugu Melodies' },
-    { label: 'Sid Sriram Hits', icon: <Mic className="w-3.5 h-3.5" />, query: 'Sid Sriram Hits' },
-    { label: 'Anirudh Beats', icon: <Flame className="w-3.5 h-3.5" />, query: 'Anirudh Beats' },
-    { label: 'Tollywood 2026', icon: <Zap className="w-3.5 h-3.5" />, query: 'Telugu Top Hits 2026' },
-    { label: 'DJ Remixes', icon: <Headphones className="w-3.5 h-3.5" />, query: 'Telugu DJ Remix' },
-    { label: 'Love Melodies', icon: <Heart className="w-3.5 h-3.5" />, query: 'Telugu Romantic Songs' },
-    { label: 'Mass Commercial', icon: <Disc className="w-3.5 h-3.5" />, query: 'Thaman S Mass Beats' },
-  ];
+  const [savedTags, setSavedTags] = useState<{label:string, query:string}[]>(() => {
+    try {
+      const saved = localStorage.getItem('sunofy_discover_tags');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [
+      { label: 'Language', query: 'Telugu Music' },
+      { label: 'Genre', query: 'Melody Hits' },
+      { label: 'Artist', query: 'Devi Sri Prasad' },
+      { label: 'Singer', query: 'Sid Sriram' }
+    ];
+  });
+
+  const [editingTagLabel, setEditingTagLabel] = useState<string | null>(null);
+  const [newTagQuery, setNewTagQuery] = useState('');
+
+  const handleUpdateTag = (label: string, newQuery: string) => {
+    if (!newQuery.trim()) return;
+    const updated = savedTags.map(t => t.label === label ? { ...t, query: newQuery.trim() } : t);
+    setSavedTags(updated);
+    localStorage.setItem('sunofy_discover_tags', JSON.stringify(updated));
+    setSelectedTag(newQuery.trim());
+    setEditingTagLabel(null);
+  };
 
   const quickMoods = [
     { id: 'qm_1', name: 'Telugu Melodies', query: 'Telugu Melodies 2026', image: './icon-192.png', color: 'from-amber-500/20 to-rose-500/20' },
@@ -318,23 +333,31 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     <div className="space-y-7 pb-28 animate-fade">
       {/* Top Header Category Filter Pills */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 px-1">
-        {topTags.map((tag) => {
+        {savedTags.map((tag) => {
           const isActive = selectedTag === tag.query;
+          if (editingTagLabel === tag.label) {
+            return (
+              <form key={tag.label} onSubmit={(e) => { e.preventDefault(); handleUpdateTag(tag.label, newTagQuery); }} className="flex items-center gap-1">
+                <input autoFocus type="text" value={newTagQuery} onChange={e => setNewTagQuery(e.target.value)} onBlur={() => handleUpdateTag(tag.label, newTagQuery)} placeholder={`Enter ${tag.label}...`} className="bg-[var(--surface-sunofy)] text-xs text-[var(--text-sunofy)] px-3 py-1.5 rounded-full border border-[var(--border-sunofy)] focus:outline-none w-32" />
+              </form>
+            );
+          }
           return (
             <button
               key={tag.label}
               onClick={() => setSelectedTag(tag.query)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 cursor-pointer select-none active:scale-95 ${
+              onDoubleClick={() => { setEditingTagLabel(tag.label); setNewTagQuery(tag.query); }}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-300 shadow-sm border ${
                 isActive
-                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm scale-102 font-black'
-                  : 'bg-[var(--card-sunofy)] text-[var(--text-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/50'
+                  ? 'bg-[var(--accent-sunofy)] text-black border-[var(--accent-sunofy)] shadow-[var(--accent-sunofy)]/20'
+                  : 'bg-[var(--surface-sunofy)] text-[var(--text-muted-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--text-muted-sunofy)] hover:bg-[var(--border-sunofy)]'
               }`}
             >
-              {tag.icon}
-              <span>{tag.label}</span>
+              <span className="font-bold mr-1 opacity-60">{tag.label}:</span> {tag.query}
             </button>
           );
         })}
+        <div className="text-[10px] text-[var(--muted-sunofy)] ml-2 whitespace-nowrap opacity-70 flex items-center">(Double-click to edit)</div>
       </div>
 
       {apiError && !loading && (

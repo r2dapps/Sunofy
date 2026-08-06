@@ -524,7 +524,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
     setActiveSubTab('search');
 
     try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}&filter=all`);
       if (res.ok) {
         const data = await res.json();
         const rawItems = data.results || data.items || [];

@@ -150,12 +150,13 @@ async function startServer() {
   // 1b. Dedicated YouTube / YouTube Music Search API Endpoint
   app.get('/api/youtube/search', async (req: Request, res: Response) => {
     const query = (req.query.q as string) || (req.query.query as string) || 'Telugu Hits';
+    const filter = (req.query.filter as string) || 'music_songs';
     
     // 1. Try Piped API instances first (Fastest and reliable)
     const pipedInstances = [
-      `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=music_songs`,
-      `https://api.piped.yt/search?q=${encodeURIComponent(query)}&filter=music_songs`,
-      `https://pipedapi.mha.fi/search?q=${encodeURIComponent(query)}&filter=music_songs`,
+      `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=${filter}`,
+      `https://api.piped.yt/search?q=${encodeURIComponent(query)}&filter=${filter}`,
+      `https://pipedapi.mha.fi/search?q=${encodeURIComponent(query)}&filter=${filter}`,
     ];
 
     for (const pipedUrl of pipedInstances) {

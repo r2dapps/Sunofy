@@ -66,10 +66,9 @@ class OfflineStore {
         }
       }
 
-      // Step 3: Fallback if no audio blob retrieved yet
+      // Step 3: Abort if no audio blob retrieved
       if (!audioBlob) {
-        onProgress?.(70);
-        audioBlob = await this.getFallbackAudioBlob();
+        throw new Error('Failed to download audio blob. Aborting offline save to prevent ghost cards.');
       }
 
       sizeBytes = audioBlob.size;
