@@ -1554,9 +1554,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       { name: 'Happy Dance 🕺', url: 'https://media.tenor.com/DJLxTbr5SfEAAAAM/friday-happy-dance.gif' },
                       { name: 'Cat Vibe 🐱', url: 'https://media.tenor.com/TccvUFJ7WiAAAAAM/dancing-cat-cat.gif' },
                       { name: 'Dance Moves ✨', url: 'https://media.tenor.com/4RQau55ngC4AAAAM/dance-dance-moves.gif' },
-                      { name: 'Party Pub 🍻', url: 'https://media.tenor.com/m9Gn2a0r7W0AAAAM/dance-party-pub.gif' },
-                      { name: 'Kido 🎈', url: 'https://media.tenor.com/8QP4JDPp85UAAAAM/kido.gif' },
-                      { name: 'Celebrate 🎉', url: 'https://media.tenor.com/0DHbRl45awkAAAAM/aallooz-com-animated-indian-gifs.gif' },
+                      { name: 'Kiss 💋', url: 'https://media.tenor.com/eCNrTq7wOpgAAAAM/kiss.gif' },
+                      { name: 'Couple Kiss 💏', url: 'https://media.tenor.com/yo8aSVqTZh0AAAAM/couple-kiss.gif' },
+                      { name: 'Big Hug 🤗', url: 'https://media.tenor.com/aN5FmNADcYwAAAAM/hug.gif' },
+                      { name: 'Cuddle 🥰', url: 'https://media.tenor.com/0PPpG_KDQ60AAAAM/couple-cuddle-cuddle.gif' },
+                      { name: 'Snuggle 🥺', url: 'https://media.tenor.com/m-t78i6TAPoAAAAM/sidku-prachku.gif' },
+                      { name: 'Cute Slap ✋', url: 'https://media.tenor.com/NJmtSRZ1Jd8AAAAM/peach-and-goma-peach-cat.gif' },
+                      { name: 'Playful Slap 😂', url: 'https://media.tenor.com/CphtLU7B4uUAAAAM/haha-playing.gif' },
+                      { name: 'Romantic 🌹', url: 'https://media.tenor.com/6Ue3VqxF3pQAAAAM/yash-kiara-advani.gif' },
+                      { name: 'Bubu Kisses 😽', url: 'https://media.tenor.com/5T24_rbk7vYAAAAM/bubu-dudu-kisses.gif' },
                     ].map((gif) => (
                       <button
                         key={gif.url}
