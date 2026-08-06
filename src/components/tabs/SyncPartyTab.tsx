@@ -156,6 +156,163 @@ interface SyncPartyTabProps {
   downloads?: Track[];
 }
 
+const GIF_CATEGORIES = {
+  "Hi": [
+    { name: "Hi", url: "https://media.tenor.com/UY_0nvL3aRYAAAAM/oh-hiiii-oh-hi.gif" },
+    { name: "Heyy", url: "https://media.tenor.com/pUMecdbDWnwAAAAM/heyy-hey.gif" },
+    { name: "Hello", url: "https://media.tenor.com/cYTIBRGNsWYAAAAM/nayanthara-hi.gif" },
+    { name: "Hi there", url: "https://media.tenor.com/lkRPi81GE54AAAAM/hi.gif" },
+    { name: "Wave", url: "https://media.tenor.com/cKLTZil3GOMAAAAM/hi-hi-there.gif" }
+  ],
+  "Movie & Popcorn": [
+    { name: "Popcorn", url: "https://media.tenor.com/ARgIw-axoFsAAAAM/popcorn-angry-birds.gif" },
+    { name: "Eating", url: "https://media.tenor.com/OWiVueFXHYoAAAAM/popcorn-eat.gif" },
+    { name: "Watch Movie", url: "https://media.tenor.com/RELsYx8iH4UAAAAM/eating-popcorn-watching-a-movie.gif" },
+    { name: "Movie Time", url: "https://media.tenor.com/U8ZEUpq9cY4AAAAM/movie-night-movie-time.gif" },
+    { name: "Garfield", url: "https://media.tenor.com/CtLw3UPuc2AAAAAM/the-garfield-movie-popcorn.gif" }
+  ],
+  "Vibing": [
+    { name: "Vibe", url: "https://media.tenor.com/9yNLtDQhh-MAAAAM/i47x.gif" },
+    { name: "Enjoying", url: "https://media.tenor.com/9s3ZBYYePBkAAAAM/music-enjoying-music.gif" },
+    { name: "Cat Jam", url: "https://media.tenor.com/W2_zxTEyVd8AAAAM/cat-on-bus-jamming-to-music-cat-listening-to-music.gif" },
+    { name: "Dance", url: "https://media.tenor.com/S8Pp-w-Pg5IAAAAM/dance-music.gif" },
+    { name: "Headphones", url: "https://media.tenor.com/HQGqGRHUG_YAAAAM/hey-arnold-headphones.gif" }
+  ],
+  "Hit on Head": [
+    { name: "Bonk", url: "https://media.tenor.com/udpvUVcjpZAAAAAM/bonk.gif" },
+    { name: "FML", url: "https://media.tenor.com/RczE1wnvphMAAAAM/fml-sylvester.gif" },
+    { name: "Slap Head", url: "https://media.tenor.com/wHJYArm1FdIAAAAM/slap-head-bird.gif" },
+    { name: "Minion Bonk", url: "https://media.tenor.com/K0u17jE1AaEAAAAM/minion-bonk.gif" },
+    { name: "Stop", url: "https://media.tenor.com/_dHsFoBZ20IAAAAM/make-it-stop-frustrated.gif" }
+  ],
+  "Slap": [
+    { name: "Cute Slap", url: "https://media.tenor.com/NJmtSRZ1Jd8AAAAM/peach-and-goma-peach-cat.gif" },
+    { name: "Haha", url: "https://media.tenor.com/CphtLU7B4uUAAAAM/haha-playing.gif" },
+    { name: "Twtjjk", url: "https://media.tenor.com/N624PZowMQUAAAAM/twtjjk.gif" },
+    { name: "Peach", url: "https://media.tenor.com/Duta2SKECKAAAAAM/tkthao219-peach.gif" },
+    { name: "Tokat", url: "https://media.tenor.com/yCC2nXLRPBgAAAAM/utku-tokat.gif" }
+  ],
+  "Bike Ride": [
+    { name: "Couple Ride", url: "https://media.tenor.com/nppnno30ElQAAAAM/love-couple-riding-bike.gif" },
+    { name: "Sanjay", url: "https://media.tenor.com/CxOUzzFYOQYAAAAM/sanjay-chat-tamil-chat.gif" },
+    { name: "Night Rider", url: "https://media.tenor.com/oYyzvP_2GqwAAAAM/night-rider-motorcycle.gif" },
+    { name: "Riding", url: "https://media.tenor.com/DGMRYbGESegAAAAM/riding-a-motorcycle-maverick.gif" },
+    { name: "Kiss Cheek", url: "https://media.tenor.com/4q8Iqrf-m-kAAAAM/kiss-cheek-shelly.gif" }
+  ],
+  "Car Driving": [
+    { name: "Cat Car", url: "https://media.tenor.com/CxLeH_YK1MMAAAAM/peach-cat-car-cat-car.gif" },
+    { name: "Dancing", url: "https://media.tenor.com/xwXaQpA6GfEAAAAM/dancing-brandon-woelfel.gif" },
+    { name: "Long Drive", url: "https://media.tenor.com/5spMhFDfbUkAAAAM/drive-long-drive.gif" },
+    { name: "Hold Hands", url: "https://media.tenor.com/0pfPrSEGaYcAAAAM/couple-hold-hands.gif" },
+    { name: "Utu Sayang", url: "https://media.tenor.com/JlPuyYsTBNcAAAAM/utu-sayangutu.gif" }
+  ],
+  "Telugu Memes": [
+    { name: "Cheppu", url: "https://media.tenor.com/F3raahWdeSUAAAAM/telugu-lo-cheppu-satya-jetlee.gif" },
+    { name: "Ali Comedy", url: "https://media.tenor.com/OJKVWOuCUpMAAAAM/ali-comedy.gif" },
+    { name: "Gopi", url: "https://media.tenor.com/zdOX0tFOmaYAAAAM/gopi-pelli.gif" },
+    { name: "Bhibatsam", url: "https://media.tenor.com/uUzQ8-tnRM8AAAAM/bhibatsam-brahmanandam.gif" },
+    { name: "Balakrishna", url: "https://media.tenor.com/P2RKA-XwThMAAAAM/balakrishna-telugu-funny.gif" }
+  ],
+  "Love": [
+    { name: "Love You", url: "https://media.tenor.com/h9KsMtW3_GMAAAAM/love-you-ta.gif" },
+    { name: "Good Morning", url: "https://media.tenor.com/Um9znIPoP0cAAAAM/good-morning-my-love-good-morning-baby.gif" },
+    { name: "Passionate", url: "https://media.tenor.com/Yo4A5vh4oZQAAAAM/passionate-kiss-kiss.gif" },
+    { name: "Bed Time", url: "https://media.tenor.com/U3zZFsQ7bekAAAAM/bed-time.gif" },
+    { name: "Vyojasmine", url: "https://media.tenor.com/Q3fU2QsPnYEAAAAM/vyojasmine-kitaboy.gif" }
+  ],
+  "Hug": [
+    { name: "Hug", url: "https://media.tenor.com/aN5FmNADcYwAAAAM/hug.gif" },
+    { name: "Comfort", url: "https://media.tenor.com/ElYQ-aw8hcgAAAAM/anime-comfort-hug-anime-hug.gif" },
+    { name: "Couple Hug", url: "https://media.tenor.com/lIWzIIxdYpIAAAAM/couple-hug-couple.gif" },
+    { name: "David Rose", url: "https://media.tenor.com/RTZQy0-E5FkAAAAM/schitts-creek-david-rose.gif" },
+    { name: "Zagrljaj", url: "https://media.tenor.com/fidgqQ1HDGwAAAAM/zagrljaj-kuhinja.gif" }
+  ],
+  "Kiss": [
+    { name: "Kiss", url: "https://media.tenor.com/eCNrTq7wOpgAAAAM/kiss.gif" },
+    { name: "Couple Kiss", url: "https://media.tenor.com/yo8aSVqTZh0AAAAM/couple-kiss.gif" },
+    { name: "Blow Kiss", url: "https://media.tenor.com/4D_04TosVEMAAAAM/bear-blowakiss.gif" },
+    { name: "Girls Kissing", url: "https://media.tenor.com/x-oFXlFnmIYAAAAM/girlfriend-kiss-girls-kissing.gif" },
+    { name: "Cooper Norris", url: "https://media.tenor.com/CP010NofH9MAAAAM/kiss-cooper-norris.gif" }
+  ],
+  "Forehead Kiss": [
+    { name: "Arjuhi", url: "https://media.tenor.com/BbUdLpzhviIAAAAM/forehead-kiss-arjuhi.gif" },
+    { name: "Sidnaaz", url: "https://media.tenor.com/aI9ObQiLoAUAAAAM/sidnaaz-shehnaaz-kaur-gill.gif" },
+    { name: "Supergirl", url: "https://media.tenor.com/Gm77PpFxrTQAAAAM/supergirl-the-cw.gif" },
+    { name: "Pacey", url: "https://media.tenor.com/XFN_acfalwEAAAAM/dawsonscreek-pacey.gif" },
+    { name: "Aadikeshava", url: "https://media.tenor.com/14X0hSajOGwAAAAM/aadikeshava-vaisshnav-tej.gif" }
+  ],
+  "Neck Kiss": [
+    { name: "Arthur", url: "https://media.tenor.com/G73r5KmAKB4AAAAM/arthurneck.gif" },
+    { name: "Abraco", url: "https://media.tenor.com/0WpLTYtyShoAAAAM/abra%C3%A7o-hug.gif" },
+    { name: "Pati", url: "https://media.tenor.com/TjkjoXgYLy0AAAAM/neck-kiss-pati.gif" },
+    { name: "Necking", url: "https://media.tenor.com/UOoZzapbPvAAAAAM/necking-kissing.gif" },
+    { name: "Neck Kiss", url: "https://media.tenor.com/jPSPnBoDssoAAAAM/neck-kiss.gif" }
+  ],
+  "Cheek Kiss": [
+    { name: "Cheek", url: "https://media.tenor.com/6w5lRr9zX6QAAAAM/cheek-kiss.gif" },
+    { name: "Cosytales", url: "https://media.tenor.com/bDvno_NK_-8AAAAM/cosytales-love.gif" },
+    { name: "Besos", url: "https://media.tenor.com/niRNXa22co0AAAAM/besos-amor.gif" },
+    { name: "Kiss Cheek", url: "https://media.tenor.com/KBfnXAks5A4AAAAM/kiss-cheek-kiss.gif" },
+    { name: "Garrett", url: "https://media.tenor.com/-2UMtic0wGkAAAAM/kiss-on-cheeks-garrett-kennell.gif" }
+  ],
+  "Bite": [
+    { name: "Meredith", url: "https://media.tenor.com/cCfhCEN5liwAAAAM/greys-anatomy-meredith-grey.gif" },
+    { name: "Clav", url: "https://media.tenor.com/eMv23M6njMgAAAAM/clav-clavicular.gif" },
+    { name: "Flamez", url: "https://media.tenor.com/m7Tv81QFsJIAAAAM/flamez-%26-ivo-anime.gif" },
+    { name: "Mocha", url: "https://media.tenor.com/jpcZQ-vfgbkAAAAM/milk-and-mocha.gif" },
+    { name: "Bite Couple", url: "https://media.tenor.com/yrCiFt92OZAAAAAM/bite-couple.gif" }
+  ],
+  "Tease": [
+    { name: "Love", url: "https://media.tenor.com/130cBxfFpjwAAAAM/davydoff-love.gif" },
+    { name: "Megan", url: "https://media.tenor.com/kf_z5AheabMAAAAM/megan-fox-cute.gif" },
+    { name: "Fight", url: "https://media.tenor.com/9zlc7p-qlI8AAAAM/couple-joking-couple-fight.gif" },
+    { name: "Couple Kiss", url: "https://media.tenor.com/LXHPuL-X1LMAAAAM/couple-kiss.gif" },
+    { name: "Smile Kiss", url: "https://media.tenor.com/rFQ4ZlQtH4AAAAAM/smile-kiss.gif" }
+  ],
+  "Massage": [
+    { name: "Massage", url: "https://media.tenor.com/3xlP-3j2q0wAAAAM/massage-massagem.gif" },
+    { name: "Keechu", url: "https://media.tenor.com/Bn0hs1ITrwAAAAAM/keechu-baby.gif" },
+    { name: "Couple", url: "https://media.tenor.com/BYCMNhjzQNcAAAAM/couple-massage.gif" },
+    { name: "BBB18", url: "https://media.tenor.com/R2y-taIf2BgAAAAM/bbb18-massage.gif" },
+    { name: "Leg Pain", url: "https://media.tenor.com/-Wp6b0JI0isAAAAM/leg-pain.gif" }
+  ],
+  "Whisper": [
+    { name: "Whisper", url: "https://media.tenor.com/Z_wKRM0nTioAAAAM/whisper.gif" },
+    { name: "Devil", url: "https://media.tenor.com/9pPfqzfnQnMAAAAM/devil-whisper-evil.gif" },
+    { name: "Spongebob", url: "https://media.tenor.com/7HZQNIoTwqcAAAAM/spongebob-whisper.gif" },
+    { name: "Therapist", url: "https://media.tenor.com/huj1jCMArV4AAAAM/callum-kerr-my-therapist-friend.gif" },
+    { name: "Seth Gecko", url: "https://media.tenor.com/41C5xl6xnbQAAAAM/seth-gecko-dj-cotrona.gif" }
+  ],
+  "Holding Hands": [
+    { name: "In Love", url: "https://media.tenor.com/AkX6vbNrJxIAAAAM/in-love.gif" },
+    { name: "Puuung", url: "https://media.tenor.com/XDKwhL5QvLAAAAAM/puuung-hold-hands.gif" },
+    { name: "Hold Hands", url: "https://media.tenor.com/xpkVSKThUQYAAAAM/hold-hands-holding-hands.gif" },
+    { name: "Love", url: "https://media.tenor.com/Ns4gc0NjdagAAAAM/love.gif" },
+    { name: "Mai", url: "https://media.tenor.com/Ks-AelpUyTsAAAAM/sakuta-azusagawa-mai-sakurajima.gif" }
+  ],
+  "Sensual Kiss": [
+    { name: "Desire Kiss", url: "https://media.tenor.com/VKXJHuLm0FsAAAAM/desire-kiss.gif" },
+    { name: "Romantic Couple", url: "https://media.tenor.com/JrLJ41e5UiIAAAAM/romantic-couple-romantic.gif" },
+    { name: "Kiss Romantic", url: "https://media.tenor.com/iseySgx8Z20AAAAM/kiss-romantic.gif" },
+    { name: "Davydoff Love", url: "https://media.tenor.com/TDJcCbgS3lYAAAAM/davydoff-love.gif" },
+    { name: "Ladla Love", url: "https://media.tenor.com/P9nPwMoG2x4AAAAM/ladla-ladli-love-kissing.gif" }
+  ],
+  "Sensual Hug": [
+    { name: "Sarilmak", url: "https://media.tenor.com/EPzQ0Vxskw8AAAAM/sarilmak.gif" },
+    { name: "Good Night", url: "https://media.tenor.com/HwXv_6YDDAIAAAAM/good-night-love-couple-kiss.gif" },
+    { name: "Couple Cute", url: "https://media.tenor.com/7R7fAP38z0IAAAAM/couple-cute.gif" },
+    { name: "Hugs Kisses", url: "https://media.tenor.com/PyZKzvjzD9YAAAAM/hugs-and-kisses.gif" },
+    { name: "Love Tears", url: "https://media.tenor.com/3IkwJaNrbJcAAAAM/love-tears.gif" }
+  ],
+  "Sensual Cuddle": [
+    { name: "Cuddle Love", url: "https://media.tenor.com/PETaPxZJuJUAAAAM/cuddle-love.gif" },
+    { name: "Forehead Kiss", url: "https://media.tenor.com/KLS4sVt8zSQAAAAM/forehead-kiss.gif" },
+    { name: "Love Husband", url: "https://media.tenor.com/3eVUj2WnOBkAAAAM/love-husband.gif" },
+    { name: "Love You", url: "https://media.tenor.com/TAjLQk5o3OQAAAAM/love-you.gif" },
+    { name: "Couple Cute", url: "https://media.tenor.com/7R7fAP38z0IAAAAM/couple-cute.gif" }
+  ]
+};
+
 export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   syncState,
   playlists = [],
