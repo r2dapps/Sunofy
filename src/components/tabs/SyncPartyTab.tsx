@@ -433,7 +433,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   };
 
   // Sync with host's network time
-  useEffect(() => {
+  React.useEffect(() => {
     setLocalTime(prev => {
       // If we are out of sync by more than 1.5 seconds, snap to the host's exact time
       if (Math.abs(prev - syncState.currentTime) > 1.5) {
@@ -444,7 +444,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   }, [syncState.currentTime]);
 
   // Smooth local ticking for the progress bar
-  useEffect(() => {
+  React.useEffect(() => {
     let animationFrameId: number;
     let lastTick = performance.now();
 

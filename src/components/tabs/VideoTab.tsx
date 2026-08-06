@@ -179,8 +179,8 @@ export const VideoTab: React.FC<VideoTabProps> = ({
              id: r.id || `feat_${i}`,
              title: r.title,
              category: 'Featured',
-             duration: r.duration || '0:00',
-             thumbnail: r.thumbnail || r.image || `https://i.ytimg.com/vi/${r.id}/hqdefault.jpg`,
+             duration: typeof r.duration === 'number' ? formatTime(r.duration) : (r.duration || '0:00'),
+             thumbnail: r.image || (r as any).thumbnail || `https://i.ytimg.com/vi/${r.id}/hqdefault.jpg`,
              videoUrl: r.downloadUrl || `https://www.youtube.com/watch?v=${r.id}`,
              type: 'youtube',
              embedId: r.id
@@ -462,8 +462,8 @@ export const VideoTab: React.FC<VideoTabProps> = ({
          id: r.id || `yt_res_${i}`,
          title: r.title,
          category: 'YouTube Search Result',
-         duration: r.duration || '0:00',
-         thumbnail: r.thumbnail || r.image || `https://i.ytimg.com/vi/${r.id}/hqdefault.jpg`,
+         duration: typeof r.duration === 'number' ? formatTime(r.duration) : (r.duration || '0:00'),
+         thumbnail: r.image || (r as any).thumbnail || `https://i.ytimg.com/vi/${r.id}/hqdefault.jpg`,
          videoUrl: r.downloadUrl || `https://www.youtube.com/watch?v=${r.id}`,
          type: 'youtube',
          embedId: r.id
@@ -1124,7 +1124,8 @@ export const VideoTab: React.FC<VideoTabProps> = ({
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
