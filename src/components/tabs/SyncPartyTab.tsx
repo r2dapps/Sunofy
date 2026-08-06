@@ -1566,7 +1566,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     ))}
                   </div>
                 </div>
-                </div>
               )}
 
               {/* Chat Bar */}
@@ -1824,7 +1823,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
           )}
         </div>
       )}
-      </div>
 
       {/* QR Code Scan Modal */}
       {showQrModal && (
