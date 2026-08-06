@@ -139,6 +139,49 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
     document.body.removeChild(a);
   };
 
+  const handleBulkExport = async () => {
+    if (selectedIds.size === 0) return;
+    const tracksToExport = downloads.filter(d => selectedIds.has(d.id) && d.offlineBlobUrl);
+    
+    if ('showDirectoryPicker' in window) {
+      try {
+        const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
+        for (const track of tracksToExport) {
+          try {
+            let ext = '.mp3';
+            if (track.offlineBlobUrl!.includes('video') || track.mediaType === 'video' || (track as any).isVideo) ext = '.mp4';
+            const filename = `${track.title.replace(/[^\w\s-]/gi, '')} - ${track.artist.replace(/[^\w\s-]/gi, '')}${ext}`;
+            const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            const response = await fetch(track.offlineBlobUrl!);
+            const blob = await response.blob();
+            await writable.write(blob);
+            await writable.close();
+          } catch (e) {
+            console.error('Failed saving', track.title, e);
+          }
+        }
+        window.dispatchEvent(new CustomEvent('sunofyToast', { detail: `✅ Saved ${tracksToExport.length} tracks to folder!` }));
+        setSelectedIds(new Set());
+        setIsSelectMode(false);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+           console.error(err);
+           window.dispatchEvent(new CustomEvent('sunofyToast', { detail: '❌ Failed to save to folder.' }));
+        }
+      }
+    } else {
+      // Fallback for browsers without showDirectoryPicker
+      if (window.confirm(`Save ${tracksToExport.length} files? Your browser may prompt you for each file.`)) {
+         tracksToExport.forEach((track, index) => {
+            setTimeout(() => handleExportTrack(track), index * 500);
+         });
+         setSelectedIds(new Set());
+         setIsSelectMode(false);
+      }
+    }
+  };
+
   const totalSize = downloads.reduce((acc, curr) => acc + (curr.sizeBytes || 0), 0);
   const sizeMb = (totalSize / (1024 * 1024)).toFixed(1);
 
@@ -259,6 +302,12 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                       
                       {selectedIds.size > 0 && (
                         <div className="flex items-center gap-1.5 ml-auto">
+                          <button
+                            onClick={handleBulkExport}
+                            className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold flex items-center gap-1 shadow cursor-pointer text-[10px] sm:text-xs hover:scale-105 transition"
+                          >
+                            <Save className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Save All
+                          </button>
                           <button
                             onClick={() => setAddToPlaylistTrackId(Array.from(selectedIds))}
                             className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold flex items-center gap-1 shadow cursor-pointer text-[10px] sm:text-xs hover:scale-105 transition"
