@@ -669,7 +669,8 @@ export default function App() {
         }
       }
     }
-  }, [currentTrack, downloads]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack]);
 
   // Save state changes to LocalStorage
   useEffect(() => {
@@ -1122,7 +1123,7 @@ export default function App() {
         title: cleanTitle,
         artist,
         album: 'Device Audio Folder',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 180,
         downloadUrl: objectUrl,
         hasOfflineAudio: true,

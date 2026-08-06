@@ -123,7 +123,7 @@ class MusicAPI {
           const results = json.data?.results || json.data || (Array.isArray(json) ? json : null);
           if (results && Array.isArray(results) && results.length > 0) {
             const mappedResults = results.map(item => {
-              let imgUrl = '/icon-192.png';
+              let imgUrl = './icon-192.png';
               if (Array.isArray(item.image) && item.image.length > 0) {
                 const lastImg = item.image[item.image.length - 1];
                 imgUrl = typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || imgUrl);
@@ -157,7 +157,7 @@ class MusicAPI {
           const results = json.data?.results || json.data || (Array.isArray(json) ? json : null);
           if (results && Array.isArray(results) && results.length > 0) {
             const mappedResults = results.map(item => {
-              let imgUrl = '/icon-192.png';
+              let imgUrl = './icon-192.png';
               if (Array.isArray(item.image) && item.image.length > 0) {
                 const lastImg = item.image[item.image.length - 1];
                 imgUrl = typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || imgUrl);
@@ -206,7 +206,7 @@ class MusicAPI {
 
   public formatSong(s: any): Track {
     // Extract best image link
-    let imgUrl = '/icon-192.png';
+    let imgUrl = './icon-192.png';
     if (Array.isArray(s.image) && s.image.length > 0) {
       const lastImg = s.image[s.image.length - 1];
       imgUrl = typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || imgUrl);
@@ -416,7 +416,7 @@ class MusicAPI {
         title: 'Telugu Melodies Anthem',
         artist: 'Tollywood Express',
         album: 'Top Hits 2026',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 200,
         downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/outdoor_theme_park.ogg',
       },
@@ -425,7 +425,7 @@ class MusicAPI {
         title: 'Tollywood Mass Beats',
         artist: 'Thaman S & DSP',
         album: 'Mass Beats 2026',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 215,
         downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
       },
@@ -434,7 +434,7 @@ class MusicAPI {
         title: 'Levitating',
         artist: 'Dua Lipa',
         album: 'Future Nostalgia',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 203,
         downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/thunderstorm.ogg',
       },
@@ -443,7 +443,7 @@ class MusicAPI {
         title: 'Save Your Tears',
         artist: 'The Weeknd',
         album: 'After Hours',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 215,
         downloadUrl: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg',
       },
@@ -452,7 +452,7 @@ class MusicAPI {
         title: 'As It Was',
         artist: 'Harry Styles',
         album: "Harry's House",
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 167,
         downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/rain_heavy.ogg',
       },
@@ -461,7 +461,7 @@ class MusicAPI {
         title: 'Nuvvosthanante Neneddantana',
         artist: 'Devi Sri Prasad, Chitra',
         album: 'Varsham',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 245,
         downloadUrl: 'https://actions.google.com/sounds/v1/transportation/car_passing.ogg',
       },
@@ -470,7 +470,7 @@ class MusicAPI {
         title: 'Samajavaragamana',
         artist: 'Sid Sriram, Thaman S',
         album: 'Ala Vaikunthapurramuloo',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 220,
         downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg',
       },
@@ -479,7 +479,7 @@ class MusicAPI {
         title: 'Kesariya',
         artist: 'Arijit Singh, Pritam',
         album: 'Brahmastra',
-        image: '/icon-192.png',
+        image: './icon-192.png',
         duration: 268,
         downloadUrl: 'https://actions.google.com/sounds/v1/ambiences/forest.ogg',
       },

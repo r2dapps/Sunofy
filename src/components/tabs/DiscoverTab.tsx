@@ -129,14 +129,14 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
               id: 'local_pl_1',
               name: 'Offline Cache Melodies',
               query: 'Offline Cache Melodies',
-              image: '/icon-192.png',
+              image: './icon-192.png',
               trackCount: `${offlineList.length} tracks`
             },
             {
               id: 'local_pl_2',
               name: 'Imported Device Tracks',
               query: 'Imported Device Tracks',
-              image: '/icon-192.png',
+              image: './icon-192.png',
               trackCount: `${folderList.length} tracks`
             }
           ];
@@ -146,11 +146,11 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
               name: 'Local Collection',
               artist: 'Device Storage',
               query: 'Local Collection',
-              image: '/icon-192.png',
+              image: './icon-192.png',
               trackCount: `${tracks.length} tracks`
             }
           ];
-        } else {
+        } else if (musicSource === 'jiosaavn') {
           try {
             const searchQuery = selectedTag ? `${selectedTag} Hits` : 'Telugu Top Hits';
             const [fetchedPlaylists, fetchedAlbums] = await Promise.all([
@@ -249,18 +249,18 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
   };
 
   const quickMoods = [
-    { id: 'qm_1', name: 'Telugu Melodies', query: 'Telugu Melodies 2026', image: '/icon-192.png', color: 'from-amber-500/20 to-rose-500/20' },
-    { id: 'qm_2', name: 'Sid Sriram Hits', query: 'Sid Sriram Melodies', image: '/icon-192.png', color: 'from-blue-500/20 to-indigo-500/20' },
-    { id: 'qm_3', name: 'Anirudh Beats', query: 'Anirudh Ravichander Telugu', image: '/icon-192.png', color: 'from-emerald-500/20 to-teal-500/20' },
-    { id: 'qm_4', name: 'Tollywood 2026', query: 'Telugu Top Hits 2026', image: '/icon-192.png', color: 'from-purple-500/20 to-pink-500/20' },
+    { id: 'qm_1', name: 'Telugu Melodies', query: 'Telugu Melodies 2026', image: './icon-192.png', color: 'from-amber-500/20 to-rose-500/20' },
+    { id: 'qm_2', name: 'Sid Sriram Hits', query: 'Sid Sriram Melodies', image: './icon-192.png', color: 'from-blue-500/20 to-indigo-500/20' },
+    { id: 'qm_3', name: 'Anirudh Beats', query: 'Anirudh Ravichander Telugu', image: './icon-192.png', color: 'from-emerald-500/20 to-teal-500/20' },
+    { id: 'qm_4', name: 'Tollywood 2026', query: 'Telugu Top Hits 2026', image: './icon-192.png', color: 'from-purple-500/20 to-pink-500/20' },
   ];
 
   const popularArtists = [
-    { id: 'pa_1', name: 'Sid Sriram', query: 'Sid Sriram Telugu Hits', image: '/icon-192.png' },
-    { id: 'pa_2', name: 'Anirudh Ravichander', query: 'Anirudh Ravichander Telugu', image: '/icon-192.png' },
-    { id: 'pa_3', name: 'Thaman S', query: 'Thaman S Hits Telugu', image: '/icon-192.png' },
-    { id: 'pa_4', name: 'Devi Sri Prasad', query: 'Devi Sri Prasad Telugu Hits', image: '/icon-192.png' },
-    { id: 'pa_5', name: 'Shreya Ghoshal', query: 'Shreya Ghoshal Telugu Melodies', image: '/icon-192.png' },
+    { id: 'pa_1', name: 'Sid Sriram', query: 'Sid Sriram Telugu Hits', image: './icon-192.png' },
+    { id: 'pa_2', name: 'Anirudh Ravichander', query: 'Anirudh Ravichander Telugu', image: './icon-192.png' },
+    { id: 'pa_3', name: 'Thaman S', query: 'Thaman S Hits Telugu', image: './icon-192.png' },
+    { id: 'pa_4', name: 'Devi Sri Prasad', query: 'Devi Sri Prasad Telugu Hits', image: './icon-192.png' },
+    { id: 'pa_5', name: 'Shreya Ghoshal', query: 'Shreya Ghoshal Telugu Melodies', image: './icon-192.png' },
   ];
 
   const isFavorited = (track: Track) => favorites?.songs.some(s => s.id === track.id);
