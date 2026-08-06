@@ -202,7 +202,8 @@ class SyncPartyManager {
       const data = snapshot.val();
       const currentHost = this.state.members.find(m => m.isHost) || hostProfile;
       if (data) {
-        this.state.members = [currentHost, ...Object.values(data).filter((m: any) => !m.kicked)] as SyncMember[];
+        const rawMembers = [currentHost, ...Object.values(data).filter((m: any) => !m.kicked)] as SyncMember[];
+        this.state.members = Array.from(new Map(rawMembers.map(m => [m.id, m])).values());
         this.notify();
       } else {
         this.state.members = [currentHost];
@@ -366,7 +367,8 @@ class SyncPartyManager {
           if (data) {
              get(ref(db, `sunofy_vibe_rooms/${cleanCode}/host`)).then(h => {
                 const hostProfile = h.val() || { id: 'host', name: 'Host', isHost: true };
-                this.state.members = [hostProfile, ...Object.values(data).filter((m:any) => !m.kicked)] as SyncMember[];
+                const rawMembers = [hostProfile, ...Object.values(data).filter((m:any) => !m.kicked)] as SyncMember[];
+                this.state.members = Array.from(new Map(rawMembers.map(m => [m.id, m])).values());
                 this.notify();
              });
           }

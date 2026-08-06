@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Download, Play, Trash2, FolderOpen, HardDrive, WifiOff, Music, FileAudio, Info, ListPlus, CheckSquare, Square, Plus, X, ListMusic, Pencil, ChevronRight } from 'lucide-react';
+import { Download, Play, Trash2, FolderOpen, HardDrive, WifiOff, Music, FileAudio, Info, ListPlus, CheckSquare, Square, Plus, X, ListMusic, Pencil, ChevronRight, Save } from 'lucide-react';
 import { DownloadTrack, Track } from '../../types';
 import { offlineStore, OfflinePlaylist } from '../../services/offlineStore';
 
@@ -106,6 +106,18 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
     selectedIds.forEach(id => onRemoveDownload(id));
     setSelectedIds(new Set());
     setIsSelectMode(false);
+  };
+
+  const handleExportTrack = (song: DownloadTrack) => {
+    if (!song.offlineBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = song.offlineBlobUrl;
+    let ext = '.mp3';
+    if (song.offlineBlobUrl.includes('video') || song.mediaType === 'video' || (song as any).isVideo) ext = '.mp4';
+    a.download = `${song.title.replace(/[^\w\s-]/gi, '')} - ${song.artist.replace(/[^\w\s-]/gi, '')}${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const totalSize = downloads.reduce((acc, curr) => acc + (curr.sizeBytes || 0), 0);
@@ -277,6 +289,13 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                             title="Add to Playlist"
                           >
                             <ListPlus className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleExportTrack(song); }}
+                            className="p-2 rounded-full text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)]/10 transition cursor-pointer"
+                            title="Export to Device"
+                          >
+                            <Save className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); onRemoveDownload(song.id); }}

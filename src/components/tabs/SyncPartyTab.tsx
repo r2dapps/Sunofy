@@ -1775,7 +1775,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               </div>
 
               <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-                {syncState.members.map((m) => (
+                {Array.from(new Map(syncState.members.map(m => [m.id, m])).values()).map((m: any) => (
                   <div
                     key={m.id}
                     className="flex items-center justify-between p-2.5 bg-[var(--bg-sunofy)] rounded-xl border border-[var(--border-sunofy)]"

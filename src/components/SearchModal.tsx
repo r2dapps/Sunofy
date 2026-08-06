@@ -701,8 +701,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
       {/* Playlist Selection Dialog inside SearchModal */}
       {selectedTrackForPlaylist && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 my-auto">
-          <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] p-6 rounded-3xl w-full max-w-xs shadow-2xl animate-fade my-auto text-[var(--text-sunofy)]">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 my-auto">
+          <div className="relative z-10 bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] p-6 rounded-3xl w-full max-w-xs shadow-2xl animate-fade my-auto text-[var(--text-sunofy)]">
             <h3 className="text-sm font-bold text-[var(--text-sunofy)] mb-1 truncate">
               Add "{selectedTrackForPlaylist.title}"
             </h3>
@@ -759,8 +759,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
       {/* Save Collection Modal */}
       {saveCollectionModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 my-auto">
-          <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-fade my-auto text-[var(--text-sunofy)]">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 my-auto">
+          <div className="relative z-10 bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-fade my-auto text-[var(--text-sunofy)]">
             <h3 className="text-sm font-extrabold text-[var(--text-sunofy)] mb-2 flex items-center gap-2">
               <Bookmark className="w-4 h-4 text-[var(--accent-sunofy)]" /> Save Collection
             </h3>
