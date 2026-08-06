@@ -163,20 +163,29 @@ class OfflineStore {
         const req = store.getAll();
         req.onsuccess = () => {
           const items = req.result || [];
-          const formatted = items.map((item: any) => {
-            // ALWAYS dynamically recreate Object URLs since session URLs expire.
-            // Ignore any serialized offlineBlobUrl strings from previous sessions.
-            let offlineBlobUrl = '';
-            
+          const validItems: any[] = [];
+          const corruptedIds: string[] = [];
+
+          items.forEach((item: any) => {
             // Strictly validate that the stored blob exists and is not corrupted/empty (at least 100KB)
             const isValidBlob = item.blob && item.blob.size > 100000;
             
             if (isValidBlob) {
-              offlineBlobUrl = URL.createObjectURL(item.blob);
+              validItems.push(item);
             } else if (item.blob) {
-              console.warn(`Corrupted or partial offline blob detected for track "${item.title}" (${item.blob.size} bytes). Falling back to network.`);
+              console.warn(`Corrupted or partial offline blob detected for track "${item.title}" (${item.blob.size} bytes). Auto-deleting.`);
+              corruptedIds.push(item.id);
             }
+          });
 
+          // Auto-delete corrupted tracks in the background
+          if (corruptedIds.length > 0) {
+            setTimeout(() => {
+              corruptedIds.forEach(id => this.deleteOfflineTrack(id).catch(console.error));
+            }, 1000);
+          }
+
+          const formatted = validItems.map((item: any) => {
             return {
               id: item.id,
               title: item.title,
@@ -187,8 +196,8 @@ class OfflineStore {
               downloadUrl: item.downloadUrl,
               downloadedAt: item.downloadedAt || Date.now(),
               sizeBytes: item.blob ? item.blob.size : (item.sizeBytes || 0),
-              hasOfflineAudio: isValidBlob,
-              offlineBlobUrl: offlineBlobUrl || undefined,
+              hasOfflineAudio: true,
+              offlineBlobUrl: URL.createObjectURL(item.blob),
             };
           });
           resolve(formatted);

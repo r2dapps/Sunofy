@@ -656,8 +656,9 @@ export default function App() {
       const src = offlineCopy?.offlineBlobUrl || currentTrack.downloadUrl;
       const isYoutubeTrack = (currentTrack as any)?.isCobalt || (currentTrack as any)?.url?.includes('youtube.com') || currentTrack?.downloadUrl?.includes('youtube.com');
       if (src && audioRef.current.src !== src) {
-        if (isYoutubeTrack && !offlineCopy && musicSource !== 'cobalt' && musicSource !== 'youtube') {
+        if (isYoutubeTrack && !offlineCopy && musicSource !== 'cobalt') {
            // Skip native audio loading to let iframe handle it without throwing CORS
+           // When musicSource is 'cobalt', we want to load the extracted stream into the native audio tag
         } else {
           audioRef.current.src = src;
           if (savedPlayerState?.currentTime) {
@@ -867,7 +868,7 @@ export default function App() {
       let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
 
       const isYoutubeTrack = ((track as any).isCobalt) || (track as any).url?.includes('youtube.com') || track.downloadUrl?.includes('youtube');
-      const needsCobaltExtraction = isYoutubeTrack && (musicSource === 'cobalt' || musicSource === 'youtube');
+      const needsCobaltExtraction = isYoutubeTrack && musicSource === 'cobalt';
       
       if (needsCobaltExtraction && !offlineCopy) {
         showToast('Extracting audio stream...');
