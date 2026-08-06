@@ -173,13 +173,13 @@ class OfflineStore {
             if (isValidBlob) {
               validItems.push(item);
             } else if (item.blob) {
-              console.warn(`Corrupted or partial offline blob detected for track "${item.title}" (${item.blob.size} bytes). Auto-deleting.`);
               corruptedIds.push(item.id);
             }
           });
 
           // Auto-delete corrupted tracks in the background
           if (corruptedIds.length > 0) {
+            console.info(`🧹 Auto-cleaned up ${corruptedIds.length} corrupted or partial offline downloads.`);
             setTimeout(() => {
               corruptedIds.forEach(id => this.deleteOfflineTrack(id).catch(console.error));
             }, 1000);
