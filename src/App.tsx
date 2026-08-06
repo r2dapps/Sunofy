@@ -855,6 +855,7 @@ export default function App() {
     }
     setCurrentTrack(track);
     setIsPlaying(true);
+    setIsFullPlayerOpen(true);
 
     // Initialize Web Audio EQ lazily on user playback interaction
     initEqualizerWebAudio();

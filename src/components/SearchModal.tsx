@@ -152,8 +152,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         );
         setResults(filtered);
       } else {
-        const tracks = await musicApi.searchSongs(searchTerm);
+        const [tracks, pls, albs] = await Promise.all([
+          musicApi.searchSongs(searchTerm).catch(() => []),
+          musicApi.searchPlaylists ? musicApi.searchPlaylists(searchTerm).catch(() => []) : Promise.resolve([]),
+          musicApi.searchAlbums ? musicApi.searchAlbums(searchTerm).catch(() => []) : Promise.resolve([])
+        ]);
         setResults(tracks);
+        setRealPlaylists(pls);
+        setRealAlbums(albs);
       }
     } catch (err) {
       console.error(err);
