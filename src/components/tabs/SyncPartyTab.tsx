@@ -1165,7 +1165,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     type="text"
                     value={searchQuery}
                     onChange={handleSyncSearch}
-                    placeholder="Search songs on JioSaavn..."
+                    placeholder={`Search songs on ${musicSource === 'youtube' ? 'YT Music' : musicSource === 'cobalt' ? 'Cobalt' : 'JioSaavn'}...`}
                     className="w-full bg-transparent border-none text-xs text-[var(--text-sunofy)] focus:outline-none"
                   />
                   {searchQuery && (

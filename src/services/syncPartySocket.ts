@@ -107,9 +107,25 @@ class SyncPartyManager {
   private startPingMonitor() {
     if (this.pingInterval) clearInterval(this.pingInterval);
     this.pingInterval = setInterval(() => {
+      const now = Date.now();
       if (!this.state.isHost && this.myMemberRef) {
         const ping = Math.floor(8 + Math.random() * 15);
-        update(this.myMemberRef, { pingMs: ping });
+        update(this.myMemberRef, { pingMs: ping, lastPingAt: now });
+      } else if (this.state.isHost && this.state.roomCode) {
+        // Host cleans up disconnected ghost members
+        const membersRef = ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/members`);
+        get(membersRef).then(snap => {
+          const data = snap.val();
+          if (data) {
+            Object.keys(data).forEach(memberId => {
+              const m = data[memberId];
+              const lastSeen = m.lastPingAt || m.joinedAt || 0;
+              if (now - lastSeen > 25000) { // 25 seconds timeout
+                remove(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/members/${memberId}`));
+              }
+            });
+          }
+        });
       }
     }, 5000);
   }

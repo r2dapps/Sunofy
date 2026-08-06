@@ -319,6 +319,7 @@ export default function App() {
   const delayGainRef = useRef<GainNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sleepTimerTimeoutRef = useRef<any>(null);
+  const lastHostBroadcastRef = useRef<number>(0);
 
   // Sync musicSource with API class currentSource
   useEffect(() => {
@@ -638,6 +639,16 @@ export default function App() {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, [syncState.inRoom, syncState.isHost]);
+
+  // Periodic Host Sync Broadcast (acts as heartbeat and fixes YouTube track progress sync)
+  useEffect(() => {
+    if (!syncState.inRoom || !syncState.isHost) return;
+    const now = Date.now();
+    if (now - lastHostBroadcastRef.current >= 2000) {
+      syncParty.syncAudioState(currentTime, isPlaying);
+      lastHostBroadcastRef.current = now;
+    }
+  }, [currentTime, isPlaying, syncState.inRoom, syncState.isHost]);
 
   // Mic Audio Ducking
   useEffect(() => {
