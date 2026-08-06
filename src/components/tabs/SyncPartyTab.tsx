@@ -171,9 +171,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [chatInput, setChatInput] = useState('');
   const [customReaction, setCustomReaction] = useState('');
   const [showGifPicker, setShowGifPicker] = useState(false);
-  const [gifSearchQuery, setGifSearchQuery] = useState('');
-  const [gifSearchResults, setGifSearchResults] = useState<{name: string, url: string}[]>([]);
-  const [isSearchingGifs, setIsSearchingGifs] = useState(false);
+  const [activeGifTag, setActiveGifTag] = useState('Hi');
   const [showQrModal, setShowQrModal] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [musicVolume, setMusicVolume] = useState(100);
@@ -543,7 +541,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
   const handleGifSearch = async (query: string) => {
     // Disabled due to API key restrictions on public apps
-    setGifSearchQuery(query);
   };
 
   const handleSyncVideoSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1536,34 +1533,26 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     </button>
                   </div>
                   
-                  <div className="px-1 pb-1">
-                    <p className="text-xs text-[var(--muted-sunofy)] mb-2">Select a GIF to send. (Search is temporarily disabled due to API limits)</p>
-                    <input
-                      type="text"
-                      placeholder="Search GIFs..."
-                      disabled={true}
-                      value={gifSearchQuery}
-                      onChange={(e) => handleGifSearch(e.target.value)}
-                      className="w-full bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
-                    />
+                  {/* Category Tags */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-hide px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {Object.keys(GIF_CATEGORIES).map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => setActiveGifTag(tag)}
+                        className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
+                          activeGifTag === tag 
+                            ? 'bg-[var(--accent-sunofy)] text-black shadow-md' 
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
                   </div>
                   
                   {/* GIFs Grid */}
                   <div className="grid grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
-                    {[
-                      { name: 'Sensual Kiss 💋', url: 'https://media.tenor.com/VKXJHuLm0FsAAAAM/desire-kiss.gif' },
-                      { name: 'Romantic Kiss 💏', url: 'https://media.tenor.com/JrLJ41e5UiIAAAAM/romantic-couple-romantic.gif' },
-                      { name: 'Davydoff Love 🌹', url: 'https://media.tenor.com/TDJcCbgS3lYAAAAM/davydoff-love.gif' },
-                      { name: 'Passionate 🤗', url: 'https://media.tenor.com/EPzQ0Vxskw8AAAAM/sarilmak.gif' },
-                      { name: 'Goodnight Hug 🫂', url: 'https://media.tenor.com/HwXv_6YDDAIAAAAM/good-night-love-couple-kiss.gif' },
-                      { name: 'Tight Hug 🥰', url: 'https://media.tenor.com/PyZKzvjzD9YAAAAM/hugs-and-kisses.gif' },
-                      { name: 'Cuddle Love 🥺', url: 'https://media.tenor.com/PETaPxZJuJUAAAAM/cuddle-love.gif' },
-                      { name: 'Forehead Kiss 😘', url: 'https://media.tenor.com/KLS4sVt8zSQAAAAM/forehead-kiss.gif' },
-                      { name: 'Love You 💖', url: 'https://media.tenor.com/TAjLQk5o3OQAAAAM/love-you.gif' },
-                      { name: 'Happy Dance 🕺', url: 'https://media.tenor.com/DJLxTbr5SfEAAAAM/friday-happy-dance.gif' },
-                      { name: 'Cat Vibe 🐱', url: 'https://media.tenor.com/TccvUFJ7WiAAAAAM/dancing-cat-cat.gif' },
-                      { name: 'Cute Slap ✋', url: 'https://media.tenor.com/NJmtSRZ1Jd8AAAAM/peach-and-goma-peach-cat.gif' },
-                    ].map((gif) => (
+                    {GIF_CATEGORIES[activeGifTag as keyof typeof GIF_CATEGORIES]?.map((gif) => (
                       <button
                         key={gif.url}
                         onClick={() => {
