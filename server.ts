@@ -469,8 +469,7 @@ async function startServer() {
       } catch (e) {}
     }
 
-    // C. Fallback to sample high quality audio stream
-    res.redirect('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+    res.status(404).send('YouTube streaming is no longer supported via proxy. Please use Cobalt or the official YouTube Music engine.');
   });
 
   // 1c. Search Suggestions Endpoint (Proxies Google YouTube Search Complete without CORS issues)
