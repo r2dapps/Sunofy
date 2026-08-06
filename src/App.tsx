@@ -1553,12 +1553,6 @@ export default function App() {
         </div>
       )}
 
-      {/* First-Time Startup Onboarding Screen */}
-      <OnboardingModal
-        isOpen={isOnboardingOpen}
-        onComplete={handleOnboardingComplete}
-      />
-
       {/* App Lock Screen Overlay */}
       {isAppLocked && (
         <AppLockOverlay
@@ -1566,6 +1560,15 @@ export default function App() {
           onUnlockSuccess={() => setIsAppLocked(false)}
         />
       )}
+
+      {/* Main App Content - completely unmounted when locked to prevent background requests and extensions */}
+      {!isAppLocked && (
+        <>
+          {/* First-Time Startup Onboarding Screen */}
+          <OnboardingModal
+            isOpen={isOnboardingOpen}
+            onComplete={handleOnboardingComplete}
+          />
 
       {/* Hidden Audio Tag */}
       <audio ref={audioRef} crossOrigin="anonymous" preload="auto" />
@@ -1935,6 +1938,8 @@ export default function App() {
           allow="autoplay; encrypted-media"
           title="YouTube Background Player"
         />
+      )}
+      </>
       )}
     </div>
   );
