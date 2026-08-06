@@ -567,6 +567,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
   const extractYoutubeId = (url?: string) => {
     if (!url) return null;
+    const streamMatch = url.match(/\/api\/youtube\/stream\?id=([a-zA-Z0-9_-]{11})/);
+    if (streamMatch) return streamMatch[1];
+    
     const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
     return match && match[2].length === 11 ? match[2] : null;
   };

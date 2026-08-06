@@ -1807,9 +1807,9 @@ export default function App() {
         />
       )}
 
-      {/* Full Player Modal - never shown when app is locked */}
+      {/* Full Player Modal - never shown when app is locked or in Sync Party room */}
       <FullPlayerModal
-        isOpen={isFullPlayerOpen && !isAppLocked}
+        isOpen={isFullPlayerOpen && !isAppLocked && !(currentTab === 'Sync Party' && syncState.inRoom)}
         onClose={() => setIsFullPlayerOpen(false)}
         currentTrack={currentTrack}
         isPlaying={isPlaying}
