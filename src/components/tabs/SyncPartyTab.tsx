@@ -549,12 +549,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     }
     setIsSearchingGifs(true);
     try {
-      const res = await fetch(`https://api.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=LIVDSRZULELA&limit=12`);
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(query)}&limit=12&rating=g`);
       const data = await res.json();
-      if (data.results) {
-        setGifSearchResults(data.results.map((r: any) => ({
-          name: r.content_description || 'GIF',
-          url: r.media[0].gif.url
+      if (data.data) {
+        setGifSearchResults(data.data.map((r: any) => ({
+          name: r.title || 'GIF',
+          url: r.images.fixed_height_small.url
         })));
       }
     } catch (e) {
@@ -653,7 +653,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const isVideoTrack = curTrack ? (curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com')) : false;
 
   return (
-    <div className="space-y-3 animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col h-[calc(100vh-100px)] sm:h-auto min-h-[580px]">
+    <div className="space-y-3 animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col flex-1 h-full min-h-0 sm:h-auto sm:min-h-[580px]">
       {/* Live Voice Active Speaker Floating Indicator */}
       {activeSpeaker && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-black font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce-subtle backdrop-blur-md border border-emerald-300">
@@ -1569,12 +1569,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     {isSearchingGifs ? (
                       <div className="col-span-3 text-center py-4 text-xs text-[var(--muted-sunofy)]">Searching...</div>
                     ) : ((gifSearchResults.length > 0 ? gifSearchResults : [
-                      { name: 'Vibe Cat 🐱', url: 'https://i.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif' },
-                      { name: 'Party 🕺', url: 'https://i.giphy.com/media/l3vR1v8L3tW9FvRZC/giphy.gif' },
-                      { name: 'Mind Blown 🤯', url: 'https://i.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
-                      { name: 'Lit Fire 🔥', url: 'https://i.giphy.com/media/3o72FfM5HJydzaMpfO/giphy.gif' },
-                      { name: 'Popcorn 🍿', url: 'https://i.giphy.com/media/hVTouq08y8fzW/giphy.gif' },
-                      { name: 'Cheers 🍻', url: 'https://i.giphy.com/media/BPJmthQ3YRwD6QqcVD/giphy.gif' },
+                      { name: 'Vibe Cat 🐱', url: 'https://media.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif' },
+                      { name: 'Party 🕺', url: 'https://media.giphy.com/media/l3vR1v8L3tW9FvRZC/giphy.gif' },
+                      { name: 'Mind Blown 🤯', url: 'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
+                      { name: 'Lit Fire 🔥', url: 'https://media.giphy.com/media/3o72FfM5HJydzaMpfO/giphy.gif' },
+                      { name: 'Popcorn 🍿', url: 'https://media.giphy.com/media/hVTouq08y8fzW/giphy.gif' },
+                      { name: 'Cheers 🍻', url: 'https://media.giphy.com/media/BPJmthQ3YRwD6QqcVD/giphy.gif' },
                     ]).map((gif) => (
                       <button
                         key={gif.url}
