@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Play, Search, Heart, Download, ListPlus, Radio, Flame, FolderOpen, FolderPlus,
-  Music, ChevronRight, ChevronDown, CheckCircle2, Headphones, Activity, X, Plus, 
+  Music, ChevronRight, ChevronDown, CheckCircle2, Headphones, Activity, X, Plus,
   Youtube, HardDrive, User, Server, Bookmark, Disc, Compass, Mic, Zap, Check
 } from 'lucide-react';
 import { musicApi } from '../../services/api';
@@ -63,8 +63,12 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
         const parsed = JSON.parse(saved);
         if (parsed.length > 0) return parsed[0].query;
       }
-    } catch(e) {}
+    } catch (e) { }
     return 'Trending Hits';
+  });
+
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('sunofy_discover_lang') || 'All';
   });
 
   useEffect(() => {
@@ -89,10 +93,10 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
 
   const [dynamicPlaylists, setDynamicPlaylists] = useState<any[]>([]);
   const [dynamicAlbums, setDynamicAlbums] = useState<any[]>([]);
-  
+
   // Playlist Modal State
   const [playlistModalTrack, setPlaylistModalTrack] = useState<Track | null>(null);
-  const [playlistModalAlbum, setPlaylistModalAlbum] = useState<{name: string, query: string, image?: string} | null>(null);
+  const [playlistModalAlbum, setPlaylistModalAlbum] = useState<{ name: string, query: string, image?: string } | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [showCreateInput, setShowCreateInput] = useState(false);
 
@@ -103,17 +107,18 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
       setLoading(true);
       setApiError(false);
       try {
-        const query = selectedTag ? `${selectedTag}` : 'Trending Hits';
+        const baseQuery = selectedTag ? `${selectedTag}` : 'Trending Hits';
+        const query = language && language !== 'All' ? `${language} ${baseQuery}` : baseQuery;
         let tracks: Track[] = [];
-        
+
         if (musicSource === 'youtube' || musicSource === 'cobalt') {
-           tracks = await musicApi.searchYoutubeCobalt(query);
+          tracks = await musicApi.searchYoutubeCobalt(query);
         } else if (musicSource === 'local') {
-           const offlineList = downloads || [];
-           const folderList = localFolderTracks || [];
-           tracks = [...offlineList, ...folderList];
+          const offlineList = downloads || [];
+          const folderList = localFolderTracks || [];
+          tracks = [...offlineList, ...folderList];
         } else {
-           tracks = await musicApi.searchSongs(query);
+          tracks = await musicApi.searchSongs(query);
         }
 
         // Helper to get best image quality
@@ -161,7 +166,8 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
           ];
         } else if (musicSource === 'jiosaavn') {
           try {
-            const searchQuery = selectedTag ? `${selectedTag}` : 'Trending Hits';
+            const baseSearch = selectedTag ? `${selectedTag}` : 'Trending Hits';
+            const searchQuery = language && language !== 'All' ? `${language} ${baseSearch}` : baseSearch;
             const [fetchedPlaylists, fetchedAlbums] = await Promise.all([
               musicApi.searchPlaylists(searchQuery).catch(() => []),
               musicApi.searchAlbums(searchQuery).catch(() => [])
@@ -191,7 +197,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
             console.warn('Failed to load dynamic collections', e);
           }
         }
-        
+
         if (isMounted) {
           if (tracks.length === 0 && musicSource !== 'local') {
             setApiError(true);
@@ -230,13 +236,13 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [selectedTag, musicSource, downloads, localFolderTracks, isAppLocked]);
+  }, [selectedTag, musicSource, downloads, localFolderTracks, isAppLocked, language]);
 
-  const [savedTags, setSavedTags] = useState<{label:string, query:string}[]>(() => {
+  const [savedTags, setSavedTags] = useState<{ label: string, query: string }[]>(() => {
     try {
       const saved = localStorage.getItem('sunofy_discover_tags');
       if (saved) return JSON.parse(saved);
-    } catch(e) {}
+    } catch (e) { }
     return [
       { label: 'Trending', query: 'Trending Hits' },
       { label: 'Global', query: 'Global Top 50' },
@@ -282,17 +288,17 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
         setNewPlaylistName('');
         setShowCreateInput(false);
         setPlaylistModalAlbum(null);
-        
+
         setTimeout(async () => {
-           try {
-             const tracks = await musicApi.searchSongs(query);
-             setTimeout(() => {
-                if (playlists && playlists.length > 0 && onAddSongToPlaylist) {
-                   const pl = playlists[playlists.length - 1];
-                   tracks.forEach(t => onAddSongToPlaylist(pl.id, t));
-                }
-             }, 300);
-           } catch (e) {}
+          try {
+            const tracks = await musicApi.searchSongs(query);
+            setTimeout(() => {
+              if (playlists && playlists.length > 0 && onAddSongToPlaylist) {
+                const pl = playlists[playlists.length - 1];
+                tracks.forEach(t => onAddSongToPlaylist(pl.id, t));
+              }
+            }, 300);
+          } catch (e) { }
         }, 100);
       }
     }
@@ -312,7 +318,8 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
           tracks = [...offlineList, ...folderList];
         }
       } else {
-        tracks = await musicApi.searchSongs(query);
+        const effectiveQuery = language && language !== 'All' ? `${language} ${query}` : query;
+        tracks = await musicApi.searchSongs(effectiveQuery);
       }
 
       if (tracks.length > 0) {
@@ -333,13 +340,40 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
   return (
     <div className="space-y-7 pb-28 animate-fade">
       {/* Personalized Greeting */}
-      <div className="px-2 pt-2">
-        <h2 className="text-2xl font-black text-[var(--text-sunofy)] tracking-tight">
-          {getGreeting()}<span className="text-[var(--accent-sunofy)]">.</span>
-        </h2>
-        <p className="text-xs font-semibold text-[var(--muted-sunofy)] mt-1">
-          Explore music {musicSource === 'jiosaavn' ? 'from JioSaavn' : musicSource === 'youtube' ? 'from YT Music' : 'from your library'}
-        </p>
+      <div className="flex items-center justify-between px-2 pt-2">
+        <div>
+          <h2 className="text-2xl font-black text-[var(--text-sunofy)] tracking-tight">
+            {getGreeting()}<span className="text-[var(--accent-sunofy)]">.</span>
+          </h2>
+          <p className="text-xs font-semibold text-[var(--muted-sunofy)] mt-1">
+            Explore music {musicSource === 'jiosaavn' ? 'from JioSaavn' : musicSource === 'youtube' ? 'from YT Music' : 'from your library'}
+          </p>
+        </div>
+
+        {musicSource !== 'local' && (
+          <select
+            value={language}
+            onChange={(e) => {
+              setLanguage(e.target.value);
+              localStorage.setItem('sunofy_discover_lang', e.target.value);
+            }}
+            className="text-xs font-bold bg-[var(--card-sunofy)] text-[var(--text-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/50 rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 outline-none cursor-pointer transition shadow-sm appearance-none"
+            style={{ WebkitAppearance: 'none', MozAppearance: 'none', backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}
+          >
+            <option value="All">Global</option>
+            <option value="Telugu">Telugu</option>
+            <option value="English">English</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Tamil">Tamil</option>
+            <option value="Punjabi">Punjabi</option>
+            <option value="Malayalam">Malayalam</option>
+            <option value="Kannada">Kannada</option>
+            <option value="Marathi">Marathi</option>
+            <option value="Bhojpuri">Bhojpuri</option>
+            <option value="Bengali">Bengali</option>
+            <option value="Gujarati">Gujarati</option>
+          </select>
+        )}
       </div>
 
       {/* Top Header Category Filter Pills */}
@@ -358,11 +392,10 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
               key={tag.label}
               onClick={() => setSelectedTag(tag.query)}
               onDoubleClick={() => { setEditingTagLabel(tag.label); setNewTagQuery(tag.query); }}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-300 shadow-sm border ${
-                isActive
-                  ? 'bg-[var(--accent-sunofy)] text-black border-[var(--accent-sunofy)] shadow-[var(--accent-sunofy)]/20'
-                  : 'bg-[var(--surface-sunofy)] text-[var(--text-muted-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--text-muted-sunofy)] hover:bg-[var(--border-sunofy)]'
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-300 shadow-sm border ${isActive
+                ? 'bg-[var(--accent-sunofy)] text-black border-[var(--accent-sunofy)] shadow-[var(--accent-sunofy)]/20'
+                : 'bg-[var(--surface-sunofy)] text-[var(--text-muted-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--text-muted-sunofy)] hover:bg-[var(--border-sunofy)]'
+                }`}
             >
               <span className="font-bold mr-1 opacity-60">{tag.label}:</span> {tag.query}
             </button>
@@ -454,11 +487,10 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
                 {onToggleFavorite && (
                   <button
                     onClick={() => onToggleFavorite(featuredTrack)}
-                    className={`p-2 rounded-xl border transition cursor-pointer ${
-                      isFavorited(featuredTrack)
-                        ? 'bg-red-500/20 text-red-500 border-red-500/30'
-                        : 'bg-[var(--bg-sunofy)]/80 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] border-[var(--border-sunofy)]'
-                    }`}
+                    className={`p-2 rounded-xl border transition cursor-pointer ${isFavorited(featuredTrack)
+                      ? 'bg-red-500/20 text-red-500 border-red-500/30'
+                      : 'bg-[var(--bg-sunofy)]/80 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] border-[var(--border-sunofy)]'
+                      }`}
                     title="Favorite"
                   >
                     <Heart className={`w-4 h-4 ${isFavorited(featuredTrack) ? 'fill-red-500' : ''}`} />
@@ -468,11 +500,10 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
                 {onDownloadTrack && (
                   <button
                     onClick={() => onDownloadTrack(featuredTrack)}
-                    className={`p-2 rounded-xl border transition cursor-pointer ${
-                      isDownloaded(featuredTrack)
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                        : 'bg-[var(--bg-sunofy)]/80 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] border-[var(--border-sunofy)]'
-                    }`}
+                    className={`p-2 rounded-xl border transition cursor-pointer ${isDownloaded(featuredTrack)
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      : 'bg-[var(--bg-sunofy)]/80 text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] border-[var(--border-sunofy)]'
+                      }`}
                     title="Download for Offline"
                   >
                     <Download className="w-4 h-4" />
@@ -494,380 +525,373 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
 
       {/* Consolidated Discovery Engine Panel */}
       {!apiError && (
-      <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl p-4 sm:p-6 shadow-2xl space-y-5">
-        
+        <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl p-4 sm:p-6 shadow-2xl space-y-5">
 
 
-        {/* Local Import Folder Tracks Section inside Discovery Engine */}
-        {musicSource === 'local' && (
-          <div className="p-4 rounded-2xl bg-[var(--bg-sunofy)] border border-dashed border-[var(--accent-sunofy)]/40 flex flex-col items-center text-center space-y-3 animate-fade">
-            <div className="p-3 rounded-full bg-[var(--accent-sunofy)]/10 text-[var(--accent-sunofy)] border border-[var(--accent-sunofy)]/20">
-              <FolderOpen className="w-6 h-6 animate-bounce-subtle text-[var(--accent-sunofy)]" />
-            </div>
-            <div className="max-w-xs">
-              <h4 className="text-xs font-black text-[var(--text-sunofy)]">Load Folder / Device Audio</h4>
-              <p className="text-[10px] text-[var(--muted-sunofy)] mt-0.5">Import offline audio tracks directly into Sunofy local queue</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const el = document.getElementById('discover-folder-input');
-                  if (el) el.click();
-                }}
-                className="px-4 py-2 rounded-xl bg-[var(--accent-sunofy)] text-black text-xs font-black hover:scale-105 shadow-md transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <FolderPlus className="w-3.5 h-3.5" /> Import Songs
-              </button>
-              {localFolderTracks && localFolderTracks.length > 0 && (
-                <button
-                  onClick={() => onClearLocalFolderTracks && onClearLocalFolderTracks()}
-                  className="px-3 py-2 rounded-xl bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-red-500 hover:border-red-500/30 text-xs font-bold transition cursor-pointer"
-                >
-                  Unload All ({localFolderTracks.length})
-                </button>
-              )}
-              <input
-                id="discover-folder-input"
-                type="file"
-                multiple
-                accept="audio/*"
-                onChange={(e) => {
-                  if (e.target.files && onImportLocalFiles) {
-                    onImportLocalFiles(e.target.files);
-                  }
-                }}
-                className="hidden"
-              />
-            </div>
-          </div>
-        )}
 
-        {/* Sub-Navigation Pill Tabs inside Discovery Engine */}
-        <div className="flex items-center gap-2 p-1 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-2xl">
-          <button
-            onClick={() => setDiscoveryTab('songs')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${
-              discoveryTab === 'songs'
-                ? 'bg-[var(--accent-sunofy)] text-black shadow-lg scale-[1.02]'
-                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-            }`}
-          >
-            <Music className="w-4 h-4" /> Songs
-          </button>
-
-          <button
-            onClick={() => setDiscoveryTab('playlists')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${
-              discoveryTab === 'playlists'
-                ? 'bg-[var(--accent-sunofy)] text-black shadow-lg scale-[1.02]'
-                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-            }`}
-          >
-            <FolderOpen className="w-4 h-4" /> Playlists
-          </button>
-
-          <button
-            onClick={() => setDiscoveryTab('albums')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${
-              discoveryTab === 'albums'
-                ? 'bg-[var(--accent-sunofy)] text-black shadow-lg scale-[1.02]'
-                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-            }`}
-          >
-            <Disc className="w-4 h-4" /> Albums
-          </button>
-        </div>
-
-        {/* SUB TAB 1: SONGS VIEW */}
-        {discoveryTab === 'songs' && (
-          <div className="space-y-4 animate-fade">
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <div key={n} className="flex items-center gap-3 p-2.5 rounded-2xl bg-[var(--card-sunofy)]/50 border border-[var(--border-sunofy)] animate-pulse">
-                    <div className="w-12 h-12 bg-[var(--border-sunofy)] rounded-2xl shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3.5 bg-[var(--border-sunofy)] rounded-lg w-1/3" />
-                      <div className="h-2.5 bg-[var(--border-sunofy)] rounded-lg w-1/4" />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
-                      <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
-                    </div>
-                  </div>
-                ))}
+          {/* Local Import Folder Tracks Section inside Discovery Engine */}
+          {musicSource === 'local' && (
+            <div className="p-4 rounded-2xl bg-[var(--bg-sunofy)] border border-dashed border-[var(--accent-sunofy)]/40 flex flex-col items-center text-center space-y-3 animate-fade">
+              <div className="p-3 rounded-full bg-[var(--accent-sunofy)]/10 text-[var(--accent-sunofy)] border border-[var(--accent-sunofy)]/20">
+                <FolderOpen className="w-6 h-6 animate-bounce-subtle text-[var(--accent-sunofy)]" />
               </div>
-            ) : (
-              <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1 no-scrollbar">
-                {trendingTracks.map((track) => (
-                  <div
-                    key={track.id}
-                    onClick={() => {
-                      onPlayTrack(track);
-                      if (onSetQueue && trendingTracks.length > 0) {
-                        onSetQueue(trendingTracks.filter((t) => t.id !== track.id));
-                      }
-                    }}
-                    className="flex items-center justify-between p-2.5 rounded-2xl bg-[var(--bg-sunofy)]/80 hover:bg-[var(--hover-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/40 transition group cursor-pointer shadow-sm"
+              <div className="max-w-xs">
+                <h4 className="text-xs font-black text-[var(--text-sunofy)]">Load Folder / Device Audio</h4>
+                <p className="text-[10px] text-[var(--muted-sunofy)] mt-0.5">Import offline audio tracks directly into Sunofy local queue</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('discover-folder-input');
+                    if (el) el.click();
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[var(--accent-sunofy)] text-black text-xs font-black hover:scale-105 shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FolderPlus className="w-3.5 h-3.5" /> Import Songs
+                </button>
+                {localFolderTracks && localFolderTracks.length > 0 && (
+                  <button
+                    onClick={() => onClearLocalFolderTracks && onClearLocalFolderTracks()}
+                    className="px-3 py-2 rounded-xl bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-red-500 hover:border-red-500/30 text-xs font-bold transition cursor-pointer"
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="relative w-12 h-12 rounded-2xl overflow-hidden shrink-0 border border-[var(--border-sunofy)] shadow-md aspect-square">
-                        <img
-                          src={track.image}
-                          alt={track.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300 aspect-square rounded-2xl"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                          <Play className="w-5 h-5 text-white ml-0.5" fill="currentColor" />
+                    Unload All ({localFolderTracks.length})
+                  </button>
+                )}
+                <input
+                  id="discover-folder-input"
+                  type="file"
+                  multiple
+                  accept="audio/*"
+                  onChange={(e) => {
+                    if (e.target.files && onImportLocalFiles) {
+                      onImportLocalFiles(e.target.files);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Sub-Navigation Pill Tabs inside Discovery Engine */}
+          <div className="flex items-center gap-2 p-1 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-2xl">
+            <button
+              onClick={() => setDiscoveryTab('songs')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${discoveryTab === 'songs'
+                ? 'bg-[var(--accent-sunofy)] text-black shadow-lg scale-[1.02]'
+                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                }`}
+            >
+              <Music className="w-4 h-4" /> Songs
+            </button>
+
+            <button
+              onClick={() => setDiscoveryTab('playlists')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${discoveryTab === 'playlists'
+                ? 'bg-[var(--accent-sunofy)] text-black shadow-lg scale-[1.02]'
+                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                }`}
+            >
+              <FolderOpen className="w-4 h-4" /> Playlists
+            </button>
+
+            <button
+              onClick={() => setDiscoveryTab('albums')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer ${discoveryTab === 'albums'
+                ? 'bg-[var(--accent-sunofy)] text-black shadow-lg scale-[1.02]'
+                : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                }`}
+            >
+              <Disc className="w-4 h-4" /> Albums
+            </button>
+          </div>
+
+          {/* SUB TAB 1: SONGS VIEW */}
+          {discoveryTab === 'songs' && (
+            <div className="space-y-4 animate-fade">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <div key={n} className="flex items-center gap-3 p-2.5 rounded-2xl bg-[var(--card-sunofy)]/50 border border-[var(--border-sunofy)] animate-pulse">
+                      <div className="w-12 h-12 bg-[var(--border-sunofy)] rounded-2xl shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 bg-[var(--border-sunofy)] rounded-lg w-1/3" />
+                        <div className="h-2.5 bg-[var(--border-sunofy)] rounded-lg w-1/4" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
+                        <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1 no-scrollbar">
+                  {trendingTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      onClick={() => {
+                        onPlayTrack(track);
+                        if (onSetQueue && trendingTracks.length > 0) {
+                          onSetQueue(trendingTracks.filter((t) => t.id !== track.id));
+                        }
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-2xl bg-[var(--bg-sunofy)]/80 hover:bg-[var(--hover-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/40 transition group cursor-pointer shadow-sm"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative w-12 h-12 rounded-2xl overflow-hidden shrink-0 border border-[var(--border-sunofy)] shadow-md aspect-square">
+                          <img
+                            src={track.image}
+                            alt={track.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300 aspect-square rounded-2xl"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                            <Play className="w-5 h-5 text-white ml-0.5" fill="currentColor" />
+                          </div>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs sm:text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">
+                            {track.title}
+                          </h4>
+                          <p className="text-[11px] font-medium text-[var(--muted-sunofy)] truncate mt-0.5">
+                            {track.artist}
+                          </p>
                         </div>
                       </div>
 
+                      {/* Pro Action Buttons Toolbar */}
+                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 pl-2" onClick={(e) => e.stopPropagation()}>
+                        {onAddToQueue && (
+                          <button
+                            onClick={() => onAddToQueue(track)}
+                            className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
+                            title="Add to Queue"
+                          >
+                            <ListPlus className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {onToggleFavorite && (
+                          <button
+                            onClick={() => onToggleFavorite(track)}
+                            className={`p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] transition cursor-pointer ${isFavorited(track) ? 'text-[var(--accent-sunofy)]' : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                              }`}
+                            title="Favorite"
+                          >
+                            <Heart className={`w-4 h-4 ${isFavorited(track) ? 'fill-[var(--accent-sunofy)]' : ''}`} />
+                          </button>
+                        )}
+
+                        {onDownloadTrack && (
+                          <button
+                            onClick={() => onDownloadTrack(track)}
+                            className={`p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] transition cursor-pointer ${isDownloaded(track) ? 'text-emerald-400' : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                              }`}
+                            title="Download for Offline"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => setPlaylistModalTrack(track)}
+                          className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
+                          title="Add to Playlist"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {trendingTracks.length === 0 && (
+                    <div className="p-8 text-center text-[var(--muted-sunofy)] text-sm font-medium">
+                      No songs found for this selection.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SUB TAB 2: PLAYLISTS VIEW */}
+          {discoveryTab === 'playlists' && (
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 no-scrollbar animate-fade">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((n) => (
+                    <div key={n} className="flex items-center gap-3 p-2.5 rounded-2xl bg-[var(--card-sunofy)]/50 border border-[var(--border-sunofy)] animate-pulse">
+                      <div className="w-13 h-13 bg-[var(--border-sunofy)] rounded-2xl shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 bg-[var(--border-sunofy)] rounded-lg w-1/3" />
+                        <div className="h-2.5 bg-[var(--border-sunofy)] rounded-lg w-1/4" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
+                        <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                dynamicPlaylists.map((pl) => (
+                  <div
+                    key={pl.id}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-sunofy)]/80 hover:bg-[var(--hover-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/40 transition group cursor-pointer shadow-sm"
+                    onClick={() => handlePlayCollection(pl.query)}
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      {imageErrors[pl.id] ? (
+                        <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-[var(--accent-sunofy)]/40 flex items-center justify-center text-xs font-black text-[var(--accent-sunofy)] uppercase shrink-0">
+                          {pl.name.split(' ').slice(0, 2).map(n => n[0]).join('')}
+                        </div>
+                      ) : (
+                        <img
+                          src={pl.image}
+                          alt={pl.name}
+                          onError={() => handleImageError(pl.id)}
+                          className="w-13 h-13 rounded-2xl object-cover shrink-0 border border-[var(--border-sunofy)] shadow-md group-hover:scale-105 transition duration-300 aspect-square"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs sm:text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">
-                          {track.title}
+                          {pl.name}
                         </h4>
-                        <p className="text-[11px] font-medium text-[var(--muted-sunofy)] truncate mt-0.5">
-                          {track.artist}
+                        <p className="text-[11px] font-semibold text-[var(--accent-sunofy)] flex items-center gap-1 mt-0.5">
+                          <FolderOpen className="w-3 h-3" /> {pl.trackCount}
                         </p>
                       </div>
                     </div>
 
-                    {/* Pro Action Buttons Toolbar */}
-                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 pl-2" onClick={(e) => e.stopPropagation()}>
-                      {onAddToQueue && (
-                        <button
-                          onClick={() => onAddToQueue(track)}
-                          className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
-                          title="Add to Queue"
-                        >
-                          <ListPlus className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      {onToggleFavorite && (
-                        <button
-                          onClick={() => onToggleFavorite(track)}
-                          className={`p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] transition cursor-pointer ${
-                            isFavorited(track) ? 'text-[var(--accent-sunofy)]' : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-                          }`}
-                          title="Favorite"
-                        >
-                          <Heart className={`w-4 h-4 ${isFavorited(track) ? 'fill-[var(--accent-sunofy)]' : ''}`} />
-                        </button>
-                      )}
-
-                      {onDownloadTrack && (
-                        <button
-                          onClick={() => onDownloadTrack(track)}
-                          className={`p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] transition cursor-pointer ${
-                            isDownloaded(track) ? 'text-emerald-400' : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-                          }`}
-                          title="Download for Offline"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                      )}
-
+                    <div className="flex items-center gap-1.5 shrink-0 pl-2" onClick={(e) => e.stopPropagation()}>
                       <button
-                        onClick={() => setPlaylistModalTrack(track)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--hover-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
-                        title="Add to Playlist"
+                        onClick={() => handlePlayCollection(pl.query)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--accent-sunofy)] text-black font-extrabold text-xs hover:scale-105 shadow-md transition cursor-pointer"
+                        title="Play Now"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Play className="w-3.5 h-3.5 fill-black" /> Play
                       </button>
-                    </div>
-                  </div>
-                ))}
 
-                {trendingTracks.length === 0 && (
-                  <div className="p-8 text-center text-[var(--muted-sunofy)] text-sm font-medium">
-                    No songs found for this selection.
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* SUB TAB 2: PLAYLISTS VIEW */}
-        {discoveryTab === 'playlists' && (
-          <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 no-scrollbar animate-fade">
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map((n) => (
-                  <div key={n} className="flex items-center gap-3 p-2.5 rounded-2xl bg-[var(--card-sunofy)]/50 border border-[var(--border-sunofy)] animate-pulse">
-                    <div className="w-13 h-13 bg-[var(--border-sunofy)] rounded-2xl shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3.5 bg-[var(--border-sunofy)] rounded-lg w-1/3" />
-                      <div className="h-2.5 bg-[var(--border-sunofy)] rounded-lg w-1/4" />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
-                      <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              dynamicPlaylists.map((pl) => (
-                <div
-                  key={pl.id}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-sunofy)]/80 hover:bg-[var(--hover-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/40 transition group cursor-pointer shadow-sm"
-                  onClick={() => handlePlayCollection(pl.query)}
-                >
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    {imageErrors[pl.id] ? (
-                      <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-[var(--accent-sunofy)]/40 flex items-center justify-center text-xs font-black text-[var(--accent-sunofy)] uppercase shrink-0">
-                        {pl.name.split(' ').slice(0, 2).map(n => n[0]).join('')}
-                      </div>
-                    ) : (
-                      <img
-                        src={pl.image}
-                        alt={pl.name}
-                        onError={() => handleImageError(pl.id)}
-                        className="w-13 h-13 rounded-2xl object-cover shrink-0 border border-[var(--border-sunofy)] shadow-md group-hover:scale-105 transition duration-300 aspect-square"
-                        referrerPolicy="no-referrer"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-xs sm:text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">
-                        {pl.name}
-                      </h4>
-                      <p className="text-[11px] font-semibold text-[var(--accent-sunofy)] flex items-center gap-1 mt-0.5">
-                        <FolderOpen className="w-3 h-3" /> {pl.trackCount}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0 pl-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handlePlayCollection(pl.query)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--accent-sunofy)] text-black font-extrabold text-xs hover:scale-105 shadow-md transition cursor-pointer"
-                      title="Play Now"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-black" /> Play
-                    </button>
-
-                    {onToggleFavoritePlaylist && (
-                      <button
-                        onClick={() => onToggleFavoritePlaylist({ id: pl.id, name: pl.name, songs: [], image: pl.image })}
-                        className={`p-2 rounded-xl border transition cursor-pointer ${
-                          isPlaylistFavorited(pl.name)
+                      {onToggleFavoritePlaylist && (
+                        <button
+                          onClick={() => onToggleFavoritePlaylist({ id: pl.id, name: pl.name, songs: [], image: pl.image })}
+                          className={`p-2 rounded-xl border transition cursor-pointer ${isPlaylistFavorited(pl.name)
                             ? 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
                             : 'bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-                        }`}
-                        title="Favorite Playlist"
-                      >
-                        <Heart className={`w-4 h-4 ${isPlaylistFavorited(pl.name) ? 'fill-red-500' : ''}`} />
-                      </button>
-                    )}
+                            }`}
+                          title="Favorite Playlist"
+                        >
+                          <Heart className={`w-4 h-4 ${isPlaylistFavorited(pl.name) ? 'fill-red-500' : ''}`} />
+                        </button>
+                      )}
 
-                    <button
-                      onClick={() => onImportCollectionAsPlaylist && onImportCollectionAsPlaylist(pl.name, pl.query, pl.image)}
-                      className="p-2 rounded-xl bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:border-[var(--accent-sunofy)]/50 transition cursor-pointer"
-                      title="Save to My Playlists"
-                    >
-                      <Bookmark className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* SUB TAB 3: ALBUMS VIEW */}
-        {discoveryTab === 'albums' && (
-          <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 no-scrollbar animate-fade">
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map((n) => (
-                  <div key={n} className="flex items-center gap-3 p-2.5 rounded-2xl bg-[var(--card-sunofy)]/50 border border-[var(--border-sunofy)] animate-pulse">
-                    <div className="w-13 h-13 bg-[var(--border-sunofy)] rounded-2xl shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3.5 bg-[var(--border-sunofy)] rounded-lg w-1/3" />
-                      <div className="h-2.5 bg-[var(--border-sunofy)] rounded-lg w-1/4" />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
-                      <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              dynamicAlbums.map((album) => (
-                <div
-                  key={album.id}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-sunofy)]/80 hover:bg-[var(--hover-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/40 transition group cursor-pointer shadow-sm"
-                  onClick={() => handlePlayCollection(album.query)}
-                >
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    {imageErrors[album.id] ? (
-                      <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-[var(--accent-sunofy)]/40 flex items-center justify-center text-xs font-black text-[var(--accent-sunofy)] uppercase shrink-0">
-                        {album.name.split(' ').slice(0, 2).map(n => n[0]).join('')}
-                      </div>
-                    ) : (
-                      <img
-                        src={album.image}
-                        alt={album.name}
-                        onError={() => handleImageError(album.id)}
-                        className="w-13 h-13 rounded-2xl object-cover shrink-0 border border-[var(--border-sunofy)] shadow-md group-hover:scale-105 transition duration-300 aspect-square"
-                        referrerPolicy="no-referrer"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-xs sm:text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">
-                        {album.name}
-                      </h4>
-                      <p className="text-[11px] font-medium text-[var(--muted-sunofy)] truncate">
-                        {album.artist}
-                      </p>
-                      <span className="text-[10px] font-bold text-[var(--accent-sunofy)] mt-0.5 block">
-                        {album.trackCount || '12 tracks'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0 pl-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handlePlayCollection(album.query)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--accent-sunofy)] text-black font-extrabold text-xs hover:scale-105 shadow-md transition cursor-pointer"
-                      title="Play Now"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-black" /> Play
-                    </button>
-
-                    {onToggleFavoriteAlbum && (
                       <button
-                        onClick={() => onToggleFavoriteAlbum({ id: album.id, title: album.name, artist: album.artist, image: album.image, trackCount: album.trackCount })}
-                        className={`p-2 rounded-xl border transition cursor-pointer ${
-                          isAlbumFavorited(album.name)
+                        onClick={() => onImportCollectionAsPlaylist && onImportCollectionAsPlaylist(pl.name, pl.query, pl.image)}
+                        className="p-2 rounded-xl bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:border-[var(--accent-sunofy)]/50 transition cursor-pointer"
+                        title="Save to My Playlists"
+                      >
+                        <Bookmark className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* SUB TAB 3: ALBUMS VIEW */}
+          {discoveryTab === 'albums' && (
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 no-scrollbar animate-fade">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((n) => (
+                    <div key={n} className="flex items-center gap-3 p-2.5 rounded-2xl bg-[var(--card-sunofy)]/50 border border-[var(--border-sunofy)] animate-pulse">
+                      <div className="w-13 h-13 bg-[var(--border-sunofy)] rounded-2xl shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 bg-[var(--border-sunofy)] rounded-lg w-1/3" />
+                        <div className="h-2.5 bg-[var(--border-sunofy)] rounded-lg w-1/4" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
+                        <div className="w-8 h-8 bg-[var(--border-sunofy)] rounded-xl" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                dynamicAlbums.map((album) => (
+                  <div
+                    key={album.id}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-sunofy)]/80 hover:bg-[var(--hover-sunofy)] border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/40 transition group cursor-pointer shadow-sm"
+                    onClick={() => handlePlayCollection(album.query)}
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      {imageErrors[album.id] ? (
+                        <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-[var(--accent-sunofy)]/40 flex items-center justify-center text-xs font-black text-[var(--accent-sunofy)] uppercase shrink-0">
+                          {album.name.split(' ').slice(0, 2).map(n => n[0]).join('')}
+                        </div>
+                      ) : (
+                        <img
+                          src={album.image}
+                          alt={album.name}
+                          onError={() => handleImageError(album.id)}
+                          className="w-13 h-13 rounded-2xl object-cover shrink-0 border border-[var(--border-sunofy)] shadow-md group-hover:scale-105 transition duration-300 aspect-square"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs sm:text-sm font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">
+                          {album.name}
+                        </h4>
+                        <p className="text-[11px] font-medium text-[var(--muted-sunofy)] truncate">
+                          {album.artist}
+                        </p>
+                        <span className="text-[10px] font-bold text-[var(--accent-sunofy)] mt-0.5 block">
+                          {album.trackCount || '12 tracks'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 pl-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handlePlayCollection(album.query)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--accent-sunofy)] text-black font-extrabold text-xs hover:scale-105 shadow-md transition cursor-pointer"
+                        title="Play Now"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-black" /> Play
+                      </button>
+
+                      {onToggleFavoriteAlbum && (
+                        <button
+                          onClick={() => onToggleFavoriteAlbum({ id: album.id, title: album.name, artist: album.artist, image: album.image, trackCount: album.trackCount })}
+                          className={`p-2 rounded-xl border transition cursor-pointer ${isAlbumFavorited(album.name)
                             ? 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
                             : 'bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-                        }`}
-                        title="Favorite Album"
+                            }`}
+                          title="Favorite Album"
+                        >
+                          <Heart className={`w-4 h-4 ${isAlbumFavorited(album.name) ? 'fill-red-500' : ''}`} />
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => onImportCollectionAsPlaylist && onImportCollectionAsPlaylist(album.name, album.query, album.image)}
+                        className="p-2 rounded-xl bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:border-[var(--accent-sunofy)]/50 transition cursor-pointer"
+                        title="Save Album to My Playlists"
                       >
-                        <Heart className={`w-4 h-4 ${isAlbumFavorited(album.name) ? 'fill-red-500' : ''}`} />
+                        <Bookmark className="w-4 h-4" />
                       </button>
-                    )}
-
-                    <button
-                      onClick={() => onImportCollectionAsPlaylist && onImportCollectionAsPlaylist(album.name, album.query, album.image)}
-                      className="p-2 rounded-xl bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:border-[var(--accent-sunofy)]/50 transition cursor-pointer"
-                      title="Save Album to My Playlists"
-                    >
-                      <Bookmark className="w-4 h-4" />
-                    </button>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
+                ))
+              )}
+            </div>
+          )}
 
-      </div>
+        </div>
       )}
 
       {/* Playlist Picker Modal */}
@@ -876,14 +900,14 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
           <div className="bg-[var(--card-sunofy)] w-full max-w-sm rounded-3xl border border-[var(--border-sunofy)] p-6 animate-fade shadow-2xl my-auto text-[var(--text-sunofy)]">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold">Add to Playlist</h3>
-              <button 
+              <button
                 onClick={() => { setPlaylistModalTrack(null); setPlaylistModalAlbum(null); }}
                 className="p-2 rounded-full bg-[var(--bg-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex items-center gap-4 mb-6 p-3.5 rounded-2xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] shadow-sm">
               {playlistModalTrack ? (
                 <>
@@ -896,7 +920,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
               ) : playlistModalAlbum ? (
                 <>
                   {playlistModalAlbum.image ? (
-                     <img src={playlistModalAlbum.image} alt={playlistModalAlbum.name} className="w-12 h-12 rounded-xl object-cover" />
+                    <img src={playlistModalAlbum.image} alt={playlistModalAlbum.name} className="w-12 h-12 rounded-xl object-cover" />
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] flex items-center justify-center shrink-0">
                       <FolderOpen className="w-6 h-6 text-[var(--muted-sunofy)]" />
@@ -921,7 +945,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
                       try {
                         const tracks = await musicApi.searchSongs(playlistModalAlbum.query);
                         tracks.forEach(t => onAddSongToPlaylist(pl.id, t));
-                      } catch (e) {}
+                      } catch (e) { }
                     }
                     setPlaylistModalTrack(null);
                     setPlaylistModalAlbum(null);
