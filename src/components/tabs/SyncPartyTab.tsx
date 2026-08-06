@@ -177,6 +177,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [micVolume, setMicVolume] = useState(100);
   const [activeSpeaker, setActiveSpeaker] = useState<{ name: string; timestamp: number } | null>(null);
   const [micLevel, setMicLevel] = useState(0);
+  const [localTime, setLocalTime] = useState(0);
   const voiceAudioCtxRef = React.useRef<AudioContext | null>(null);
   const recorderIntervalRef = React.useRef<any>(null);
   const micStreamRef = React.useRef<MediaStream | null>(null);
@@ -427,8 +428,44 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     if (!joinCodeInput.trim()) return;
     syncParty.joinRoom(joinCodeInput.trim());
     onShowToast(`Joining room #${joinCodeInput.trim()}...`);
+    setChatInput('');
     setJoinCodeInput('');
   };
+
+  // Sync with host's network time
+  useEffect(() => {
+    setLocalTime(prev => {
+      // If we are out of sync by more than 1.5 seconds, snap to the host's exact time
+      if (Math.abs(prev - syncState.currentTime) > 1.5) {
+        return syncState.currentTime;
+      }
+      return prev;
+    });
+  }, [syncState.currentTime]);
+
+  // Smooth local ticking for the progress bar
+  useEffect(() => {
+    let animationFrameId: number;
+    let lastTick = performance.now();
+
+    const tick = (now: number) => {
+      const delta = (now - lastTick) / 1000;
+      lastTick = now;
+
+      setLocalTime(prev => {
+        // Only increment if playing
+        if (syncState.isPlaying && syncState.duration > 0) {
+          const next = prev + delta;
+          return next <= syncState.duration ? next : syncState.duration;
+        }
+        return prev;
+      });
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
+    animationFrameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [syncState.isPlaying, syncState.duration]);
 
   const handleCopyCode = () => {
     navigator.clipboard?.writeText(syncState.roomCode);
@@ -824,10 +861,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
                 {/* Timeline Progress Bar (Host gets Knob & Seek; Listener gets Read-Only Line) */}
                 {(() => {
-                  const pct = syncState.duration > 0 ? (syncState.currentTime / syncState.duration) * 100 : 0;
+                  const pct = syncState.duration > 0 ? (localTime / syncState.duration) * 100 : 0;
                   return (
                     <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
-                      <span>{formatTime(syncState.currentTime)}</span>
+                      <span>{formatTime(localTime)}</span>
                       <div
                         className={`flex-1 h-3 bg-black/60 border border-purple-500/30 rounded-full relative p-0.5 flex items-center touch-none select-none ${
                           syncState.isHost ? 'cursor-pointer' : 'cursor-default'

@@ -27,8 +27,17 @@ import {
   Tv,
   ListVideo,
   Heart,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from 'lucide-react';
+import { musicApi } from '../../services/api';
+
+const formatTime = (seconds: number) => {
+  if (isNaN(seconds)) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+};
 
 export interface SavedVideoItem {
   id: string;
@@ -145,105 +154,48 @@ export const VideoTab: React.FC<VideoTabProps> = ({
 
   const controlsTimeoutRef = useRef<any>(null);
 
-  // Curated playable music videos catalog (No live streams)
-  const playableMusicVideosCatalog: SampleVideo[] = [
-    {
-      id: 'mv_1',
-      title: 'Ramuloo Ramulaa - Ala Vaikunthapurramuloo Video Song',
-      category: 'Telugu Tollywood',
-      duration: '4:15',
-      thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=13I3kY06nC4',
-      type: 'youtube',
-      embedId: '13I3kY06nC4',
-    },
-    {
-      id: 'mv_2',
-      title: 'Kalaavathi - Sarkaru Vaari Paata Video Song',
-      category: 'Telugu Tollywood',
-      duration: '4:02',
-      thumbnail: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=k4yXQkG2s1E',
-      type: 'youtube',
-      embedId: 'k4yXQkG2s1E',
-    },
-    {
-      id: 'mv_3',
-      title: 'Naatu Naatu - RRR Full Video Song',
-      category: 'Telugu Tollywood',
-      duration: '4:35',
-      thumbnail: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=sAzlWScHTc4',
-      type: 'youtube',
-      embedId: 'sAzlWScHTc4',
-    },
-    {
-      id: 'mv_4',
-      title: 'Srivalli - Pushpa The Rise Video Song',
-      category: 'Telugu Tollywood',
-      duration: '3:45',
-      thumbnail: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=hcMzwMrr1tU',
-      type: 'youtube',
-      embedId: 'hcMzwMrr1tU',
-    },
-    {
-      id: 'mv_5',
-      title: 'Arabic Kuthu - Halamithi Habibo Video Song',
-      category: 'Tamil Hits',
-      duration: '4:40',
-      thumbnail: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=KVP9M1CInS4',
-      type: 'youtube',
-      embedId: 'KVP9M1CInS4',
-    },
-    {
-      id: 'mv_6',
-      title: 'Oo Antava Mava..Oo Oo Antava - Pushpa Video Song',
-      category: 'Telugu Tollywood',
-      duration: '3:50',
-      thumbnail: 'https://images.unsplash.com/photo-1493225457124-a1a2a4f529ed?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=s4A_UCo0EaM',
-      type: 'youtube',
-      embedId: 's4A_UCo0EaM',
-    },
-    {
-      id: 'mv_7',
-      title: 'Inkem Inkem Inkem Kaavale - Geetha Govindam Video Song',
-      category: 'Telugu Melodies',
-      duration: '4:28',
-      thumbnail: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=o34A64C2Y5U',
-      type: 'youtube',
-      embedId: 'o34A64C2Y5U',
-    },
-    {
-      id: 'mv_8',
-      title: 'Tollywood Cinema Hits 2026',
-      category: 'Global Hits',
-      duration: '4:22',
-      thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=350&fit=crop',
-      videoUrl: 'https://www.youtube.com/watch?v=4NRXx6U8ABQ',
-      type: 'youtube',
-      embedId: '4NRXx6U8ABQ',
-    },
+  const [featuredVideos, setFeaturedVideos] = useState<SampleVideo[]>([]);
+  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('Trending Music Videos');
+
+  const VIDEO_CATEGORIES = [
+    'Trending Music Videos',
+    'Live Concerts',
+    '4K HDR Music',
+    'Lofi Visuals',
+    'Tollywood Hits',
+    'Bollywood Blockbusters'
   ];
 
-  // Daily Random Pickup Seeded by Current Date (No Live Music)
-  const sampleVideos = React.useMemo(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    let hash = 0;
-    for (let i = 0; i < todayStr.length; i++) {
-      hash = (hash << 5) - hash + todayStr.charCodeAt(i);
-      hash |= 0;
-    }
-    const shuffled = [...playableMusicVideosCatalog];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.abs((hash + i) % (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }, []);
+  // Dynamic Featured Feed Loader
+  useEffect(() => {
+    let isMounted = true;
+    const fetchFeatured = async () => {
+      setIsLoadingFeatured(true);
+      try {
+        const results = await musicApi.searchYoutubeCobalt(activeCategory);
+        if (isMounted) {
+          const formatted: SampleVideo[] = results.map((r, i) => ({
+             id: r.id || `feat_${i}`,
+             title: r.title,
+             category: 'Featured',
+             duration: r.duration || '0:00',
+             thumbnail: r.thumbnail || r.image || `https://i.ytimg.com/vi/${r.id}/hqdefault.jpg`,
+             videoUrl: r.downloadUrl || `https://www.youtube.com/watch?v=${r.id}`,
+             type: 'youtube',
+             embedId: r.id
+          }));
+          setFeaturedVideos(formatted);
+        }
+      } catch (err) {
+        console.error('Error fetching featured videos:', err);
+      } finally {
+        if (isMounted) setIsLoadingFeatured(false);
+      }
+    };
+    fetchFeatured();
+    return () => { isMounted = false; };
+  }, [activeCategory]);
 
   // Save history to localStorage
   useEffect(() => {
@@ -262,27 +214,9 @@ export const VideoTab: React.FC<VideoTabProps> = ({
     }
   }, [videoFavorites]);
 
-  // Fetch Search Suggestions
+  // Search Suggestions (Disabled for direct API calls, relies on musicApi now)
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!ytSearchQuery.trim() || ytSearchQuery.length < 2) {
-        setSearchSuggestions([]);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/suggestions?q=${encodeURIComponent(ytSearchQuery)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && Array.isArray(data.suggestions)) {
-            setSearchSuggestions(data.suggestions.slice(0, 6));
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    const timeout = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(timeout);
+    setSearchSuggestions([]);
   }, [ytSearchQuery]);
 
   // Pause video if music player starts
@@ -518,47 +452,31 @@ export const VideoTab: React.FC<VideoTabProps> = ({
     
     // Collapse panel
     setIsSearchPanelOpen(false);
-
     setShowSuggestions(false);
     setIsSearching(true);
     setActiveSubTab('search');
 
     try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}&filter=all`);
-      if (res.ok) {
-        const data = await res.json();
-        const rawItems = data.results || data.items || [];
-        const results: SampleVideo[] = rawItems
-          .slice(0, 20)
-          .map((item: any, idx: number) => {
-            const isPlaylist = item.type === 'playlist';
-            const id = item.videoId || item.id;
-            const dur = item.duration || item.durationText || (item.lengthSeconds > 0 ? formatTime(item.lengthSeconds) : 'Live');
-            return {
-              id: `yt_res_${id || idx}`,
-              title: item.title,
-              category: isPlaylist ? 'Playlist' : 'YouTube Video',
-              duration: dur,
-              thumbnail: item.thumbnail || item.image || item.videoThumbnails?.[0]?.url || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
-              videoUrl: item.videoUrl || (isPlaylist ? `https://www.youtube.com/playlist?list=${id}` : `https://www.youtube.com/watch?v=${id}`),
-              type: 'youtube',
-              embedId: isPlaylist ? '' : id,
-              embedUrl: item.embedUrl || (isPlaylist ? `https://www.youtube.com/embed/videoseries?list=${id}&autoplay=1` : `https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1`)
-            };
-          });
-        
-        setSearchResults(results);
-        if (results.length > 0) {
-          onShowToast(`Found ${results.length} YouTube results for "${query}"`);
-        } else {
-          onShowToast('No videos found.');
-        }
+      const results = await musicApi.searchYoutubeCobalt(query);
+      const formatted: SampleVideo[] = results.slice(0, 20).map((r, i) => ({
+         id: r.id || `yt_res_${i}`,
+         title: r.title,
+         category: 'YouTube Search Result',
+         duration: r.duration || '0:00',
+         thumbnail: r.thumbnail || r.image || `https://i.ytimg.com/vi/${r.id}/hqdefault.jpg`,
+         videoUrl: r.downloadUrl || `https://www.youtube.com/watch?v=${r.id}`,
+         type: 'youtube',
+         embedId: r.id
+      }));
+      setSearchResults(formatted);
+      if (formatted.length > 0) {
+        onShowToast(`Found ${formatted.length} results for "${query}"`);
       } else {
-        onShowToast('Failed to fetch search results from YouTube.');
+        onShowToast('No videos found.');
       }
     } catch (err) {
       console.error(err);
-      onShowToast('Error connecting to YouTube search service.');
+      onShowToast('Error connecting to search service.');
     } finally {
       setIsSearching(false);
     }
@@ -722,10 +640,6 @@ export const VideoTab: React.FC<VideoTabProps> = ({
     setVideoHistory([]);
     onShowToast('Cleared watch history');
   };
-
-  const filteredVideos = sampleVideos.filter(
-    (v) => searchCategory === 'All' || v.category.toLowerCase().includes(searchCategory.toLowerCase())
-  );
 
   return (
     <div className={`space-y-4 animate-fade text-[var(--text-sunofy)] select-none relative overflow-hidden ${isEmbeddedInSyncParty ? 'p-1' : 'p-4 pb-24 min-h-screen'}`} style={{ backgroundColor: isEmbeddedInSyncParty ? 'transparent' : 'var(--bg-sunofy)' }}>
@@ -1137,14 +1051,14 @@ export const VideoTab: React.FC<VideoTabProps> = ({
         <div className="space-y-3">
           {/* Category Chips */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-            {['All', 'Telugu Tollywood', 'Sci-Fi Movie', 'Animation', 'Chill Visuals', 'Fantasy'].map((cat) => (
+            {VIDEO_CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSearchCategory(cat)}
+                onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${
-                  searchCategory === cat
-                    ? 'bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)]'
-                    : 'bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                  activeCategory === cat
+                    ? 'bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)] shadow-[0_0_10px_rgba(29,185,84,0.3)]'
+                    : 'bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:border-[var(--accent-sunofy)]'
                 }`}
               >
                 {cat}
@@ -1152,8 +1066,13 @@ export const VideoTab: React.FC<VideoTabProps> = ({
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {filteredVideos.map((video) => (
+          {isLoadingFeatured ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="w-8 h-8 rounded-full border-4 border-dashed border-[var(--accent-sunofy)] animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {featuredVideos.map((video) => (
               <div
                 key={video.id}
                 onClick={() => handleSelectVideo(video)}
