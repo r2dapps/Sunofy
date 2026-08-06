@@ -78,25 +78,8 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     setImageErrors((prev) => ({ ...prev, [id]: true }));
   };
 
-  const curatedPlaylists = [
-    { id: 'cp_1', query: 'Telugu Melodies 2026', name: 'Telugu Melodies', image: './icon-192.png', trackCount: '50 tracks' },
-    { id: 'cp_2', query: 'Telugu Jesus Songs Melodies', name: 'Telugu Jesus Songs', image: './icon-192.png', trackCount: '40 tracks' },
-    { id: 'cp_3', query: 'Telugu Fast Beat Dance Hits', name: 'Mixed Melodies & Fast Beats', image: './icon-192.png', trackCount: '45 tracks' },
-    { id: 'cp_4', query: 'Tollywood Mass Beats Folk', name: 'Mass Songs & High Energy', image: './icon-192.png', trackCount: '38 tracks' },
-    { id: 'cp_5', query: 'Sid Sriram Melodies Telugu', name: 'Sid Sriram Soulful Anthems', image: './icon-192.png', trackCount: '35 tracks' },
-    { id: 'cp_6', query: 'Anirudh Ravichander Telugu Hits', name: 'Anirudh High Energy Beats', image: './icon-192.png', trackCount: '42 tracks' },
-  ];
-
-  const curatedAlbums = [
-    { id: 'ca_1', query: 'Tollywood 90s Most Played', name: 'Most Played Telugu 90s', artist: 'Classic Cinema Hits', image: './icon-192.png', trackCount: '18 tracks' },
-    { id: 'ca_2', query: 'Telugu Jesus Songs Devotional', name: 'Telugu Christian Worship', artist: 'Devotional Hits', image: './icon-192.png', trackCount: '25 tracks' },
-    { id: 'ca_3', query: 'Devi Sri Prasad Mass Beats', name: 'DSP Mass Blockbusters', artist: 'Devi Sri Prasad', image: './icon-192.png', trackCount: '30 tracks' },
-    { id: 'ca_4', query: 'S.S. Thaman Heavy Bass', name: 'Thaman S Heavy Bass', artist: 'Thaman S', image: './icon-192.png', trackCount: '22 tracks' },
-    { id: 'ca_5', query: 'Telugu Fast Beat DJ Dance', name: 'Tollywood DJ Party Mix', artist: 'Party Anthems', image: './icon-192.png', trackCount: '32 tracks' },
-  ];
-
-  const [dynamicPlaylists, setDynamicPlaylists] = useState<any[]>(curatedPlaylists);
-  const [dynamicAlbums, setDynamicAlbums] = useState<any[]>(curatedAlbums);
+  const [dynamicPlaylists, setDynamicPlaylists] = useState<any[]>([]);
+  const [dynamicAlbums, setDynamicAlbums] = useState<any[]>([]);
   
   // Playlist Modal State
   const [playlistModalTrack, setPlaylistModalTrack] = useState<Track | null>(null);
@@ -213,18 +196,14 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
 
           if (plist.length > 0) {
             setDynamicPlaylists(plist);
-          } else if (apiError || (tracks.length === 0 && musicSource !== 'local')) {
-            setDynamicPlaylists([]);
           } else {
-            setDynamicPlaylists(curatedPlaylists);
+            setDynamicPlaylists([]);
           }
 
           if (alist.length > 0) {
             setDynamicAlbums(alist);
-          } else if (apiError || (tracks.length === 0 && musicSource !== 'local')) {
-            setDynamicAlbums([]);
           } else {
-            setDynamicAlbums(curatedAlbums);
+            setDynamicAlbums([]);
           }
         }
       } catch (err) {
