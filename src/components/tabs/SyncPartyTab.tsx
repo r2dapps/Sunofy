@@ -171,6 +171,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [chatInput, setChatInput] = useState('');
   const [customReaction, setCustomReaction] = useState('');
   const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifSearchQuery, setGifSearchQuery] = useState('');
+  const [gifSearchResults, setGifSearchResults] = useState<{name: string, url: string}[]>([]);
+  const [isSearchingGifs, setIsSearchingGifs] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [musicVolume, setMusicVolume] = useState(100);
@@ -508,6 +511,29 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
       setSearchResults(res);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleGifSearch = async (query: string) => {
+    setGifSearchQuery(query);
+    if (!query.trim()) {
+      setGifSearchResults([]);
+      return;
+    }
+    setIsSearchingGifs(true);
+    try {
+      const res = await fetch(`https://api.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=LIVDSRZULELA&limit=12`);
+      const data = await res.json();
+      if (data.results) {
+        setGifSearchResults(data.results.map((r: any) => ({
+          name: r.content_description || 'GIF',
+          url: r.media[0].gif.url
+        })));
+      }
+    } catch (e) {
+      console.error('GIF search failed:', e);
+    } finally {
+      setIsSearchingGifs(false);
     }
   };
 
@@ -1491,7 +1517,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               {/* GIF Reaction Selector Drawer */}
               {showGifPicker && (
                 <div className="bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-2 space-y-2 animate-fade shadow-xl">
-                  <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center justify-between px-1 mb-1">
                     <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider">Select GIF Reaction</span>
                     <button
                       onClick={() => setShowGifPicker(false)}
@@ -1501,21 +1527,35 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     </button>
                   </div>
                   
-                  {/* Preset Trending GIFs Grid */}
-                  <div className="grid grid-cols-3 gap-1.5 max-h-[120px] overflow-y-auto pr-1">
-                    {[
+                  <div className="px-1 pb-1">
+                    <input
+                      type="text"
+                      placeholder="Search GIFs..."
+                      value={gifSearchQuery}
+                      onChange={(e) => handleGifSearch(e.target.value)}
+                      className="w-full bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 transition"
+                    />
+                  </div>
+                  
+                  {/* GIFs Grid */}
+                  <div className="grid grid-cols-3 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                    {isSearchingGifs ? (
+                      <div className="col-span-3 text-center py-4 text-xs text-[var(--muted-sunofy)]">Searching...</div>
+                    ) : ((gifSearchResults.length > 0 ? gifSearchResults : [
                       { name: 'Vibe Cat 🐱', url: 'https://i.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif' },
                       { name: 'Party 🕺', url: 'https://i.giphy.com/media/l3vR1v8L3tW9FvRZC/giphy.gif' },
                       { name: 'Mind Blown 🤯', url: 'https://i.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif' },
                       { name: 'Lit Fire 🔥', url: 'https://i.giphy.com/media/3o72FfM5HJydzaMpfO/giphy.gif' },
                       { name: 'Popcorn 🍿', url: 'https://i.giphy.com/media/hVTouq08y8fzW/giphy.gif' },
                       { name: 'Cheers 🍻', url: 'https://i.giphy.com/media/BPJmthQ3YRwD6QqcVD/giphy.gif' },
-                    ].map((gif) => (
+                    ]).map((gif) => (
                       <button
                         key={gif.url}
                         onClick={() => {
                           syncParty.sendMessage(gif.url);
                           setShowGifPicker(false);
+                          setGifSearchQuery('');
+                          setGifSearchResults([]);
                         }}
                         className="relative rounded-xl overflow-hidden aspect-video border border-purple-500/30 hover:border-[var(--accent-sunofy)] hover:scale-105 transition cursor-pointer group"
                       >
@@ -1524,7 +1564,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                           {gif.name}
                         </span>
                       </button>
-                    ))}
+                    )))}
                   </div>
                 </div>
               )}
