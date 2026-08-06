@@ -122,8 +122,18 @@ class MusicAPI {
           const json = await res.json();
           const results = json.data?.results || json.data || (Array.isArray(json) ? json : null);
           if (results && Array.isArray(results) && results.length > 0) {
-            this.setCache(cacheKey, results);
-            return results;
+            const mappedResults = results.map(item => {
+              let imgUrl = '/icon-192.png';
+              if (Array.isArray(item.image) && item.image.length > 0) {
+                const lastImg = item.image[item.image.length - 1];
+                imgUrl = typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || imgUrl);
+              } else if (typeof item.image === 'string' && item.image.length > 5) {
+                imgUrl = item.image;
+              }
+              return { ...item, image: imgUrl };
+            });
+            this.setCache(cacheKey, mappedResults);
+            return mappedResults;
           }
         }
       } catch (e) {}
@@ -146,8 +156,18 @@ class MusicAPI {
           const json = await res.json();
           const results = json.data?.results || json.data || (Array.isArray(json) ? json : null);
           if (results && Array.isArray(results) && results.length > 0) {
-            this.setCache(cacheKey, results);
-            return results;
+            const mappedResults = results.map(item => {
+              let imgUrl = '/icon-192.png';
+              if (Array.isArray(item.image) && item.image.length > 0) {
+                const lastImg = item.image[item.image.length - 1];
+                imgUrl = typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || imgUrl);
+              } else if (typeof item.image === 'string' && item.image.length > 5) {
+                imgUrl = item.image;
+              }
+              return { ...item, image: imgUrl };
+            });
+            this.setCache(cacheKey, mappedResults);
+            return mappedResults;
           }
         }
       } catch (e) {}
@@ -186,7 +206,7 @@ class MusicAPI {
 
   public formatSong(s: any): Track {
     // Extract best image link
-    let imgUrl = './favicon.ico';
+    let imgUrl = '/icon-192.png';
     if (Array.isArray(s.image) && s.image.length > 0) {
       const lastImg = s.image[s.image.length - 1];
       imgUrl = typeof lastImg === 'string' ? lastImg : (lastImg.link || lastImg.url || imgUrl);
@@ -195,7 +215,7 @@ class MusicAPI {
     }
 
     // Extract best download audio stream URL
-    let audioUrl = 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
+    let audioUrl = '';
     if (Array.isArray(s.downloadUrl) && s.downloadUrl.length > 0) {
       const bestStream = s.downloadUrl[s.downloadUrl.length - 1] || s.downloadUrl[2] || s.downloadUrl[0];
       audioUrl = typeof bestStream === 'string' ? bestStream : (bestStream.link || bestStream.url || audioUrl);
