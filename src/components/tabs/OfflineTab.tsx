@@ -488,7 +488,7 @@ export const OfflineTab: React.FC<OfflineTabProps> = ({
                   >
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                       <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--accent-sunofy)]/10 to-[var(--accent-sunofy)]/25 border border-[var(--border-sunofy)] flex items-center justify-center shrink-0">
-                        <img src="./icon-192.png" alt={song.title} className="w-5 h-5 opacity-80 group-hover:scale-110 transition duration-300" />
+                        <img src='/icon-192.png' alt={song.title} className="w-5 h-5 opacity-80 group-hover:scale-110 transition duration-300" />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition rounded-xl">
                           <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
                         </div>

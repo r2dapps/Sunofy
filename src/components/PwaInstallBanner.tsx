@@ -71,7 +71,7 @@ export const PwaInstallBanner: React.FC<PwaInstallBannerProps> = ({ onShowToast 
       <div className="fixed bottom-20 left-4 right-4 max-w-md mx-auto z-40 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white p-3.5 rounded-2xl shadow-2xl border border-white/20 flex items-center justify-between animate-bounce-subtle">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-black/30 backdrop-blur-md flex items-center justify-center p-1 border border-white/20">
-            <img src="./icon-192.png" alt="Sunofy" className="w-full h-full object-cover rounded-lg" />
+            <img src='/icon-192.png' alt="Sunofy" className="w-full h-full object-cover rounded-lg" />
           </div>
           <div>
             <h4 className="text-xs font-black tracking-tight flex items-center gap-1.5">

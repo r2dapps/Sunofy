@@ -510,7 +510,7 @@ export default function App() {
                if (isVideoTrack) {
                   audioRef.current.pause();
                } else {
-                  audioRef.current.src = track.downloadUrl || trackUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
+                  audioRef.current.src = track.downloadUrl || trackUrl || '';
                   if (newState.isPlaying) {
                      audioRef.current.currentTime = newState.currentTime;
                      audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
@@ -883,7 +883,7 @@ export default function App() {
     if (audioRef.current) {
       // Use local offline blob URL if downloaded
       const offlineCopy = downloads.find((d) => d.id === track.id);
-      let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
+      let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || '';
 
       const isYoutubeTrack = ((track as any).isCobalt) || (track as any).url?.includes('youtube.com') || track.downloadUrl?.includes('youtube');
       const needsCobaltExtraction = isYoutubeTrack && musicSource === 'cobalt';
@@ -1037,7 +1037,7 @@ export default function App() {
       setIsPlaying(true);
       if (audioRef.current) {
         const offlineCopy = downloads.find((d) => d.id === prev.id);
-        let src = offlineCopy?.offlineBlobUrl || prev.downloadUrl || 'https://aac.saavncdn.com/274/b7a2d39893d56f6c94481bc265e38600_160.mp3';
+        let src = offlineCopy?.offlineBlobUrl || prev.downloadUrl || '';
         audioRef.current.src = src;
         audioRef.current.play().then(() => {
           initEqualizerWebAudio();
@@ -1122,7 +1122,7 @@ export default function App() {
         title: cleanTitle,
         artist,
         album: 'Device Audio Folder',
-        image: './icon-192.png',
+        image: '/icon-192.png',
         duration: 180,
         downloadUrl: objectUrl,
         hasOfflineAudio: true,

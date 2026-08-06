@@ -91,7 +91,7 @@ export const AppLockOverlay: React.FC<AppLockOverlayProps> = ({ pin, onUnlockSuc
       {/* Top Branding Header */}
       <div className="flex flex-col items-center pt-8 space-y-6">
         <div className="w-20 h-20 rounded-2xl mx-auto overflow-hidden border-2 border-[var(--accent-sunofy)]/50 shadow-[0_0_30px_var(--accent-sunofy)]">
-          <img src="./icon-512.png" alt="Logo" className="w-full h-full object-cover" />
+          <img src='/icon-512.png' alt="Logo" className="w-full h-full object-cover" />
         </div>
         <div className="text-center">
           <h2 className="text-lg font-extrabold text-[var(--text-sunofy)] tracking-wide">Sunofy Music Console</h2>
