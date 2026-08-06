@@ -275,7 +275,7 @@ export default function App() {
   });
 
   // Sleep Timer State
-  const [sleepTimerMinutes, setSleepTimerMinutes] = useState<number | null>(null);
+  const [sleepTimerTarget, setSleepTimerTarget] = useState<number | null>(null);
 
   // Modals visibility
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
@@ -828,21 +828,38 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentTrack, isPlaying, volume]);
 
-  // Sleep Timer Handler
+  // Android Back Button Interceptor — closes open modals instead of closing app
   useEffect(() => {
-    if (sleepTimerTimeoutRef.current) clearTimeout(sleepTimerTimeoutRef.current);
-    if (sleepTimerMinutes !== null) {
-      showToast(`Sleep timer set for ${sleepTimerMinutes} minutes`);
-      sleepTimerTimeoutRef.current = setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          setIsPlaying(false);
-          showToast('Sleep timer expired. Playback paused.');
-          setSleepTimerMinutes(null);
+    const handlePopState = (e: PopStateEvent) => {
+      // If any modal is open, close the top one and push state back
+      if (isFullPlayerOpen) { setIsFullPlayerOpen(false); window.history.pushState(null, '', window.location.href); return; }
+      if (isSearchOpen) { setIsSearchOpen(false); window.history.pushState(null, '', window.location.href); return; }
+      if (isEqualizerOpen) { setIsEqualizerOpen(false); window.history.pushState(null, '', window.location.href); return; }
+      if (isSleepTimerOpen) { setIsSleepTimerOpen(false); window.history.pushState(null, '', window.location.href); return; }
+      if (isCarModeOpen) { setIsCarModeOpen(false); window.history.pushState(null, '', window.location.href); return; }
+    };
+    // Push an initial state so there is history to go "back" to
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isFullPlayerOpen, isSearchOpen, isEqualizerOpen, isSleepTimerOpen, isCarModeOpen]);
+
+  // Sleep Timer Handler (Absolute Timestamp to survive background throttling)
+  useEffect(() => {
+    if (sleepTimerTimeoutRef.current) clearInterval(sleepTimerTimeoutRef.current);
+    if (sleepTimerTarget !== null) {
+      sleepTimerTimeoutRef.current = setInterval(() => {
+        if (Date.now() >= sleepTimerTarget) {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+            showToast('Sleep timer expired. Playback paused.');
+          }
+          setSleepTimerTarget(null);
         }
-      }, sleepTimerMinutes * 60 * 1000);
+      }, 5000);
     }
-  }, [sleepTimerMinutes]);
+  }, [sleepTimerTarget]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -1689,6 +1706,7 @@ export default function App() {
               localStorage.setItem('sunofy_local_source_mode', mode);
             }}
             onPlayTrack={handlePlayTrack}
+            onSetQueue={(q) => setQueue(q)}
             onRemoveDownload={handleRemoveDownload}
             onImportLocalFiles={handleImportLocalFiles}
             onRemoveLocalFolderTrack={handleRemoveLocalFolderTrack}
@@ -1879,8 +1897,8 @@ export default function App() {
       <SleepTimerModal
         isOpen={isSleepTimerOpen}
         onClose={() => setIsSleepTimerOpen(false)}
-        activeMinutes={sleepTimerMinutes}
-        onSetTimer={(min) => setSleepTimerMinutes(min)}
+        activeTargetTime={sleepTimerTarget}
+        onSetTimer={(min) => { if (min) { setSleepTimerTarget(Date.now() + min * 60000); showToast(`Sleep timer set for ${min} minutes`); } else { setSleepTimerTarget(null); } }}
       />
 
       {/* Car Mode Modal */}

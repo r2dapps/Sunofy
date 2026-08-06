@@ -1,42 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, Check, Moon, Volume2, Sparkles } from 'lucide-react';
+import { X, Clock, Check, Moon, Volume2 } from 'lucide-react';
 
 interface SleepTimerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeMinutes: number | null; // null means timer off
+  activeTargetTime: number | null; // absolute timestamp (ms) when timer ends
   onSetTimer: (minutes: number | null) => void;
 }
 
 export const SleepTimerModal: React.FC<SleepTimerModalProps> = ({
   isOpen,
   onClose,
-  activeMinutes,
+  activeTargetTime,
   onSetTimer,
 }) => {
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [fadeoutEnabled, setFadeoutEnabled] = useState(true);
 
+  // Use absolute timestamp to compute remaining seconds — survives background throttling
   useEffect(() => {
-    if (!activeMinutes) {
+    if (activeTargetTime === null) {
       setRemainingSeconds(null);
       return;
     }
 
-    setRemainingSeconds(activeMinutes * 60);
+    const updateRemaining = () => {
+      const diff = Math.max(0, Math.round((activeTargetTime - Date.now()) / 1000));
+      setRemainingSeconds(diff);
+    };
+    updateRemaining();
 
-    const interval = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev === null || prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
+    const interval = setInterval(updateRemaining, 1000);
     return () => clearInterval(interval);
-  }, [activeMinutes]);
+  }, [activeTargetTime]);
 
   if (!isOpen) return null;
 
@@ -78,7 +74,7 @@ export const SleepTimerModal: React.FC<SleepTimerModalProps> = ({
         </div>
 
         {/* Active Countdown Badge */}
-        {activeMinutes && remainingSeconds !== null && (
+        {activeTargetTime !== null && remainingSeconds !== null && (
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[var(--accent-sunofy)]/20 via-purple-500/10 to-indigo-500/20 border border-[var(--accent-sunofy)]/40 flex items-center justify-between shadow-lg">
             <div className="flex items-center space-x-2">
               <Clock className="w-4 h-4 text-[var(--accent-sunofy)] animate-spin" style={{ animationDuration: '8s' }} />
@@ -93,7 +89,10 @@ export const SleepTimerModal: React.FC<SleepTimerModalProps> = ({
         {/* Options List */}
         <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
           {options.map((opt) => {
-            const isSelected = activeMinutes === opt.value;
+            const isSelected = opt.value === null ? activeTargetTime === null : activeTargetTime !== null;
+            const isActiveOff = opt.value === null && activeTargetTime === null;
+            const isActiveOn = opt.value !== null && activeTargetTime !== null;
+            const finalSelected = opt.value === null ? isActiveOff : isActiveOn;
             return (
               <button
                 key={opt.label}
@@ -105,13 +104,13 @@ export const SleepTimerModal: React.FC<SleepTimerModalProps> = ({
                   onClose();
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-2xl border transition cursor-pointer ${
-                  isSelected
+                  finalSelected
                     ? 'bg-[var(--accent-sunofy)]/15 border-[var(--accent-sunofy)] text-[var(--accent-sunofy)] font-bold shadow-md'
                     : 'bg-[var(--bg-sunofy)]/80 border-[var(--border-sunofy)] text-gray-300 hover:border-gray-500'
                 }`}
               >
                 <span className="text-xs">{opt.label}</span>
-                {isSelected && <Check className="w-4 h-4 text-[var(--accent-sunofy)]" />}
+                {finalSelected && <Check className="w-4 h-4 text-[var(--accent-sunofy)]" />}
               </button>
             );
           })}
