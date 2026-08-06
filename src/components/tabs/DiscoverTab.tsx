@@ -56,7 +56,16 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
   onClearLocalFolderTracks,
   isAppLocked = false,
 }) => {
-  const [selectedTag, setSelectedTag] = useState('Telugu Melodies');
+  const [selectedTag, setSelectedTag] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sunofy_discover_tags');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) return parsed[0].query;
+      }
+    } catch(e) {}
+    return 'Trending Hits';
+  });
 
   useEffect(() => {
     if (discoverQuery) {
@@ -94,7 +103,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
       setLoading(true);
       setApiError(false);
       try {
-        const query = selectedTag ? `${selectedTag} Music` : 'Top Telugu Hits';
+        const query = selectedTag ? `${selectedTag}` : 'Trending Hits';
         let tracks: Track[] = [];
         
         if (musicSource === 'youtube' || musicSource === 'cobalt') {
@@ -152,7 +161,7 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
           ];
         } else if (musicSource === 'jiosaavn') {
           try {
-            const searchQuery = selectedTag ? `${selectedTag} Hits` : 'Telugu Top Hits';
+            const searchQuery = selectedTag ? `${selectedTag}` : 'Trending Hits';
             const [fetchedPlaylists, fetchedAlbums] = await Promise.all([
               musicApi.searchPlaylists(searchQuery).catch(() => []),
               musicApi.searchAlbums(searchQuery).catch(() => [])
@@ -229,10 +238,10 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
       if (saved) return JSON.parse(saved);
     } catch(e) {}
     return [
-      { label: 'Language', query: 'Telugu Music' },
-      { label: 'Genre', query: 'Melody Hits' },
-      { label: 'Artist', query: 'Devi Sri Prasad' },
-      { label: 'Singer', query: 'Sid Sriram' }
+      { label: 'Trending', query: 'Trending Hits' },
+      { label: 'Global', query: 'Global Top 50' },
+      { label: 'Vibe', query: 'Lofi & Chill' },
+      { label: 'New', query: 'Latest Releases' }
     ];
   });
 
@@ -248,20 +257,12 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
     setEditingTagLabel(null);
   };
 
-  const quickMoods = [
-    { id: 'qm_1', name: 'Telugu Melodies', query: 'Telugu Melodies 2026', image: './icon-192.png', color: 'from-amber-500/20 to-rose-500/20' },
-    { id: 'qm_2', name: 'Sid Sriram Hits', query: 'Sid Sriram Melodies', image: './icon-192.png', color: 'from-blue-500/20 to-indigo-500/20' },
-    { id: 'qm_3', name: 'Anirudh Beats', query: 'Anirudh Ravichander Telugu', image: './icon-192.png', color: 'from-emerald-500/20 to-teal-500/20' },
-    { id: 'qm_4', name: 'Tollywood 2026', query: 'Telugu Top Hits 2026', image: './icon-192.png', color: 'from-purple-500/20 to-pink-500/20' },
-  ];
-
-  const popularArtists = [
-    { id: 'pa_1', name: 'Sid Sriram', query: 'Sid Sriram Telugu Hits', image: './icon-192.png' },
-    { id: 'pa_2', name: 'Anirudh Ravichander', query: 'Anirudh Ravichander Telugu', image: './icon-192.png' },
-    { id: 'pa_3', name: 'Thaman S', query: 'Thaman S Hits Telugu', image: './icon-192.png' },
-    { id: 'pa_4', name: 'Devi Sri Prasad', query: 'Devi Sri Prasad Telugu Hits', image: './icon-192.png' },
-    { id: 'pa_5', name: 'Shreya Ghoshal', query: 'Shreya Ghoshal Telugu Melodies', image: './icon-192.png' },
-  ];
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
   const isFavorited = (track: Track) => favorites?.songs.some(s => s.id === track.id);
   const isDownloaded = (track: Track) => downloads?.some(s => s.id === track.id);
@@ -331,6 +332,16 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
 
   return (
     <div className="space-y-7 pb-28 animate-fade">
+      {/* Personalized Greeting */}
+      <div className="px-2 pt-2">
+        <h2 className="text-2xl font-black text-[var(--text-sunofy)] tracking-tight">
+          {getGreeting()}<span className="text-[var(--accent-sunofy)]">.</span>
+        </h2>
+        <p className="text-xs font-semibold text-[var(--muted-sunofy)] mt-1">
+          Explore music {musicSource === 'jiosaavn' ? 'from JioSaavn' : musicSource === 'youtube' ? 'from YT Music' : 'from your library'}
+        </p>
+      </div>
+
       {/* Top Header Category Filter Pills */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 px-1">
         {savedTags.map((tag) => {
@@ -858,78 +869,6 @@ export const DiscoverTab: React.FC<DiscoverTabProps> = ({
 
       </div>
       )}
-
-      {/* Quick Moods & Playlists Grid */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-sm font-black text-[var(--text-sunofy)] flex items-center gap-2">
-            <Flame className="w-4 h-4 text-[var(--accent-sunofy)]" /> Quick Moods & Vibes
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {quickMoods.map((mood) => (
-            <div
-              key={mood.id}
-              onClick={() => handlePlayCollection(mood.query)}
-              className={`relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-br ${mood.color} bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] shadow-md hover:border-[var(--accent-sunofy)]/50 transition duration-300 group cursor-pointer flex items-center gap-3`}
-            >
-              <img
-                src={mood.image}
-                alt={mood.name}
-                className="w-11 h-11 rounded-2xl aspect-square object-cover shadow-md group-hover:scale-105 transition duration-300"
-                referrerPolicy="no-referrer"
-              />
-              <div className="min-w-0 flex-1">
-                <h4 className="text-xs font-black text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)]">
-                  {mood.name}
-                </h4>
-                <span className="text-[10px] font-semibold text-[var(--muted-sunofy)]">Quick Play</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Top Telugu Artists Carousel */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-sm font-black text-[var(--text-sunofy)] flex items-center gap-2">
-            <User className="w-4 h-4 text-[var(--accent-sunofy)]" /> Top Telugu Artists
-          </h3>
-        </div>
-
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-2 px-1">
-          {popularArtists.map((artist) => (
-            <div
-              key={artist.id}
-              onClick={() => handlePlayCollection(artist.query)}
-              className="min-w-[90px] w-[90px] shrink-0 text-center group cursor-pointer"
-            >
-              <div className="relative w-18 h-18 rounded-full overflow-hidden mx-auto mb-2 border-2 border-[var(--border-sunofy)] group-hover:border-[var(--accent-sunofy)] transition shadow-lg">
-                {imageErrors[artist.id] ? (
-                  <div className="w-full h-full bg-gradient-to-tr from-[var(--accent-sunofy)]/20 to-[var(--accent-sunofy)]/40 flex items-center justify-center text-xs font-black text-[var(--accent-sunofy)] uppercase">
-                    {artist.name.split(' ').slice(0, 2).map(n => n[0]).join('')}
-                  </div>
-                ) : (
-                  <img
-                    src={artist.image}
-                    alt={artist.name}
-                    onError={() => handleImageError(artist.id)}
-                    className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                  />
-                )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                  <Play className="w-5 h-5 text-white ml-0.5" fill="currentColor" />
-                </div>
-              </div>
-              <p className="text-xs font-bold text-[var(--text-sunofy)] truncate group-hover:text-[var(--accent-sunofy)] transition">
-                {artist.name}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Playlist Picker Modal */}
       {(playlistModalTrack || playlistModalAlbum) && (
