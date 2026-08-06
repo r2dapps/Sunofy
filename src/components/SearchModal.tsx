@@ -464,14 +464,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
             <button
               onClick={() => {
                 onClose();
-                window.dispatchEvent(new CustomEvent('sunofy:switch_tab', { detail: 'Profile' }));
-                setTimeout(() => {
-                  document.getElementById('engine-switcher')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 150);
+                window.dispatchEvent(new CustomEvent('sunofy:switch_tab', { detail: 'Offline' }));
               }}
               className="px-6 py-2.5 rounded-xl bg-[var(--accent-sunofy)] text-black font-bold shadow-md hover:scale-105 transition flex items-center justify-center gap-2 mx-auto cursor-pointer"
             >
-              Go to Engine Settings
+              Go to Offline Tab
             </button>
           </div>
         )}
