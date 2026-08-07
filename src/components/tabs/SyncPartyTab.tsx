@@ -809,7 +809,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const isVideoTrack = curTrack ? (curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com')) : false;
 
   return (
-    <div className="space-y-3 animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col flex-1 h-full min-h-0">
+    <div className="animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col h-full min-h-0 w-full overflow-hidden">
       {/* Live Voice Active Speaker Floating Indicator */}
       {activeSpeaker && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-black font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce-subtle backdrop-blur-md border border-emerald-300">
@@ -818,9 +818,71 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         </div>
       )}
 
-      {/* Unified Master Live Watch Party Stage Container (No Outer Box Border for Seamless Blend) */}
+      {/* Pinned Top Room Header Bar */}
+      <div className="sticky top-0 z-40 bg-[#0a0d18]/95 border-b border-purple-500/20 px-3 py-2 flex items-center justify-between backdrop-blur-md shrink-0 gap-2 shadow-md">
+        {/* Left Side: Radio Icon + Room Code + Share */}
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shadow-inner shrink-0 relative">
+            <Radio className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
+            {syncState.isHost && (
+              <div className="absolute -top-1 -right-1 bg-amber-500 text-black rounded-full p-0.5" title="Host">
+                <Crown className="w-2.5 h-2.5" />
+              </div>
+            )}
+          </div>
+          
+          {/* Combined Room Code + Copy + Share Pill */}
+          <div className="font-mono text-xs font-bold text-[var(--accent-sunofy)] bg-black/60 px-2.5 py-1 rounded-xl border border-[var(--border-sunofy)] flex items-center space-x-1.5 shrink-0 shadow-inner">
+            <span className="tracking-wider text-[11px]">#{syncState.roomCode}</span>
+            <div className="w-px h-3 bg-[var(--border-sunofy)] opacity-50" />
+            <button
+              onClick={handleCopyCode}
+              className="p-1 hover:text-white transition cursor-pointer"
+              title="Copy Room Code"
+            >
+              <Copy className="w-3.5 h-3.5 opacity-80 hover:opacity-100" />
+            </button>
+            <button
+              onClick={handleShareLink}
+              className="p-1 text-purple-300 hover:text-white transition cursor-pointer"
+              title="Share Room Link"
+            >
+              <Share2 className="w-3.5 h-3.5 opacity-80 hover:opacity-100" />
+            </button>
+          </div>
+
+          {/* Equalizer button */}
+          <button
+            onClick={() => {
+              if (onOpenEqualizer) onOpenEqualizer();
+              else onShowToast('Equalizer opened');
+            }}
+            className="w-8 h-8 rounded-xl bg-purple-600/20 hover:bg-purple-600 border border-purple-500/30 text-purple-300 hover:text-white transition cursor-pointer flex items-center justify-center"
+            title="Audio Equalizer"
+          >
+            <Settings2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Right Side: Live Status + Exit */}
+        <div className="flex items-center space-x-2 shrink-0">
+          <div className="h-8 px-3 bg-purple-500/20 rounded-xl border border-purple-400/30 flex items-center" title={syncState.isPlaying ? 'Listening Live' : 'Paused'}>
+            <LiveAudioWave isPlaying={syncState.isPlaying} />
+          </div>
+
+          <button
+            onClick={() => setShowLeaveConfirm(true)}
+            className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition cursor-pointer flex items-center justify-center"
+            title="Exit Party"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Unified Master Live Watch Party Stage Container */}
       <div className={`bg-gradient-to-b from-purple-950/40 via-[#0a0d18] to-[var(--bg-sunofy)] rounded-3xl relative overflow-hidden flex flex-col justify-between text-center transition-all duration-300 ${
-        isConsoleMinimized ? 'flex-1 min-h-[340px] p-3.5 sm:p-6' : 'shrink-0 p-2.5 sm:p-3 space-y-2'
+        isConsoleMinimized ? 'flex-1 min-h-0 p-3.5 sm:p-6' : 'shrink-0 p-2.5 sm:p-3 space-y-2'
       }`}>
         {/* Blended Background Ambient Art & Pulsing Particles Glow */}
         {curTrack?.image && (
@@ -843,68 +905,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             {fe.emoji}
           </div>
         ))}
-
-        {/* Integrated Room Header Bar - Compact Icons Only */}
-        <div className="bg-black/40 border-b border-purple-500/20 px-3 py-2 flex items-center justify-between backdrop-blur-md shrink-0 relative z-20 rounded-2xl gap-2">
-          {/* Left Side: Radio Icon + Room Code + Share */}
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shadow-inner shrink-0 relative">
-              <Radio className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
-              {syncState.isHost && (
-                <div className="absolute -top-1 -right-1 bg-amber-500 text-black rounded-full p-0.5" title="Host">
-                  <Crown className="w-2.5 h-2.5" />
-                </div>
-              )}
-            </div>
-            
-            {/* Combined Room Code + Copy + Share Pill */}
-            <div className="font-mono text-xs font-bold text-[var(--accent-sunofy)] bg-black/60 px-2.5 py-1 rounded-xl border border-[var(--border-sunofy)] flex items-center space-x-1.5 shrink-0 shadow-inner">
-              <span className="tracking-wider text-[11px]">#{syncState.roomCode}</span>
-              <div className="w-px h-3 bg-[var(--border-sunofy)] opacity-50" />
-              <button
-                onClick={handleCopyCode}
-                className="p-1 hover:text-white transition cursor-pointer"
-                title="Copy Room Code"
-              >
-                <Copy className="w-3.5 h-3.5 opacity-80 hover:opacity-100" />
-              </button>
-              <button
-                onClick={handleShareLink}
-                className="p-1 text-purple-300 hover:text-white transition cursor-pointer"
-                title="Share Room Link"
-              >
-                <Share2 className="w-3.5 h-3.5 opacity-80 hover:opacity-100" />
-              </button>
-            </div>
-
-            {/* Equalizer button */}
-            <button
-              onClick={() => {
-                if (onOpenEqualizer) onOpenEqualizer();
-                else onShowToast('Equalizer opened');
-              }}
-              className="w-8 h-8 rounded-xl bg-purple-600/20 hover:bg-purple-600 border border-purple-500/30 text-purple-300 hover:text-white transition cursor-pointer flex items-center justify-center"
-              title="Audio Equalizer"
-            >
-              <Settings2 className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Right Side: Live Status + Exit */}
-          <div className="flex items-center space-x-2 shrink-0">
-            <div className="h-8 px-3 bg-purple-500/20 rounded-xl border border-purple-400/30 flex items-center" title={syncState.isPlaying ? 'Listening Live' : 'Paused'}>
-              <LiveAudioWave isPlaying={syncState.isPlaying} />
-            </div>
-
-            <button
-              onClick={() => setShowLeaveConfirm(true)}
-              className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition cursor-pointer flex items-center justify-center"
-              title="Exit Party"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
 
         {curTrack ? (
           <div className="relative z-10 space-y-1.5 sm:space-y-3 flex-1 flex flex-col justify-between py-1">
@@ -1122,7 +1122,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
 
         {/* Icon-Only Tab Header Bar (Native Bottom Nav Bar Style) */}
-        <div className={`bg-[#0a0a0f]/95 border-t border-[var(--border-sunofy)] flex items-center justify-between gap-1.5 backdrop-blur-2xl shadow-lg z-50 transition-all duration-300 ${isConsoleMinimized ? 'rounded-2xl border px-2 py-1 mx-2 mb-2' : 'absolute bottom-0 left-0 right-0 h-[48px]'}`}>
+        <div className={`bg-[#0a0a0f]/95 border-t border-[var(--border-sunofy)] flex items-center justify-between gap-1.5 backdrop-blur-2xl shadow-lg z-50 transition-all duration-300 ${isConsoleMinimized ? 'rounded-2xl border px-2 py-1 mx-2 mb-2' : 'sticky bottom-0 left-0 right-0 h-[48px]'}`}>
           {/* Scrollable sub-tabs container */}
           <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 min-w-0 py-0.5 pr-1">
             {/* 1. Search Music */}
@@ -1245,7 +1245,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
         {/* Tab Content Body (Hidden when console is minimized) */}
         {!isConsoleMinimized && (
-          <div className={`flex-1 p-4 pb-[80px] custom-scrollbar ${activeTab === 'chat' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto space-y-3'}`}>
+          <div className={`flex-1 p-4 custom-scrollbar ${activeTab === 'chat' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto space-y-3'}`}>
             {/* SUB-TAB 1: Party Queue */}
             {activeTab === 'queue' && (
               <div className="space-y-2 animate-fade">
