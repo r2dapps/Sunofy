@@ -39,10 +39,23 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-      return fetch(event.request).catch(() => {
-        // Fallback gracefully
-        return new Response('', { status: 404, statusText: 'Not Found' });
-      });
+      return fetch(event.request)
+        .then((response) => {
+          // Check if we received a valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+          // Clone the response because it's a stream and can only be consumed once
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Fallback gracefully for images/assets if offline
+          return new Response('', { status: 404, statusText: 'Not Found' });
+        });
     })
   );
 });
