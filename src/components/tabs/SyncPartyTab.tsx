@@ -157,6 +157,18 @@ interface SyncPartyTabProps {
   musicSource?: 'jiosaavn' | 'youtube' | 'local';
   downloads?: Track[];
   onOpenEqualizer?: () => void;
+  onSeek?: (timeSecs: number) => void;
+}
+
+function parseDurationSecs(dur?: string | number): number {
+  if (!dur) return 0;
+  if (typeof dur === 'number') return dur;
+  const parts = String(dur).split(':').map(Number);
+  if (parts.some(isNaN)) return 0;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 1) return parts[0];
+  return 0;
 }
 
 const GIF_CATEGORIES = {
@@ -325,6 +337,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   musicSource = 'jiosaavn',
   downloads = [],
   onOpenEqualizer,
+  onSeek,
 }) => {
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1056,7 +1069,8 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
               {/* Timeline Progress Bar (Host gets Knob & Seek; Listener gets Read-Only Line) */}
               {(() => {
-                const pct = syncState.duration > 0 ? (localTime / syncState.duration) * 100 : 0;
+                const activeDuration = syncState.duration || curTrack?.duration || (isVideoTrack ? 300 : 210);
+                const pct = activeDuration > 0 ? (localTime / activeDuration) * 100 : 0;
                 return (
                   <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
                     <span>{formatTime(localTime)}</span>
@@ -1071,7 +1085,13 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                         const rect = target.getBoundingClientRect();
                         const updateSeek = (clientX: number) => {
                           const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-                          syncParty.seek(pos * syncState.duration);
+                          const targetTime = pos * activeDuration;
+                          setLocalTime(targetTime);
+                          if (onSeek) {
+                            onSeek(targetTime);
+                          } else {
+                            syncParty.seek(targetTime);
+                          }
                         };
                         updateSeek(e.clientX);
 
@@ -1098,7 +1118,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                         )}
                       </div>
                     </div>
-                    <span>{formatTime(syncState.duration)}</span>
+                    <span>{formatTime(activeDuration)}</span>
                   </div>
                 );
               })()}
@@ -1688,14 +1708,15 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   onShowToast={onShowToast}
                   isEmbeddedInSyncParty={true}
                   onVideoSelect={(vid) => {
+                    const durSecs = parseDurationSecs(vid.duration);
                     const newTrack: Track = {
                       id: 'vid_' + Date.now(),
                       title: vid.title || 'Watch Party Video',
                       artist: (vid.type ? vid.type.toUpperCase() : 'PARTY') + ' Video',
                       album: 'Watch Party',
-                      duration: 0,
+                      duration: durSecs || 300,
                       downloadUrl: vid.url,
-                      image: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=350&fit=crop',
+                      image: vid.thumbnail || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&h=350&fit=crop',
                       mediaType: 'video'
                     };
                     syncParty.addTrackToQueue(newTrack, syncState.isHost ? 'Host' : 'Member');

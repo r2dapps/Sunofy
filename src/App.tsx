@@ -674,12 +674,12 @@ export default function App() {
     }
   }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying]);
 
-  // Listener Drift Correction (only adjusts if out of sync by > 5s without triggering play re-calls)
+  // Listener Drift Correction (only adjusts if out of sync by > 1.5s without triggering play re-calls)
   useEffect(() => {
     if (!syncState.inRoom || syncState.isHost || !audioRef.current || !syncState.isPlaying) return;
     const audio = audioRef.current;
     const drift = Math.abs(audio.currentTime - syncState.currentTime);
-    if (drift > 5 && syncState.currentTime >= 0) {
+    if (drift > 1.5 && syncState.currentTime >= 0) {
       try {
         audio.currentTime = syncState.currentTime;
       } catch (e) {}
@@ -1834,6 +1834,7 @@ export default function App() {
             musicSource={musicSource}
             downloads={downloads}
             onOpenEqualizer={handleOpenEqualizer}
+            onSeek={handleSeek}
           />
         )}
         {currentTab === 'Profile' && (
