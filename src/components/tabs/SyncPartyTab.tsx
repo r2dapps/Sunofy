@@ -1125,7 +1125,46 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         <div className={`bg-[#0a0a0f]/95 border-t border-[var(--border-sunofy)] flex items-center justify-between gap-1.5 backdrop-blur-2xl shadow-lg z-50 transition-all duration-300 ${isConsoleMinimized ? 'rounded-2xl border px-2 py-1 mx-2 mb-2' : 'absolute bottom-0 left-0 right-0 h-[48px]'}`}>
           {/* Scrollable sub-tabs container */}
           <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 min-w-0 py-0.5 pr-1">
-            {/* 1. Queue */}
+            {/* 1. Search Music */}
+            <button
+              onClick={() => handleSelectTab('search_music')}
+              title="Search Songs Online"
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
+                activeTab === 'search_music'
+                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
+              }`}
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            {/* 2. My Library */}
+            <button
+              onClick={() => handleSelectTab('library')}
+              title="My Library (Favorites, Playlists & Offline)"
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
+                activeTab === 'library'
+                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
+              }`}
+            >
+              <Music2 className="w-4 h-4" />
+            </button>
+
+            {/* 3. Search Videos */}
+            <button
+              onClick={() => handleSelectTab('video_search')}
+              title="Search & Queue Watch Party Videos"
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
+                activeTab === 'video_search'
+                  ? 'bg-purple-600 text-white shadow-md font-bold'
+                  : 'text-purple-400 hover:text-purple-300 hover:bg-[var(--border-sunofy)]'
+              }`}
+            >
+              <Film className="w-4 h-4" />
+            </button>
+
+            {/* 4. Queue */}
             <button
               onClick={() => handleSelectTab('queue')}
               title={`Party Queue (${syncState.queue.length})`}
@@ -1139,45 +1178,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'queue' ? 'bg-black/20 text-black' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
                 {syncState.queue.length}
               </span>
-            </button>
-
-            {/* 2. Search Music */}
-            <button
-              onClick={() => handleSelectTab('search_music')}
-              title="Search Songs Online"
-              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
-                activeTab === 'search_music'
-                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
-                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-              }`}
-            >
-              <Search className="w-4 h-4" />
-            </button>
-
-            {/* 3. My Library */}
-            <button
-              onClick={() => handleSelectTab('library')}
-              title="My Library (Favorites, Playlists & Offline)"
-              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
-                activeTab === 'library'
-                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
-                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-              }`}
-            >
-              <Music2 className="w-4 h-4" />
-            </button>
-
-            {/* 4. Search Videos */}
-            <button
-              onClick={() => handleSelectTab('video_search')}
-              title="Search & Queue Watch Party Videos"
-              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer shrink-0 ${
-                activeTab === 'video_search'
-                  ? 'bg-purple-600 text-white shadow-md font-bold'
-                  : 'text-purple-400 hover:text-purple-300 hover:bg-[var(--border-sunofy)]'
-              }`}
-            >
-              <Film className="w-4 h-4" />
             </button>
 
             {/* 5. Chat */}
