@@ -1087,7 +1087,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       }}
                     >
                       <div
-                        className="bg-[var(--accent-sunofy)] h-full transition-all duration-75 rounded-full shadow-[0_0_8px_rgba(29,185,84,0.6)] relative"
+                        className="bg-[var(--accent-sunofy)] h-full rounded-full shadow-[0_0_8px_rgba(29,185,84,0.6)] relative"
                         style={{ width: `${pct}%` }}
                       >
                         {/* Host White Draggable Knob */}

@@ -361,7 +361,7 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
                 }}
               >
                 <div
-                  className="bg-[var(--accent-sunofy)] h-full rounded-full relative transition-all duration-75 shadow-[0_0_8px_rgba(29,185,84,0.6)]"
+                  className="bg-[var(--accent-sunofy)] h-full rounded-full relative shadow-[0_0_8px_rgba(29,185,84,0.6)]"
                   style={{ width: `${progressPct}%` }}
                 >
                   {/* Glowing Slider Circular Knob/Thumb */}
