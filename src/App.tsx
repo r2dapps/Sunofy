@@ -2042,7 +2042,7 @@ export default function App() {
       {globalYtId && (
         <iframe
           ref={ytIframeRef}
-          src={`https://www.youtube.com/embed/${globalYtId}?autoplay=${isPlaying ? 1 : 0}&controls=0&disablekb=1&modestbranding=1&playsinline=1&enablejsapi=1&mute=0&loop=1&playlist=${globalYtId}`}
+          src={`https://www.youtube.com/embed/${globalYtId}?autoplay=${isPlaying ? 1 : 0}&controls=0&disablekb=1&modestbranding=1&playsinline=1&enablejsapi=1&mute=0`}
           className="fixed bottom-0 left-0 w-1 h-1 opacity-0 pointer-events-none z-[-1]"
           allow="autoplay; encrypted-media"
           title="YouTube Background Player"

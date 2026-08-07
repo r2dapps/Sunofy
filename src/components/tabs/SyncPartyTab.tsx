@@ -921,7 +921,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   >
                     {ytId ? (
                       <iframe
-                        key={ytId + '_' + startSec}
+                        key={ytId}
                         src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=${syncState.isPlaying ? 1 : 0}&start=${startSec}&controls=${syncState.isHost ? 1 : 0}&disablekb=1&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`}
                         className={`w-full h-full border-0 ${!syncState.isHost ? 'pointer-events-none select-none' : ''}`}
                         allow="autoplay; encrypted-media; picture-in-picture"
