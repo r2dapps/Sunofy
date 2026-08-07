@@ -222,8 +222,10 @@ class SyncPartyManager {
        const data = snapshot.val();
        if (data) {
          this.state.chat = Object.values(data);
-         this.notify();
+       } else {
+         this.state.chat = [];
        }
+       this.notify();
     });
 
     // Listen to queue changes
@@ -231,8 +233,10 @@ class SyncPartyManager {
       const data = snapshot.val();
       if (data) {
         this.state.queue = Object.values(data);
-        this.notify();
+      } else {
+        this.state.queue = [];
       }
+      this.notify();
     });
 
     // Listen to requests
@@ -331,8 +335,10 @@ class SyncPartyManager {
            const data = snap.val();
            if (data) {
              this.state.chat = Object.values(data);
-             this.notify();
+           } else {
+             this.state.chat = [];
            }
+           this.notify();
         });
 
         // Listen to mic permissions
@@ -369,8 +375,10 @@ class SyncPartyManager {
            const data = snap.val();
            if (data) {
              this.state.queue = Object.values(data);
-             this.notify();
+           } else {
+             this.state.queue = [];
            }
+           this.notify();
         });
         
         // Listen to members

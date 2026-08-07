@@ -548,7 +548,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   // Auto-scroll chat to latest message
   React.useEffect(() => {
     if (activeTab === 'chat' && !isConsoleMinimized) {
-      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }
   }, [syncState.chat.length, activeTab, isConsoleMinimized]);
 
@@ -1114,11 +1116,11 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
       </div>
 
       {/* Bottom Sub-Tabs Console (Docked Bottom Nav Bar Card) */}
-      <div className={`bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-2xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 ${
-        isConsoleMinimized ? 'shrink-0 mt-auto shadow-2xl border-t-[var(--accent-sunofy)]/30' : 'flex-1 min-h-0'
+      <div className={`flex flex-col transition-all duration-300 ${
+        isConsoleMinimized ? 'shrink-0 mt-auto' : 'flex-1 min-h-0 bg-[#0a0a0f]/80 backdrop-blur-2xl rounded-t-3xl border-t border-[var(--border-sunofy)] overflow-hidden relative z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]'
       }`}>
         {/* Icon-Only Tab Header Bar (Native Bottom Nav Bar Style) */}
-        <div className="bg-[#0c0e1a]/95 border-b border-[var(--border-sunofy)] p-1.5 flex items-center justify-between gap-1.5 backdrop-blur-xl shadow-lg">
+        <div className={`bg-[#0a0a0f]/95 border-t border-[var(--border-sunofy)] flex items-center justify-between gap-1.5 backdrop-blur-2xl shadow-lg z-50 transition-all duration-300 ${isConsoleMinimized ? 'rounded-2xl border px-2 py-1 mx-2 mb-2' : 'absolute bottom-0 left-0 right-0 h-[48px]'}`}>
           {/* Scrollable sub-tabs container */}
           <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 min-w-0 py-0.5 pr-1">
             {/* 1. Queue */}
@@ -1242,16 +1244,16 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             <button
               onClick={() => setIsConsoleMinimized(!isConsoleMinimized)}
               title={isConsoleMinimized ? "Expand Console" : "Minimize Console"}
-              className="p-2 rounded-xl text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)] transition cursor-pointer shrink-0"
+              className="p-2 rounded-xl text-[var(--muted-sunofy)] hover:text-white hover:bg-[var(--border-sunofy)] transition cursor-pointer shrink-0"
             >
               {isConsoleMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        {/* Tab Body View (Hidden when console is minimized) */}
+        {/* Tab Content Body (Hidden when console is minimized) */}
         {!isConsoleMinimized && (
-          <div className="p-3 sm:p-4 space-y-3 flex-1 overflow-y-auto min-h-0">
+          <div className={`flex-1 p-4 pb-[80px] custom-scrollbar ${activeTab === 'chat' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto space-y-3'}`}>
             {/* SUB-TAB 1: Party Queue */}
             {activeTab === 'queue' && (
               <div className="space-y-2 animate-fade">
@@ -1585,9 +1587,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
           {/* TAB 3: Room Chat */}
           {activeTab === 'chat' && (
-            <div className="space-y-2 animate-fade flex flex-col h-[250px]">
+            <div className="flex flex-col h-full animate-fade min-h-0">
               {/* Message List */}
-              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+              <div className="flex-1 overflow-y-auto pr-1 flex flex-col space-y-2 pb-2">
+                <div className="flex-1 min-h-0"></div>
                 {syncState.chat.length === 0 ? (
                   <div className="text-center py-10 text-xs text-[var(--muted-sunofy)]">No messages yet. Say hi to the room!</div>
                 ) : (
@@ -1596,7 +1599,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     return (
                       <div
                         key={c.id}
-                        className={`p-2.5 rounded-2xl text-xs flex flex-col ${
+                        className={`py-1.5 px-3 rounded-2xl text-xs flex flex-col ${
                           c.isSystem
                             ? 'text-[10px] text-[var(--muted-sunofy)] text-center py-1 font-medium bg-black/10 rounded-lg my-1'
                             : isMyMessage
