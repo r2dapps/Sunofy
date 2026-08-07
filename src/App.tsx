@@ -620,15 +620,19 @@ export default function App() {
     const track = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
 
     if (track) {
-      const src = track.downloadUrl || track.url || '';
-      // Bypass video tracks & YouTube links from native <audio> element to prevent NotSupportedError
-      const isVideoTrack = 
+      const offlineCopy = downloads.find((d) => d.id === track.id);
+      const offlineBlob = offlineCopy?.offlineBlobUrl || (track as any).offlineBlobUrl;
+      const src = offlineBlob || track.downloadUrl || track.url || '';
+
+      // Bypass video tracks & YouTube links from native <audio> element ONLY if not downloaded offline
+      const isVideoTrack = !offlineBlob && (
         track.mediaType === 'video' || 
         (track as any).isVideo || 
         src.includes('youtube') || 
         src.includes('youtu.be') || 
         track.url?.includes('youtube') || 
-        track.url?.includes('youtu.be');
+        track.url?.includes('youtu.be')
+      );
 
       if (!src || isVideoTrack) {
         if (!audio.paused) audio.pause();
@@ -971,12 +975,13 @@ export default function App() {
     if (audioRef.current) {
       // Use local offline blob URL if downloaded
       const offlineCopy = downloads.find((d) => d.id === track.id);
-      let src = offlineCopy?.offlineBlobUrl || track.downloadUrl || '';
+      const offlineBlob = offlineCopy?.offlineBlobUrl || (track as any).offlineBlobUrl;
+      let src = offlineBlob || track.downloadUrl || '';
 
-      const isYoutubeTrack = ((track as any).isCobalt) || (track as any).url?.includes('youtube.com') || track.downloadUrl?.includes('youtube');
+      const isYoutubeTrack = !offlineBlob && (((track as any).isCobalt) || (track as any).url?.includes('youtube.com') || track.downloadUrl?.includes('youtube'));
       const needsCobaltExtraction = isYoutubeTrack && musicSource === 'cobalt';
       
-      if (needsCobaltExtraction && !offlineCopy) {
+      if (needsCobaltExtraction) {
         showToast('Extracting audio stream...');
         try {
           const ytUrl = (track.downloadUrl && track.downloadUrl.startsWith('http') && !track.downloadUrl.includes('saavncdn'))
@@ -993,9 +998,8 @@ export default function App() {
           showToast('Stream extraction failed. Check Cobalt API.');
           return;
         }
-      } else if (isYoutubeTrack && !offlineCopy) {
-         // If it's a YT track but we're in JioSaavn mode, bypass native <audio> completely
-         // The MiniPlayer's hidden iframe will handle the playback instead
+      } else if (isYoutubeTrack) {
+         // If it's an online YT track without offline audio in JioSaavn mode, bypass native <audio>
          audioRef.current.pause();
          return;
       }

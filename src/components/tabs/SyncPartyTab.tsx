@@ -1454,28 +1454,70 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block px-1">
                         Offline Downloaded Songs ({downloads.length})
                       </span>
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)]">
-                        <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-                            <Download className="w-4 h-4" />
+                      <div className="flex flex-col rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] overflow-hidden">
+                        <div
+                          onClick={() => setExpandedPlaylists(prev => ({ ...prev, offline: !prev.offline }))}
+                          className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-white/5 transition"
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                              <Download className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-[var(--text-sunofy)] truncate">All Offline Downloaded Songs</p>
+                              <p className="text-[10px] text-[var(--muted-sunofy)]">{downloads.length} Local Tracks</p>
+                            </div>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-[var(--text-sunofy)] truncate">All Offline Downloaded Songs</p>
-                            <p className="text-[10px] text-[var(--muted-sunofy)]">{downloads.length} Local Tracks</p>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                downloads.forEach((song) => {
+                                  syncParty.addTrackToQueue(song, syncState.isHost ? 'Host' : 'Member');
+                                });
+                                onShowToast(syncState.isHost ? `Imported ${downloads.length} offline songs to Party!` : `Requested offline songs for Host approval!`);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-500 text-white font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span className="hidden sm:inline">{syncState.isHost ? 'Import All' : 'Request All'}</span>
+                            </button>
+                            {expandedPlaylists['offline'] ? <ChevronUp className="w-4 h-4 text-[var(--muted-sunofy)]" /> : <ChevronDown className="w-4 h-4 text-[var(--muted-sunofy)]" />}
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            downloads.forEach((song) => {
-                              syncParty.addTrackToQueue(song, syncState.isHost ? 'Host' : 'Member');
-                            });
-                            onShowToast(syncState.isHost ? `Imported ${downloads.length} offline songs to Party!` : `Requested offline songs for Host approval!`);
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-blue-500 text-white font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>{syncState.isHost ? 'Import All' : 'Request All'}</span>
-                        </button>
+
+                        {/* Expanded Offline Tracks */}
+                        {expandedPlaylists['offline'] && (
+                          <div className="border-t border-[var(--border-sunofy)] divide-y divide-[var(--border-sunofy)]/50 bg-black/20 max-h-48 overflow-y-auto custom-scrollbar">
+                            {downloads.map((track, i) => (
+                              <div key={`off-${track.id}-${i}`} className="flex items-center justify-between p-2 pl-3 hover:bg-[var(--border-sunofy)]/50 group">
+                                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                  {track.image ? (
+                                    <img src={track.image} alt={track.title} className="w-6 h-6 rounded object-cover" />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded bg-blue-500/20 flex items-center justify-center">
+                                      <Music className="w-3 h-3 text-blue-400" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-[10px] font-semibold text-[var(--text-sunofy)] truncate">{track.title}</p>
+                                    <p className="text-[9px] text-[var(--muted-sunofy)] truncate">{track.artist}</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    syncParty.addTrackToQueue(track, syncState.isHost ? 'Host' : 'Member');
+                                    onShowToast(`Added "${track.title}" to Sync Party`);
+                                  }}
+                                  className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition cursor-pointer shrink-0 ml-1"
+                                  title="Add to Party Queue"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1486,28 +1528,70 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       <span className="text-[10px] font-bold text-pink-400 uppercase tracking-wider block px-1">
                         Liked Favorites ({favorites.songs.length})
                       </span>
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)]">
-                        <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                          <div className="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
-                            <Heart className="w-4 h-4 fill-pink-400" />
+                      <div className="flex flex-col rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] overflow-hidden">
+                        <div
+                          onClick={() => setExpandedPlaylists(prev => ({ ...prev, favorites: !prev.favorites }))}
+                          className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-white/5 transition"
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                            <div className="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
+                              <Heart className="w-4 h-4 fill-pink-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-[var(--text-sunofy)] truncate">All Liked Favorite Songs</p>
+                              <p className="text-[10px] text-[var(--muted-sunofy)]">{favorites.songs.length} Tracks</p>
+                            </div>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-[var(--text-sunofy)] truncate">All Liked Favorite Songs</p>
-                            <p className="text-[10px] text-[var(--muted-sunofy)]">{favorites.songs.length} Tracks</p>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                favorites.songs.forEach((song) => {
+                                  syncParty.addTrackToQueue(song, syncState.isHost ? 'Host' : 'Member');
+                                });
+                                onShowToast(syncState.isHost ? `Imported ${favorites.songs.length} songs to Party!` : `Requested songs for Host approval!`);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span className="hidden sm:inline">{syncState.isHost ? 'Import All' : 'Request All'}</span>
+                            </button>
+                            {expandedPlaylists['favorites'] ? <ChevronUp className="w-4 h-4 text-[var(--muted-sunofy)]" /> : <ChevronDown className="w-4 h-4 text-[var(--muted-sunofy)]" />}
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            favorites.songs.forEach((song) => {
-                              syncParty.addTrackToQueue(song, syncState.isHost ? 'Host' : 'Member');
-                            });
-                            onShowToast(syncState.isHost ? `Imported ${favorites.songs.length} songs to Party!` : `Requested songs for Host approval!`);
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>{syncState.isHost ? 'Import All' : 'Request All'}</span>
-                        </button>
+
+                        {/* Expanded Favorites Tracks */}
+                        {expandedPlaylists['favorites'] && (
+                          <div className="border-t border-[var(--border-sunofy)] divide-y divide-[var(--border-sunofy)]/50 bg-black/20 max-h-48 overflow-y-auto custom-scrollbar">
+                            {favorites.songs.map((track, i) => (
+                              <div key={`fav-${track.id}-${i}`} className="flex items-center justify-between p-2 pl-3 hover:bg-[var(--border-sunofy)]/50 group">
+                                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                  {track.image ? (
+                                    <img src={track.image} alt={track.title} className="w-6 h-6 rounded object-cover" />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded bg-pink-500/20 flex items-center justify-center">
+                                      <Music className="w-3 h-3 text-pink-400" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-[10px] font-semibold text-[var(--text-sunofy)] truncate">{track.title}</p>
+                                    <p className="text-[9px] text-[var(--muted-sunofy)] truncate">{track.artist}</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    syncParty.addTrackToQueue(track, syncState.isHost ? 'Host' : 'Member');
+                                    onShowToast(`Added "${track.title}" to Sync Party`);
+                                  }}
+                                  className="w-6 h-6 rounded-lg bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] flex items-center justify-center hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer shrink-0 ml-1"
+                                  title="Add to Party Queue"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
