@@ -612,7 +612,7 @@ export default function App() {
     }
   }, [syncState.inRoom, syncState.currentTrack?.id]);
 
-  // SyncParty WebRTC-Style Drift-Correction Audio Engine
+  // SyncParty WebRTC-Style Smooth Audio Engine
   useEffect(() => {
     if (!syncState.inRoom || !audioRef.current) return;
 
@@ -658,18 +658,6 @@ export default function App() {
           }).catch((err) => console.warn('SyncParty audio play failed:', err));
         }
         setIsPlaying(true);
-
-        // Seek / Drift correction for Host and Listeners
-        // We removed the aggressive "time-jumping" reloop logic that caused stuttering.
-        // Listeners will only hard-seek if they are massively out of sync (e.g. Host manually scrubbed the timeline > 5 seconds)
-        if (!isNewTrack && syncState.currentTime >= 0) {
-          const drift = Math.abs(audio.currentTime - syncState.currentTime);
-          if (drift > 5) {
-            try {
-              audio.currentTime = syncState.currentTime;
-            } catch (e) {}
-          }
-        }
       } else {
         if (!audio.paused) audio.pause();
         audio.playbackRate = 1.0;
@@ -680,7 +668,19 @@ export default function App() {
       audio.playbackRate = 1.0;
       setIsPlaying(false);
     }
-  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying, syncState.currentTime]);
+  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying]);
+
+  // Listener Drift Correction (only adjusts if out of sync by > 5s without triggering play re-calls)
+  useEffect(() => {
+    if (!syncState.inRoom || syncState.isHost || !audioRef.current || !syncState.isPlaying) return;
+    const audio = audioRef.current;
+    const drift = Math.abs(audio.currentTime - syncState.currentTime);
+    if (drift > 5 && syncState.currentTime >= 0) {
+      try {
+        audio.currentTime = syncState.currentTime;
+      } catch (e) {}
+    }
+  }, [syncState.currentTime]);
 
   // Host Audio Timeupdate
   useEffect(() => {
@@ -741,7 +741,7 @@ export default function App() {
            // When musicSource is 'cobalt', we want to load the extracted stream into the native audio tag
         } else {
           audioRef.current.src = src;
-          if (savedPlayerState?.currentTime) {
+          if (savedPlayerState?.currentTime && !syncState.inRoom) {
             try {
               audioRef.current.currentTime = savedPlayerState.currentTime;
             } catch (e) {}
