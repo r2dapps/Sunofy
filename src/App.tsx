@@ -958,6 +958,7 @@ export default function App() {
       setHistory((prev) => [...prev.filter((t) => t.id !== track.id), currentTrack]);
     }
     setCurrentTrack(track);
+    setCurrentTime(0);
     setIsPlaying(true);
     setIsFullPlayerOpen(true);
 

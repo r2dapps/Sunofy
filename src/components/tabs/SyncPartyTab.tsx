@@ -606,7 +606,11 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     setJoinCodeInput('');
   };
 
-  // Sync with host's network time
+  // Sync with host's network time & reset on track change
+  React.useEffect(() => {
+    setLocalTime(syncState.currentTime || 0);
+  }, [syncState.currentTrackIndex, syncState.playingTrack?.id, syncState.currentTrack?.id]);
+
   React.useEffect(() => {
     setLocalTime(prev => {
       // If we are out of sync by more than 1.5 seconds, snap to the host's exact time
