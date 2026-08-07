@@ -794,7 +794,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const isVideoTrack = curTrack ? (curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com')) : false;
 
   return (
-    <div className="space-y-3 animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col flex-1 h-full min-h-0 sm:h-auto sm:min-h-[580px]">
+    <div className="space-y-3 animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col flex-1 h-full min-h-0">
       {/* Live Voice Active Speaker Floating Indicator */}
       {activeSpeaker && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-black font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce-subtle backdrop-blur-md border border-emerald-300">
