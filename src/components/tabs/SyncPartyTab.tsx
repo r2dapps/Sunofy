@@ -36,6 +36,8 @@ import {
   Mic,
   MicOff,
   Volume2,
+  VolumeX,
+  Settings2,
 } from 'lucide-react';
 import { SyncPartyState, Track, Playlist, Favorites } from '../../types';
 import { syncParty } from '../../services/syncPartySocket';
@@ -154,6 +156,7 @@ interface SyncPartyTabProps {
   onPlayTrack: (track: Track) => void;
   musicSource?: 'jiosaavn' | 'youtube' | 'local';
   downloads?: Track[];
+  onOpenEqualizer?: () => void;
 }
 
 const GIF_CATEGORIES = {
@@ -321,6 +324,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   onPlayTrack,
   musicSource = 'jiosaavn',
   downloads = [],
+  onOpenEqualizer,
 }) => {
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -509,7 +513,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   React.useEffect(() => {
     if (!syncState.inRoom) return;
     const cleanup = syncParty.listenEmojiReactions((emoji) => {
-      spawnFloatingEmoji(emoji);
+      spawnFloatingEmoji(emoji, false);
     });
     return () => cleanup();
   }, [syncState.inRoom, syncState.roomCode]);
@@ -520,6 +524,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [hasUnreadChat, setHasUnreadChat] = useState(false);
   const [videoSearchQuery, setVideoSearchQuery] = useState('');
   const [videoSearchResults, setVideoSearchResults] = useState<any[]>([]);
+  const [expandedLibrarySections, setExpandedLibrarySections] = useState<{ [key: string]: boolean }>({ playlists: false });
+  const [expandedPlaylists, setExpandedPlaylists] = useState<{ [key: string]: boolean }>({});
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   const lastChatLenRef = React.useRef(syncState.chat.length);
   const chatBottomRef = React.useRef<HTMLDivElement | null>(null);
@@ -557,14 +564,18 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   // Floating Emoji Particles state over Live Stage
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string; left: number }[]>([]);
 
-  const spawnFloatingEmoji = (emoji: string) => {
+  const spawnFloatingEmoji = (emoji: string, isLocalClick: boolean = false) => {
     triggerFloatingEmojiConfetti(emoji);
-    const id = Math.random().toString(36).substring(2, 9);
-    const left = Math.floor(15 + Math.random() * 70);
-    setFloatingEmojis((prev) => [...prev, { id, emoji, left }]);
+    const count = isLocalClick ? Math.floor(Math.random() * 3) + 3 : 1; // 1 for network incoming, 3-5 for local click burst
+    const newEmojis = Array.from({ length: count }).map(() => ({
+      id: Math.random().toString(36).substring(2, 9),
+      emoji,
+      left: Math.floor(10 + Math.random() * 80)
+    }));
+    setFloatingEmojis((prev) => [...prev, ...newEmojis]);
     setTimeout(() => {
-      setFloatingEmojis((prev) => prev.filter((item) => item.id !== id));
-    }, 2200);
+      setFloatingEmojis((prev) => prev.filter((item) => !newEmojis.find(ne => ne.id === item.id)));
+    }, 4500);
   };
 
   const extractYoutubeId = (url?: string) => {
@@ -822,85 +833,71 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
         {isConsoleMinimized && floatingEmojis.map((fe) => (
           <div
             key={fe.id}
-            style={{ left: `${fe.left}%` }}
-            className="absolute bottom-16 z-30 text-4xl sm:text-6xl pointer-events-none select-none animate-[ping_1.8s_ease-out_infinite] drop-shadow-[0_0_25px_rgba(255,215,0,0.95)]"
+            style={{ left: `${fe.left}%`, marginLeft: '-1.5rem' }}
+            className="absolute bottom-16 z-30 text-4xl sm:text-5xl pointer-events-none select-none animate-float-up drop-shadow-[0_0_25px_rgba(255,215,0,0.95)]"
           >
             {fe.emoji}
           </div>
         ))}
 
-        {/* Integrated Room Header Bar */}
-        <div className="bg-black/40 border-b border-purple-500/20 p-2.5 sm:p-3 flex items-start justify-between backdrop-blur-md shrink-0 relative z-20 rounded-2xl gap-2">
-          {/* Column 1 (Left): Row 1 = Sync Room title. Row 2 = Room Code + QR + Share */}
-          <div className="flex flex-col min-w-0 space-y-1.5 text-left">
-            {/* Left Row 1: Title & Badge */}
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shrink-0 shadow-inner">
-                <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" style={{ animationDuration: '6s' }} />
-              </div>
-              <div className="flex items-center space-x-1.5 text-xs font-bold text-white min-w-0">
-                <span className="truncate">Sync Room</span>
-                {syncState.isHost ? (
-                  <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 font-mono font-bold uppercase flex items-center gap-1 shrink-0">
-                    <span>HOST</span>
-                    <Crown className="w-3 h-3 text-amber-400 rotate-12" />
-                  </span>
-                ) : (
-                  <span className="text-[9px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/40 font-mono font-bold uppercase shrink-0">
-                    MEMBER
-                  </span>
-                )}
-              </div>
+        {/* Integrated Room Header Bar - Compact Icons Only */}
+        <div className="bg-black/40 border-b border-purple-500/20 px-3 py-2 flex items-center justify-between backdrop-blur-md shrink-0 relative z-20 rounded-2xl gap-2">
+          {/* Left Side: Radio Icon + Room Code + Share */}
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/30 flex items-center justify-center text-[var(--accent-sunofy)] shadow-inner shrink-0 relative">
+              <Radio className="w-4 h-4 animate-spin" style={{ animationDuration: '6s' }} />
+              {syncState.isHost && (
+                <div className="absolute -top-1 -right-1 bg-amber-500 text-black rounded-full p-0.5" title="Host">
+                  <Crown className="w-2.5 h-2.5" />
+                </div>
+              )}
             </div>
-
-            {/* Left Row 2: Code badge + QR code button + Share button */}
-            <div className="flex items-center space-x-1.5">
+            
+            {/* Combined Room Code + Copy + Share Pill */}
+            <div className="font-mono text-xs font-bold text-[var(--accent-sunofy)] bg-black/60 px-2.5 py-1 rounded-xl border border-[var(--border-sunofy)] flex items-center space-x-1.5 shrink-0 shadow-inner">
+              <span className="tracking-wider text-[11px]">#{syncState.roomCode}</span>
+              <div className="w-px h-3 bg-[var(--border-sunofy)] opacity-50" />
               <button
                 onClick={handleCopyCode}
-                className="text-[10px] font-mono text-[var(--accent-sunofy)] bg-black/40 px-2 py-1 rounded-xl border border-[var(--border-sunofy)] flex items-center space-x-1 hover:border-[var(--accent-sunofy)] transition cursor-pointer shrink-0"
+                className="p-1 hover:text-white transition cursor-pointer"
                 title="Copy Room Code"
               >
-                <span>#{syncState.roomCode}</span>
-                <Copy className="w-3 h-3" />
-              </button>
-              <button
-                onClick={() => setShowQrModal(true)}
-                className="w-7 h-7 rounded-xl bg-white/10 hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer flex items-center justify-center text-white shrink-0"
-                title="Show Room QR Code"
-              >
-                <QrCode className="w-3.5 h-3.5" />
+                <Copy className="w-3.5 h-3.5 opacity-80 hover:opacity-100" />
               </button>
               <button
                 onClick={handleShareLink}
-                className="w-7 h-7 rounded-xl bg-white/10 hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer flex items-center justify-center text-white shrink-0"
-                title="Share Room"
+                className="p-1 text-purple-300 hover:text-white transition cursor-pointer"
+                title="Share Room Link"
               >
-                <Share2 className="w-3.5 h-3.5" />
+                <Share2 className="w-3.5 h-3.5 opacity-80 hover:opacity-100" />
               </button>
             </div>
-          </div>
 
-          {/* Column 2 (Right): Row 1 = Listening Live status. Row 2 = Exit button */}
-          <div className="flex flex-col items-end space-y-1.5 shrink-0">
-            {/* Right Row 1: Listening Live status badge */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/20 rounded-full border border-purple-400/30">
-              <LiveAudioWave isPlaying={syncState.isPlaying} />
-              <span className="text-[9px] font-mono font-bold uppercase text-purple-200">
-                {syncState.isPlaying ? 'LISTENING LIVE' : 'PAUSED'}
-              </span>
-            </div>
-
-            {/* Right Row 2: Exit button */}
+            {/* Equalizer button */}
             <button
               onClick={() => {
-                syncParty.leaveRoom();
-                onShowToast('Exited party room. Back to solo mode.');
+                if (onOpenEqualizer) onOpenEqualizer();
+                else onShowToast('Equalizer opened');
               }}
-              className="px-3 py-1 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 font-bold text-xs hover:bg-red-500/30 transition cursor-pointer flex items-center space-x-1"
-              title="Exit to Solo Mode"
+              className="w-8 h-8 rounded-xl bg-purple-600/20 hover:bg-purple-600 border border-purple-500/30 text-purple-300 hover:text-white transition cursor-pointer flex items-center justify-center"
+              title="Audio Equalizer"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Exit</span>
+              <Settings2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Right Side: Live Status + Exit */}
+          <div className="flex items-center space-x-2 shrink-0">
+            <div className="h-8 px-3 bg-purple-500/20 rounded-xl border border-purple-400/30 flex items-center" title={syncState.isPlaying ? 'Listening Live' : 'Paused'}>
+              <LiveAudioWave isPlaying={syncState.isPlaying} />
+            </div>
+
+            <button
+              onClick={() => setShowLeaveConfirm(true)}
+              className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition cursor-pointer flex items-center justify-center"
+              title="Exit Party"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -916,7 +913,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 return (
                   <div
                     ref={videoContainerRef}
-                    className="relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-black my-auto group"
+                    className="relative w-full max-w-lg mx-auto aspect-video rounded-2xl overflow-hidden border-2 border-purple-500/40 shadow-2xl bg-transparent my-auto group"
                   >
                     {ytId ? (
                       <iframe
@@ -984,6 +981,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                         key={emoji}
                         onClick={() => {
                           syncParty.sendEmojiReaction(emoji);
+                          spawnFloatingEmoji(emoji, true);
                         }}
                         className="w-7.5 h-7.5 sm:w-9 sm:h-9 rounded-full bg-black/40 hover:bg-purple-600/40 border border-purple-500/30 text-sm sm:text-base flex items-center justify-center hover:scale-125 transition-transform cursor-pointer active:scale-95 shadow-sm"
                       >
@@ -1017,92 +1015,90 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               );
             })()}
 
-            {/* Host Controls & Progress Bar Section (Only for Audio Tracks) */}
-            {!isVideoTrack && (
-              <div className="space-y-3 pt-2">
-                {/* Host-Only Playback Controls (Hidden for Listeners) */}
-                {syncState.isHost && (
-                  <div className="flex items-center justify-center space-x-3 bg-black/60 px-4 py-2 rounded-2xl border border-purple-500/30 shadow-inner w-fit mx-auto">
-                    <button
-                      onClick={() => syncParty.prevTrack()}
-                      className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
-                      title="Previous Track"
-                    >
-                      <SkipBack className="w-4.5 h-4.5" />
-                    </button>
+            {/* Host Controls & Progress Bar Section (Shown for both Audio & Video Tracks) */}
+            <div className="space-y-3 pt-2">
+              {/* Host-Only Playback Controls (Hidden for Listeners) */}
+              {syncState.isHost && (
+                <div className="flex items-center justify-center space-x-3 bg-black/60 px-4 py-2 rounded-2xl border border-purple-500/30 shadow-inner w-fit mx-auto">
+                  <button
+                    onClick={() => syncParty.prevTrack()}
+                    className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
+                    title="Previous Track"
+                  >
+                    <SkipBack className="w-4.5 h-4.5" />
+                  </button>
 
-                    <button
-                      onClick={() => syncParty.togglePlayPause()}
-                      className="w-10 h-10 rounded-xl bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
-                      title={syncState.isPlaying ? 'Pause' : 'Play'}
-                    >
-                      {syncState.isPlaying ? (
-                        <Pause className="w-5 h-5 fill-black" />
-                      ) : (
-                        <Play className="w-5 h-5 fill-black ml-0.5" />
-                      )}
-                    </button>
+                  <button
+                    onClick={() => syncParty.togglePlayPause()}
+                    className="w-10 h-10 rounded-xl bg-[var(--accent-sunofy)] text-black flex items-center justify-center shadow-lg hover:scale-105 transition cursor-pointer"
+                    title={syncState.isPlaying ? 'Pause' : 'Play'}
+                  >
+                    {syncState.isPlaying ? (
+                      <Pause className="w-5 h-5 fill-black" />
+                    ) : (
+                      <Play className="w-5 h-5 fill-black ml-0.5" />
+                    )}
+                  </button>
 
-                    <button
-                      onClick={() => syncParty.nextTrackInQueue()}
-                      className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
-                      title="Next Track"
-                    >
-                      <SkipForward className="w-4.5 h-4.5" />
-                    </button>
-                  </div>
-                )}
+                  <button
+                    onClick={() => syncParty.nextTrackInQueue()}
+                    className="p-2 text-purple-300 hover:text-white transition cursor-pointer hover:scale-110"
+                    title="Next Track"
+                  >
+                    <SkipForward className="w-4.5 h-4.5" />
+                  </button>
+                </div>
+              )}
 
-                {/* Timeline Progress Bar (Host gets Knob & Seek; Listener gets Read-Only Line) */}
-                {(() => {
-                  const pct = syncState.duration > 0 ? (localTime / syncState.duration) * 100 : 0;
-                  return (
-                    <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
-                      <span>{formatTime(localTime)}</span>
+              {/* Timeline Progress Bar (Host gets Knob & Seek; Listener gets Read-Only Line) */}
+              {(() => {
+                const pct = syncState.duration > 0 ? (localTime / syncState.duration) * 100 : 0;
+                return (
+                  <div className="flex items-center space-x-2 text-[10px] text-purple-300 font-mono">
+                    <span>{formatTime(localTime)}</span>
+                    <div
+                      className={`flex-1 h-3 bg-black/60 border border-purple-500/30 rounded-full relative p-0.5 flex items-center touch-none select-none ${
+                        syncState.isHost ? 'cursor-pointer' : 'cursor-default'
+                      }`}
+                      onPointerDown={(e) => {
+                        if (!syncState.isHost) return;
+                        e.preventDefault();
+                        const target = e.currentTarget;
+                        const rect = target.getBoundingClientRect();
+                        const updateSeek = (clientX: number) => {
+                          const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                          syncParty.seek(pos * syncState.duration);
+                        };
+                        updateSeek(e.clientX);
+
+                        const handleMove = (moveEv: PointerEvent) => {
+                          updateSeek(moveEv.clientX);
+                        };
+                        const handleUp = () => {
+                          window.removeEventListener('pointermove', handleMove);
+                          window.removeEventListener('pointerup', handleUp);
+                        };
+                        window.addEventListener('pointermove', handleMove);
+                        window.addEventListener('pointerup', handleUp);
+                      }}
+                    >
                       <div
-                        className={`flex-1 h-3 bg-black/60 border border-purple-500/30 rounded-full relative p-0.5 flex items-center touch-none select-none ${
-                          syncState.isHost ? 'cursor-pointer' : 'cursor-default'
-                        }`}
-                        onPointerDown={(e) => {
-                          if (!syncState.isHost) return;
-                          e.preventDefault();
-                          const target = e.currentTarget;
-                          const rect = target.getBoundingClientRect();
-                          const updateSeek = (clientX: number) => {
-                            const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-                            syncParty.seek(pos * syncState.duration);
-                          };
-                          updateSeek(e.clientX);
-
-                          const handleMove = (moveEv: PointerEvent) => {
-                            updateSeek(moveEv.clientX);
-                          };
-                          const handleUp = () => {
-                            window.removeEventListener('pointermove', handleMove);
-                            window.removeEventListener('pointerup', handleUp);
-                          };
-                          window.addEventListener('pointermove', handleMove);
-                          window.addEventListener('pointerup', handleUp);
-                        }}
+                        className="bg-[var(--accent-sunofy)] h-full transition-all duration-75 rounded-full shadow-[0_0_8px_rgba(29,185,84,0.6)] relative"
+                        style={{ width: `${pct}%` }}
                       >
-                        <div
-                          className="bg-[var(--accent-sunofy)] h-full transition-all duration-75 rounded-full shadow-[0_0_8px_rgba(29,185,84,0.6)] relative"
-                          style={{ width: `${pct}%` }}
-                        >
-                          {/* Host White Draggable Knob */}
-                          {syncState.isHost && (
-                            <div
-                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-[var(--accent-sunofy)] pointer-events-none transition-transform"
-                            />
-                          )}
-                        </div>
+                        {/* Host White Draggable Knob */}
+                        {syncState.isHost && (
+                          <div
+                            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-[var(--accent-sunofy)] pointer-events-none transition-transform"
+                          />
+                        )}
                       </div>
-                      <span>{formatTime(syncState.duration)}</span>
                     </div>
-                  );
-                })()}
-              </div>
-            )}
+                    <span>{formatTime(syncState.duration)}</span>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         ) : (
           <div className="text-center py-12 space-y-3 relative z-10 my-auto">
@@ -1117,8 +1113,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
       {/* Bottom Sub-Tabs Console (Docked Bottom Nav Bar Card) */}
       <div className={`flex flex-col transition-all duration-300 ${
-        isConsoleMinimized ? 'shrink-0 mt-auto' : 'flex-1 min-h-0 bg-[#0a0a0f]/80 backdrop-blur-2xl rounded-t-3xl border-t border-[var(--border-sunofy)] overflow-hidden relative z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]'
+        isConsoleMinimized ? 'shrink-0 mt-auto' : 'flex-1 min-h-0 bg-gradient-to-b from-[#0a0a14]/95 via-[#0e0e1a]/95 to-[var(--bg-sunofy)] backdrop-blur-2xl rounded-t-3xl border-t border-[var(--border-sunofy)] overflow-hidden relative z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]'
       }`}>
+
+
         {/* Icon-Only Tab Header Bar (Native Bottom Nav Bar Style) */}
         <div className={`bg-[#0a0a0f]/95 border-t border-[var(--border-sunofy)] flex items-center justify-between gap-1.5 backdrop-blur-2xl shadow-lg z-50 transition-all duration-300 ${isConsoleMinimized ? 'rounded-2xl border px-2 py-1 mx-2 mb-2' : 'absolute bottom-0 left-0 right-0 h-[48px]'}`}>
           {/* Scrollable sub-tabs container */}
@@ -1215,28 +1213,18 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
               </span>
             </button>
 
-            {/* 7. Voice Chat & Mic Console */}
-            {(() => {
-              const activeMicCount = syncState.members.filter((m) => m.isMicActive).length;
-              return (
-                <button
-                  onClick={() => handleSelectTab('voice')}
-                  title={`Live Voice Chat (${activeMicCount} Mics Active)`}
-                  className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
-                    activeTab === 'voice'
-                      ? 'bg-emerald-500 text-black shadow-md font-bold'
-                      : activeMicCount > 0
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
-                      : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
-                  }`}
-                >
-                  {isMicActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === 'voice' ? 'bg-black/20 text-black' : activeMicCount > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-[var(--border-sunofy)] text-[var(--muted-sunofy)]'}`}>
-                    {activeMicCount > 0 ? `🎙️ ${activeMicCount}` : 'Off'}
-                  </span>
-                </button>
-              );
-            })()}
+            {/* 7. Room Volume & Audio Settings */}
+            <button
+              onClick={() => handleSelectTab('voice')}
+              title="Room Volume & Audio Settings"
+              className={`p-2.5 rounded-xl transition flex items-center justify-center space-x-1 cursor-pointer relative shrink-0 ${
+                activeTab === 'voice'
+                  ? 'bg-[var(--accent-sunofy)] text-black shadow-md font-bold'
+                  : 'text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)] hover:bg-[var(--border-sunofy)]'
+              }`}
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Fixed Minimize / Maximize Toggle */}
@@ -1526,29 +1514,73 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       <span className="text-[10px] font-bold text-[var(--accent-sunofy)] uppercase tracking-wider block px-1">
                         Saved Playlists ({playlists.length})
                       </span>
-                      {playlists.map((pl) => (
-                        <div
-                          key={pl.id}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)]"
-                        >
-                          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                            <div className="w-8 h-8 rounded-lg bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] flex items-center justify-center shrink-0">
-                              <Music2 className="w-4 h-4" />
+                      {playlists.map((pl) => {
+                        const isExpanded = expandedPlaylists[pl.id];
+                        return (
+                          <div key={pl.id} className="flex flex-col rounded-xl bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] overflow-hidden">
+                            <div
+                              onClick={() => setExpandedPlaylists(prev => ({ ...prev, [pl.id]: !isExpanded }))}
+                              className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-white/5 transition"
+                            >
+                              <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                                <div className="w-8 h-8 rounded-lg bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] flex items-center justify-center shrink-0">
+                                  <Music2 className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-bold text-[var(--text-sunofy)] truncate">{pl.name}</p>
+                                  <p className="text-[10px] text-[var(--muted-sunofy)]">{pl.songs.length} Tracks</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleImportPlaylistToParty(pl);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span className="hidden sm:inline">{syncState.isHost ? 'Import All' : 'Request All'}</span>
+                                </button>
+                                {isExpanded ? <ChevronUp className="w-4 h-4 text-[var(--muted-sunofy)]" /> : <ChevronDown className="w-4 h-4 text-[var(--muted-sunofy)]" />}
+                              </div>
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-bold text-[var(--text-sunofy)] truncate">{pl.name}</p>
-                              <p className="text-[10px] text-[var(--muted-sunofy)]">{pl.songs.length} Tracks</p>
-                            </div>
+                            
+                            {/* Expanded Tracks */}
+                            {isExpanded && (
+                              <div className="border-t border-[var(--border-sunofy)] divide-y divide-[var(--border-sunofy)]/50 bg-black/20">
+                                {pl.songs.map((track, i) => (
+                                  <div key={`${track.id}-${i}`} className="flex items-center justify-between p-2 pl-3 hover:bg-[var(--border-sunofy)]/50 group">
+                                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                      {track.image ? (
+                                        <img src={track.image} alt={track.title} className="w-6 h-6 rounded object-cover" />
+                                      ) : (
+                                        <div className="w-6 h-6 rounded bg-purple-500/20 flex items-center justify-center">
+                                          <Music className="w-3 h-3 text-purple-400" />
+                                        </div>
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] font-semibold text-[var(--text-sunofy)] truncate">{track.title}</p>
+                                        <p className="text-[9px] text-[var(--muted-sunofy)] truncate">{track.subtitle}</p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        syncParty.addTrackToQueue(track, syncState.isHost ? 'Host' : 'Member');
+                                        onShowToast(`Added "${track.title}" to Sync Party`);
+                                      }}
+                                      className="w-6 h-6 rounded-lg bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] flex items-center justify-center hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer shrink-0 ml-1"
+                                      title="Add to Party Queue"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <button
-                            onClick={() => handleImportPlaylistToParty(pl)}
-                            className="px-2.5 py-1.5 rounded-lg bg-[var(--accent-sunofy)] text-black font-bold text-[10px] flex items-center space-x-1 hover:scale-105 transition cursor-pointer shrink-0 ml-1"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>{syncState.isHost ? 'Import' : 'Request'}</span>
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
@@ -1646,6 +1678,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     key={emoji}
                     onClick={() => {
                       syncParty.sendEmojiReaction(emoji);
+                      spawnFloatingEmoji(emoji, true);
                     }}
                     className="text-sm p-1 hover:scale-125 hover:bg-[var(--border-sunofy)] rounded-lg transition active:scale-95 cursor-pointer shrink-0"
                   >
@@ -1839,151 +1872,66 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             </div>
           )}
 
-          {/* TAB 7: Live Voice Chat & Microphone Mixer Console */}
+          {/* TAB 7: Room Audio & Media Volume */}
           {activeTab === 'voice' && (
             <div className="space-y-3 animate-fade">
               <div className="flex items-center justify-between text-[10px] font-bold text-[var(--muted-sunofy)] uppercase tracking-wider px-1">
-                <span>Dedicated Voice Chat & Microphone Mixer</span>
-                <span className={isMicActive ? 'text-emerald-400 font-bold' : 'text-red-400'}>
-                  {isMicActive ? '● Live Transmitting' : '○ Mic Muted'}
+                <span>Room Media Volume & Equalizer</span>
+                <span className="text-[var(--accent-sunofy)] font-mono font-bold">
+                  {musicVolume}%
                 </span>
               </div>
 
               <div className="bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-2xl p-4 space-y-4">
-                {/* Host Mic Permission Lock Control Card */}
-                {syncState.isHost && (
-                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 flex items-center justify-between shadow-sm">
-                    <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
-                        <Crown className="w-4 h-4 rotate-12" />
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-bold text-[var(--text-sunofy)]">Member Mic Permissions</h5>
-                        <p className="text-[10px] text-[var(--muted-sunofy)]">
-                          {syncState.allowMemberMics !== false ? 'Members can unmute & speak live' : 'Members are locked & muted'}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const nextState = syncState.allowMemberMics === false;
-                        syncParty.toggleAllowMemberMics(nextState);
-                        onShowToast(nextState ? '🎙️ Member microphones enabled' : '🔒 Member microphones locked');
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ml-1 ${
-                        syncState.allowMemberMics !== false
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : 'bg-red-500/20 text-red-400 border border-red-500/40'
-                      }`}
-                    >
-                      {syncState.allowMemberMics !== false ? 'Unlocked (ON)' : 'Locked (OFF)'}
-                    </button>
-                  </div>
-                )}
-
-                {/* Master Mic Toggle Button */}
-                <button
-                  onClick={toggleMic}
-                  className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center space-x-2 transition cursor-pointer shadow-lg ${
-                    isMicActive
-                      ? 'bg-emerald-500 text-black shadow-emerald-500/30 animate-pulse'
-                      : 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
-                  }`}
-                >
-                  {isMicActive ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-                  <span>{isMicActive ? 'MICROPHONE LIVE (TAP TO MUTE)' : 'UNMUTE MICROPHONE (TRANSMIT VOICE)'}</span>
-                </button>
-
-                {/* Live Microphone Voice Level Visualizer Meter */}
-                {isMicActive && (
-                  <div className="space-y-1.5 pt-1 animate-fade">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-emerald-400 uppercase tracking-wider px-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                        <span>Voice Audio Input Level</span>
-                      </span>
-                      <span className="font-mono">{micLevel}%</span>
-                    </div>
-                    <div className="flex items-center gap-1 h-6 bg-black/60 p-1.5 rounded-xl border border-emerald-500/30 overflow-hidden shadow-inner">
-                      {[...Array(24)].map((_, i) => {
-                        const threshold = (i + 1) * 4;
-                        const isActive = micLevel >= threshold;
-                        const barColor = threshold > 80 ? 'bg-red-500' : threshold > 60 ? 'bg-amber-400' : 'bg-emerald-400';
-                        return (
-                          <div
-                            key={i}
-                            className={`flex-1 h-full rounded-xs transition-all duration-75 ${
-                              isActive ? `${barColor} shadow-[0_0_6px_rgba(52,211,153,0.8)]` : 'bg-emerald-950/30'
-                            }`}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Unified 2-Column Mixer Sliders (Room Media vs Voice Stream) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
-                      <span className="flex items-center gap-1.5"><Volume2 className="w-4 h-4 text-[var(--accent-sunofy)]" /> Room Media Volume (Music & Video)</span>
-                      <span className="text-[var(--accent-sunofy)] font-mono font-bold">{musicVolume}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={musicVolume}
-                      onChange={(e) => setMusicVolume(Number(e.target.value))}
-                      className="w-full accent-[var(--accent-sunofy)] h-1.5 bg-[var(--border-sunofy)] rounded-lg cursor-pointer"
-                    />
-                    <div className="flex items-center justify-between gap-1 pt-0.5">
-                      {[100, 50, 0].map((v) => (
-                        <button
-                          key={v}
-                          onClick={() => setMusicVolume(v)}
-                          className={`flex-1 py-1 rounded text-[9px] font-mono font-bold transition cursor-pointer ${
-                            musicVolume === v
-                              ? 'bg-[var(--accent-sunofy)] text-black'
-                              : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-                          }`}
-                        >
-                          {v === 0 ? 'Mute' : `${v}%`}
-                        </button>
-                      ))}
-                    </div>
+                <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-4 space-y-3 shadow-md">
+                  <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
+                    <span className="flex items-center gap-2">
+                      <Volume2 className="w-5 h-5 text-[var(--accent-sunofy)]" />
+                      <span>Room Volume (Music & Video)</span>
+                    </span>
+                    <span className="text-[var(--accent-sunofy)] font-mono font-bold text-sm">{musicVolume}%</span>
                   </div>
 
-                  <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-xl p-3 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-[var(--text-sunofy)]">
-                      <span className="flex items-center gap-1.5"><Mic className="w-4 h-4 text-emerald-400" /> Voice Stream Volume (Microphones)</span>
-                      <span className="text-emerald-400 font-mono font-bold">{micVolume}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={micVolume}
-                      onChange={(e) => setMicVolume(Number(e.target.value))}
-                      className="w-full accent-emerald-400 h-1.5 bg-[var(--border-sunofy)] rounded-lg cursor-pointer"
-                    />
-                    <div className="flex items-center justify-between gap-1 pt-0.5">
-                      {[100, 50, 0].map((v) => (
-                        <button
-                          key={v}
-                          onClick={() => setMicVolume(v)}
-                          className={`flex-1 py-1 rounded text-[9px] font-mono font-bold transition cursor-pointer ${
-                            micVolume === v
-                              ? 'bg-emerald-500 text-black'
-                              : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
-                          }`}
-                        >
-                          {v === 0 ? 'Mute' : `${v}%`}
-                        </button>
-                      ))}
-                    </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={musicVolume}
+                    onChange={(e) => setMusicVolume(Number(e.target.value))}
+                    style={{
+                      background: `linear-gradient(to right, var(--accent-sunofy) 0%, var(--accent-sunofy) ${musicVolume}%, var(--border-sunofy) ${musicVolume}%, var(--border-sunofy) 100%)`
+                    }}
+                    className="w-full h-2 rounded-lg cursor-pointer accent-[var(--accent-sunofy)]"
+                  />
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    {[100, 50, 0].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setMusicVolume(v)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                          musicVolume === v
+                            ? 'bg-[var(--accent-sunofy)] text-black shadow'
+                            : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--text-sunofy)]'
+                        }`}
+                      >
+                        {v === 0 ? 'Mute' : `${v}%`}
+                      </button>
+                    ))}
                   </div>
                 </div>
+
+                {/* Equalizer Quick Access Button */}
+                <button
+                  onClick={() => {
+                    if (onOpenEqualizer) onOpenEqualizer();
+                    else onShowToast('Equalizer opened');
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-300 hover:text-white hover:bg-purple-600/40 transition cursor-pointer font-bold text-xs flex items-center justify-center space-x-2 shadow-sm"
+                >
+                  <Settings2 className="w-4 h-4" />
+                  <span>Configure Audio Equalizer & FX</span>
+                </button>
               </div>
             </div>
           )}
@@ -2030,6 +1978,41 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
             >
               Copy Party Link
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Confirmation Modal */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade">
+          <div className="bg-[var(--card-sunofy)] border border-[var(--border-sunofy)] rounded-3xl w-full max-w-xs p-6 relative shadow-2xl text-center space-y-5">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-2 border border-red-500/20">
+              <LogOut className="w-8 h-8 text-red-400 ml-1" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-white">Leave Party?</h3>
+              <p className="text-xs text-[var(--muted-sunofy)]">
+                Are you sure you want to exit the Sync Party and return to solo mode?
+              </p>
+            </div>
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 py-3 rounded-xl bg-[var(--border-sunofy)] text-white text-xs font-bold hover:bg-white/20 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  syncParty.leaveRoom();
+                  onShowToast('Exited party room.');
+                  setShowLeaveConfirm(false);
+                }}
+                className="flex-1 py-3 rounded-xl bg-red-500/90 text-white text-xs font-bold shadow-lg hover:bg-red-500 transition cursor-pointer border border-red-400"
+              >
+                Leave
+              </button>
+            </div>
           </div>
         </div>
       )}

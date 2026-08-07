@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Disc, Trash2, Edit2, ArrowLeft, Play, Search, Music, X, FolderOpen, Download, CheckCircle2 } from 'lucide-react';
+import { Plus, Disc, Trash2, Edit2, ArrowLeft, Play, Search, Music, X, FolderOpen, Download, CheckCircle2, Share2 } from 'lucide-react';
 import { Playlist, Track } from '../../types';
 import { musicApi } from '../../services/api';
+import { generateShareLink } from '../../services/shareUrl';
 
 interface PlaylistsTabProps {
   playlists: Playlist[];
@@ -13,6 +14,7 @@ interface PlaylistsTabProps {
   onAddSongToPlaylist: (playlistId: string, song: Track) => void;
   onRemoveSongFromPlaylist: (playlistId: string, songId: string) => void;
   onDownloadTrack?: (track: Track) => void;
+  onToast?: (msg: string) => void;
 }
 
 export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
@@ -25,6 +27,7 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
   onAddSongToPlaylist,
   onRemoveSongFromPlaylist,
   onDownloadTrack,
+  onToast,
 }) => {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -42,6 +45,27 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
     ...selectedPlaylistRaw,
     songs: (selectedPlaylistRaw.songs || []).filter(Boolean).filter((s) => s.id && s.title)
   } : null;
+
+  const handleShare = (type: 'track' | 'playlist', data: any, name?: string) => {
+    const link = generateShareLink(type, data, name);
+    if (link.length > 2000) {
+      if (onToast) onToast("This item is too large to share via URL.");
+      return;
+    }
+    if (navigator.share) {
+      navigator.share({
+        title: `Sunofy - ${name || 'Share'}`,
+        text: `Check out ${name || 'this item'} on Sunofy!`,
+        url: link,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(link).then(() => {
+        if (onToast) onToast(`Share link for ${name || 'item'} copied!`);
+      }).catch(() => {
+        if (onToast) onToast("Failed to copy link.");
+      });
+    }
+  };
 
   const handleCreateSubmit = () => {
     if (playlistNameInput.trim()) {
@@ -117,7 +141,7 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
               {selectedPlaylist.songs?.length || 0} songs • {selectedPlaylist.duration || '0 mins'}
             </p>
 
-            <div className="flex items-center justify-center gap-4 mt-6">
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
               {selectedPlaylist.songs && selectedPlaylist.songs.length > 0 && (
                 <button
                   onClick={() => {
@@ -149,13 +173,19 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
                   title="Download all songs in this playlist for offline playback"
                 >
                   {isDownloadingAll ? (
-                    <CheckCircle2 className="w-4 h-4 text-[var(--accent-sunofy)] animate-pulse" />
+                    <div className="w-4 h-4 border-2 border-[var(--accent-sunofy)] border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
                 </button>
               )}
-
+              <button
+                onClick={() => handleShare('playlist', selectedPlaylist.songs, selectedPlaylist.name)}
+                className="w-10 h-10 rounded-full bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--accent-sunofy)] flex items-center justify-center shadow-sm hover:border-[var(--accent-sunofy)] transition-all cursor-pointer"
+                title="Share this Playlist"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => setShowAddSongModal(true)}
                 className="w-10 h-10 rounded-full bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] flex items-center justify-center shadow-sm hover:border-[var(--accent-sunofy)] transition-all cursor-pointer"
@@ -228,15 +258,27 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
                       <div className="text-xs text-[var(--muted-sunofy)] truncate mt-0.5">{song.artist}</div>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveSongFromPlaylist(selectedPlaylist.id, song.id);
-                    }}
-                    className="p-2 rounded-full text-[var(--muted-sunofy)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare('track', song, song.title);
+                      }}
+                      className="p-2 rounded-full text-[var(--muted-sunofy)] hover:text-[var(--accent-sunofy)] opacity-0 group-hover:opacity-100 transition"
+                      title="Share Track"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveSongFromPlaylist(selectedPlaylist.id, song.id);
+                      }}
+                      className="p-2 rounded-full text-[var(--muted-sunofy)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -26,8 +26,8 @@ import {
   VolumeX,
   FileText,
   Trash2,
-  Activity,
   PlusCircle,
+  Share2,
 } from 'lucide-react';
 import { Track } from '../types';
 
@@ -60,6 +60,7 @@ interface FullPlayerModalProps {
   onRemoveQueueItem?: (index: number) => void;
   onPlayQueueItem?: (index: number) => void;
   onSaveQueueAsPlaylist?: () => void;
+  onShareTrack?: () => void;
   musicSource?: 'jiosaavn' | 'cobalt' | 'youtube' | 'local';
 }
 
@@ -92,6 +93,7 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
   onRemoveQueueItem,
   onPlayQueueItem,
   onSaveQueueAsPlaylist,
+  onShareTrack,
   musicSource = 'jiosaavn',
 }) => {
   const [activeTab, setActiveTab] = useState<'player' | 'lyrics' | 'queue'>('player');
@@ -321,6 +323,15 @@ export const FullPlayerModal: React.FC<FullPlayerModalProps> = ({
                 >
                   <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500' : ''}`} />
                 </button>
+                {onShareTrack && (
+                  <button
+                    onClick={onShareTrack}
+                    className="p-2.5 rounded-full bg-[var(--card-sunofy)]/80 backdrop-blur-md text-[var(--muted-sunofy)] hover:text-white border border-[var(--border-sunofy)] transition cursor-pointer"
+                    title="Share Track"
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 

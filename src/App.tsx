@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, X } from 'lucide-react';
 import {
   Header,
   BottomNav,
@@ -26,6 +26,7 @@ import { Track, Playlist, Favorites, DownloadTrack, SyncPartyState, EqualizerBan
 import { offlineStore } from './services/offlineStore';
 import { musicApi } from './services/api';
 import { syncParty } from './services/syncPartySocket';
+import { decodeShareData, generateShareLink } from './services/shareUrl';
 
 const ThemeInjector: React.FC<{ themeId: string }> = ({ themeId }) => {
   const themes: Record<string, any> = {
@@ -213,6 +214,35 @@ export default function App() {
         setCurrentTab('Sync Party');
         syncParty.joinRoom(partyCode);
         setTimeout(() => setToastMsg(`Auto-joined Sync Party #${partyCode}`), 500);
+      }
+      const shareData = params.get('share');
+      if (shareData) {
+        const decoded = decodeShareData(shareData);
+        if (decoded) {
+          if (decoded.type === 'track' && decoded.data) {
+            setQueue(prev => [...prev, decoded.data]);
+            setToastMsg(`Added shared track "${decoded.data.title}" to Queue!`);
+          } else if (decoded.type === 'playlist' && decoded.data && Array.isArray(decoded.data)) {
+            const newPlaylist = {
+              id: 'pl_' + Date.now(),
+              name: decoded.name || 'Shared Playlist',
+              tracks: decoded.data
+            };
+            setPlaylists(prev => [...prev, newPlaylist]);
+            setToastMsg(`Imported shared playlist "${newPlaylist.name}"!`);
+          } else if (decoded.type === 'favorites' && decoded.data && Array.isArray(decoded.data)) {
+            const newPlaylist = {
+              id: 'pl_' + Date.now(),
+              name: decoded.name || 'Shared Favorites',
+              tracks: decoded.data
+            };
+            setPlaylists(prev => [...prev, newPlaylist]);
+            setToastMsg(`Imported shared favorites as playlist "${newPlaylist.name}"!`);
+          }
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          setToastMsg('Invalid or corrupted share link.');
+        }
       }
     }, 1400);
 
@@ -572,6 +602,16 @@ export default function App() {
     }
   }, []);
 
+  // When in SyncParty room, lock currentTrack in App to syncState's track
+  useEffect(() => {
+    if (syncState.inRoom) {
+      const activeSyncTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
+      if (activeSyncTrack) {
+        setCurrentTrack(activeSyncTrack);
+      }
+    }
+  }, [syncState.inRoom, syncState.currentTrack?.id]);
+
   // SyncParty WebRTC-Style Drift-Correction Audio Engine
   useEffect(() => {
     if (!syncState.inRoom || !audioRef.current) return;
@@ -580,15 +620,22 @@ export default function App() {
     const track = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
 
     if (track) {
+      const src = track.downloadUrl || track.url || '';
       // Bypass video tracks & YouTube links from native <audio> element to prevent NotSupportedError
-      const isVideoTrack = track.mediaType === 'video' || (track as any).isVideo || track.url?.includes('youtube.com') || track.url?.includes('youtu.be') || track.downloadUrl?.includes('youtube.com');
-      if (isVideoTrack) {
+      const isVideoTrack = 
+        track.mediaType === 'video' || 
+        (track as any).isVideo || 
+        src.includes('youtube') || 
+        src.includes('youtu.be') || 
+        track.url?.includes('youtube') || 
+        track.url?.includes('youtu.be');
+
+      if (!src || isVideoTrack) {
         if (!audio.paused) audio.pause();
         setIsPlaying(syncState.isPlaying);
         return;
       }
 
-      const src = track.downloadUrl || track.url;
       const isNewTrack = src && audio.src !== src;
 
       if (isNewTrack) {
@@ -649,6 +696,18 @@ export default function App() {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, [syncState.inRoom, syncState.isHost]);
+
+  // Global event listener to immediately pause HTML5 audio when a YouTube video starts
+  useEffect(() => {
+    const handlePauseAudio = () => {
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener('sunofy:pause_audio_player', handlePauseAudio);
+    return () => window.removeEventListener('sunofy:pause_audio_player', handlePauseAudio);
+  }, []);
 
   // Periodic Host Sync Broadcast (acts as heartbeat and fixes YouTube track progress sync)
   useEffect(() => {
@@ -889,6 +948,12 @@ export default function App() {
   };
 
   const handlePlayTrack = async (track: Track) => {
+    if (syncState.inRoom) {
+      syncParty.addTrackToQueue(track, syncState.isHost ? 'Host' : 'Member');
+      showToast(`Added "${track.title}" to Sync Party`);
+      return;
+    }
+
     if (currentTrack && currentTrack.id !== track.id) {
       setHistory((prev) => [...prev.filter((t) => t.id !== track.id), currentTrack]);
     }
@@ -1688,6 +1753,7 @@ export default function App() {
           <PlaylistsTab
             playlists={playlists}
             onPlayTrack={handlePlayTrack}
+            onToast={setToastMsg}
             onSetQueue={(q) => {
               const uniqueQ = q.filter((track, index, self) =>
                 self.findIndex((t) => t.id === track.id) === index
@@ -1712,6 +1778,7 @@ export default function App() {
             onRemoveFavoritePlaylist={handleRemoveFavoritePlaylist}
             onPlayCollection={handlePlayCollection}
             onOpenSearch={() => setIsSearchOpen(true)}
+            onToast={setToastMsg}
             onSetQueue={(q) => {
               const uniqueQ = q.filter((track, index, self) =>
                 self.findIndex((t) => t.id === track.id) === index
@@ -1761,6 +1828,7 @@ export default function App() {
             onPlayTrack={handlePlayTrack}
             musicSource={musicSource}
             downloads={downloads}
+            onOpenEqualizer={handleOpenEqualizer}
           />
         )}
         {currentTab === 'Profile' && (
@@ -1842,6 +1910,22 @@ export default function App() {
         onRemoveQueueItem={(idx) => setQueue((prev) => prev.filter((_, i) => i !== idx))}
         onPlayQueueItem={handlePlayQueueItem}
         onSaveQueueAsPlaylist={handleSaveQueueAsPlaylist}
+        onShareTrack={() => {
+          if (currentTrack) {
+            const link = generateShareLink('track', currentTrack, currentTrack.title);
+            if (navigator.share) {
+              navigator.share({
+                title: `Sunofy - ${currentTrack.title}`,
+                text: `Listen to "${currentTrack.title}" by ${currentTrack.artist || 'Artist'} on Sunofy!`,
+                url: link,
+              }).catch(() => {});
+            } else {
+              navigator.clipboard.writeText(link).then(() => {
+                showToast(`Share link for "${currentTrack.title}" copied!`);
+              });
+            }
+          }
+        }}
         musicSource={musicSource}
       />
 
@@ -1941,12 +2025,15 @@ export default function App() {
 
       {/* Premium Glassmorphism Toast Notification Pill */}
       {toastMsg && (
-        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[99999] pointer-events-none max-w-[90%] w-auto animate-fade">
+        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[99999] max-w-[90%] w-auto animate-fade pointer-events-auto">
           <div className="bg-[#0f111a]/95 text-white border border-[var(--accent-sunofy)]/40 px-4 py-2 rounded-full shadow-[0_12px_35px_rgba(0,0,0,0.7)] backdrop-blur-2xl flex items-center space-x-2.5 text-xs font-bold border-t-emerald-400/50">
-            <div className="w-5 h-5 rounded-full bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/50 text-[var(--accent-sunofy)] flex items-center justify-center shrink-0">
+            <div className="w-5 h-5 rounded-full bg-[var(--accent-sunofy)]/20 border border-[var(--accent-sunofy)]/50 text-[var(--accent-sunofy)] flex items-center justify-center shrink-0 pointer-events-none">
               <Heart className="w-3 h-3 text-[var(--accent-sunofy)] fill-[var(--accent-sunofy)] animate-pulse" />
             </div>
-            <span className="truncate max-w-[280px] sm:max-w-md tracking-wide text-gray-100">{toastMsg}</span>
+            <span className="truncate max-w-[280px] sm:max-w-md tracking-wide text-gray-100 pointer-events-none">{toastMsg}</span>
+            <button onClick={() => setToastMsg(null)} className="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition cursor-pointer ml-1">
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Heart, Play, Trash2, Search, ArrowRight, FolderOpen, Disc, Music, ListPlus } from 'lucide-react';
+import { Heart, Play, Trash2, Search, ArrowRight, FolderOpen, Disc, Music, ListPlus, Share2 } from 'lucide-react';
 import { Track, Playlist, Favorites } from '../../types';
+import { generateShareLink } from '../../services/shareUrl';
 
 interface FavoritesTabProps {
   favorites: Favorites;
@@ -11,6 +12,7 @@ interface FavoritesTabProps {
   onPlayCollection?: (query: string) => void;
   onOpenSearch?: () => void;
   onSetQueue?: (queue: Track[]) => void;
+  onToast?: (msg: string) => void;
 }
 
 export const FavoritesTab: React.FC<FavoritesTabProps> = ({
@@ -22,6 +24,7 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
   onPlayCollection,
   onOpenSearch,
   onSetQueue,
+  onToast,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'songs' | 'playlists' | 'albums'>('songs');
   const [filterQuery, setFilterQuery] = useState('');
@@ -29,6 +32,27 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
   const songs = (favorites.songs || []).filter(Boolean).filter((s) => s.id && s.title && s.artist);
   const playlists = (favorites.playlists || []).filter(Boolean).filter((p) => p.id && p.name);
   const albums = (favorites.albums || []).filter(Boolean).filter((a) => a.id && a.title);
+
+  const handleShare = (type: 'track' | 'playlist' | 'favorites', data: any, name?: string) => {
+    const link = generateShareLink(type, data, name);
+    if (link.length > 2000) {
+      if (onToast) onToast("This item is too large to share via URL.");
+      return;
+    }
+    if (navigator.share) {
+      navigator.share({
+        title: `Sunofy - ${name || 'Favorites'}`,
+        text: `Check out ${name || 'this item'} on Sunofy!`,
+        url: link,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(link).then(() => {
+        if (onToast) onToast(`Share link for ${name || 'item'} copied!`);
+      }).catch(() => {
+        if (onToast) onToast("Failed to copy link.");
+      });
+    }
+  };
 
   const filteredSongs = songs.filter(s => 
     s.title.toLowerCase().includes(filterQuery.toLowerCase()) || 
@@ -46,12 +70,23 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fade pb-12">
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold text-[var(--text-sunofy)] tracking-tight">Your Favorites</h2>
-        <p className="text-sm font-medium text-[var(--muted-sunofy)]">
-          {songs.length} Songs • {playlists.length} Playlists • {albums.length} Albums
-        </p>
+      {/* Title & Stats */}
+      <div className="flex items-end justify-between mb-8 px-2 mt-4">
+        <div>
+          <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent-sunofy)] to-white tracking-tight flex items-center gap-3">
+            <Heart className="w-8 h-8 text-[var(--accent-sunofy)]" fill="currentColor" /> Favorites
+          </h2>
+          <p className="text-[var(--muted-sunofy)] text-sm font-medium mt-1">
+            {songs.length} Tracks • {playlists.length} Playlists • {albums.length} Albums
+          </p>
+        </div>
+        <button
+          onClick={() => handleShare('favorites', songs, 'My Favorites')}
+          className="p-2.5 rounded-2xl bg-[var(--card-sunofy)] text-[var(--text-sunofy)] hover:text-[var(--accent-sunofy)] hover:bg-[var(--hover-sunofy)] transition shadow-sm border border-[var(--border-sunofy)]"
+          title="Share Favorites"
+        >
+          <Share2 className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Segmented Sub Tabs inside Favorites */}
@@ -154,16 +189,28 @@ export const FavoritesTab: React.FC<FavoritesTabProps> = ({
                       <div className="text-xs font-medium text-[var(--muted-sunofy)] truncate mt-0.5">{song.artist}</div>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveFavorite(song);
-                    }}
-                    className="p-2.5 rounded-full text-red-500 hover:bg-red-500/10 transition opacity-0 group-hover:opacity-100 cursor-pointer"
-                    title="Remove from favorites"
-                  >
-                    <Heart className="w-4 h-4" fill="currentColor" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare('track', song, song.title);
+                      }}
+                      className="p-2.5 rounded-full text-[var(--muted-sunofy)] hover:text-[var(--accent-sunofy)] hover:bg-[var(--accent-sunofy)]/10 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                      title="Share track"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveFavorite(song);
+                      }}
+                      className="p-2.5 rounded-full text-red-500 hover:bg-red-500/10 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                      title="Remove from favorites"
+                    >
+                      <Heart className="w-4 h-4" fill="currentColor" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

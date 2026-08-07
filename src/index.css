@@ -173,3 +173,11 @@ input[type=range]::-moz-range-thumb {
   animation: rainbowGlow 3.5s linear infinite;
   display: inline-block;
 }
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-300px) scale(1.5); opacity: 0; }
+}
+.animate-float-up {
+  animation: floatUp 4.5s ease-out forwards;
+}
