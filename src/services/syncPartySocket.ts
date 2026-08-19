@@ -629,12 +629,10 @@ class SyncPartyManager {
       this.state.currentTrack = { ...this.state.queue[currentIndex + 1], playSessionId: Date.now() };
       this.state.currentTime = 0;
       this.state.isPlaying = true;
-    } else if (this.state.queue.length > 0) {
-      this.state.currentTrack = { ...this.state.queue[0], playSessionId: Date.now() };
-      this.state.currentTime = 0;
-      this.state.isPlaying = true;
     } else {
+      // Reached the end of the queue — stop playback cleanly
       this.state.isPlaying = false;
+      this.state.currentTime = 0;
     }
 
     this.broadcastState();

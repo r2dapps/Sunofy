@@ -198,26 +198,9 @@ export default function App() {
     };
     window.addEventListener('message', handleMessage);
     
-    // Poll the iframe for time updates every 500ms since we don't have the YT wrapper
+    // Poll the iframe for time updates every 500ms when playing in solo mode
     const interval = setInterval(() => {
-      if (ytIframeRef.current && isPlaying && globalYtId) {
-        // Fallback manual tick in case infoDelivery fails (CORS or JS API changes)
-        setCurrentTime((prev) => {
-          if (duration && duration > 0 && prev >= duration - 0.5) {
-            const now = Date.now();
-            if (now - lastEndedTriggerRef.current >= 1000) {
-              lastEndedTriggerRef.current = now;
-              const state = syncParty.getState();
-              if (state.inRoom && state.isHost) {
-                syncParty.nextTrackInQueue();
-              } else if (!state.inRoom) {
-                handleNextTrack();
-              }
-            }
-            return duration;
-          }
-          return prev + 0.5;
-        });
+      if (ytIframeRef.current && isPlaying && globalYtId && !syncState.inRoom) {
         ytIframeRef.current.contentWindow?.postMessage(
           JSON.stringify({ event: 'listening', id: 1 }),
           '*'
@@ -2161,8 +2144,8 @@ export default function App() {
           </div>
         </div>
       )}
-      {/* Global YouTube Iframe for Background/Seamless Playback */}
-      {globalYtId && (
+      {/* Global YouTube Iframe for Background/Seamless Playback (Solo Mode Only) */}
+      {globalYtId && !syncState.inRoom && (
         <iframe
           ref={ytIframeRef}
           src={`https://www.youtube.com/embed/${globalYtId}?autoplay=${isPlaying ? 1 : 0}&controls=0&disablekb=1&modestbranding=1&playsinline=1&enablejsapi=1&mute=0`}
