@@ -38,6 +38,8 @@ import {
   Volume2,
   VolumeX,
   Settings2,
+  CornerUpLeft,
+  History,
 } from 'lucide-react';
 import { SyncPartyState, Track, Playlist, Favorites } from '../../types';
 import { syncParty } from '../../services/syncPartySocket';
@@ -353,6 +355,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [activeSpeaker, setActiveSpeaker] = useState<{ name: string; timestamp: number } | null>(null);
   const [micLevel, setMicLevel] = useState(0);
   const [localTime, setLocalTime] = useState(0);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; sender: string; text: string } | null>(null);
+  const [syncHistory, setSyncHistory] = React.useState<Track[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sunofy_sync_history') || '[]').slice(0, 100); } catch { return []; }
+  });
   const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
   const isVideoTrack = curTrack ? (curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com')) : false;
   const voiceAudioCtxRef = React.useRef<AudioContext | null>(null);
@@ -624,6 +630,11 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   // Sync with host's network time & reset on track change
   React.useEffect(() => {
     setLocalTime(syncState.currentTime || 0);
+    // Refresh local history from localStorage whenever track changes
+    try {
+      const h = JSON.parse(localStorage.getItem('sunofy_sync_history') || '[]').slice(0, 100);
+      setSyncHistory(h);
+    } catch {}
   }, [syncState.currentTrack?.id, (syncState.currentTrack as any)?.queueId, (syncState.currentTrack as any)?.playSessionId]);
 
   React.useEffect(() => {
@@ -758,8 +769,9 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
   const handleSendChat = () => {
     if (chatInput.trim()) {
-      syncParty.sendMessage(chatInput.trim());
+      syncParty.sendMessage(chatInput.trim(), undefined, replyingTo || undefined);
       setChatInput('');
+      setReplyingTo(null);
     }
   };
 
@@ -1455,8 +1467,59 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       </div>
                     ))}
                   </div>
+                ) : searchQuery.trim() === '' && syncHistory.length > 0 ? (
+                  /* Recent History Panel - shown when search is empty */
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[10px] font-bold text-[var(--muted-sunofy)] uppercase tracking-wider flex items-center gap-1.5">
+                        <History className="w-3 h-3" />
+                        Recent Party History ({syncHistory.length})
+                      </span>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('sunofy_sync_history');
+                          setSyncHistory([]);
+                        }}
+                        className="text-[9px] text-red-400/70 hover:text-red-400 transition cursor-pointer font-medium"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+                      {syncHistory.map((s, idx) => (
+                        <div
+                          key={(s as any).queueId || s.id + '_h_' + idx}
+                          className="flex items-center justify-between p-2 bg-[var(--bg-sunofy)] rounded-xl border border-[var(--border-sunofy)] hover:border-[var(--accent-sunofy)]/50 transition group"
+                        >
+                          <div className="flex items-center space-x-2 min-w-0 flex-1">
+                            <div className="relative shrink-0">
+                              <img src={s.image} alt={s.title} className="w-8 h-8 rounded-lg object-cover" />
+                              <div className="absolute inset-0 rounded-lg bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
+                                <Clock className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-80 transition" />
+                              </div>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h5 className="text-xs font-semibold truncate text-[var(--text-sunofy)]">{s.title}</h5>
+                              <p className="text-[10px] text-[var(--muted-sunofy)] truncate">{s.artist}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              syncParty.addTrackToQueue(s, syncState.isHost ? 'Host' : 'Member');
+                              onShowToast(syncState.isHost ? `Added "${s.title}" to Party Queue!` : `Sent request for "${s.title}" to Host!`);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[var(--accent-sunofy)]/20 text-[var(--accent-sunofy)] font-bold text-[10px] flex items-center space-x-1 hover:bg-[var(--accent-sunofy)] hover:text-black transition cursor-pointer shrink-0 ml-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span className="hidden sm:inline">{syncState.isHost ? 'Add' : 'Request'}</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ) : (
                   <div className="p-6 text-center border border-dashed border-[var(--border-sunofy)] rounded-xl bg-[var(--bg-sunofy)]/50">
+                    <Search className="w-6 h-6 text-[var(--muted-sunofy)] mx-auto mb-2 opacity-50" />
                     <p className="text-xs text-[var(--muted-sunofy)]">Type a song or artist name to search and queue live tracks.</p>
                   </div>
                 )}
@@ -1744,7 +1807,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     return (
                       <div
                         key={c.id}
-                        className={`py-1.5 px-3 rounded-2xl text-xs flex flex-col ${
+                        className={`group relative py-1.5 px-3 rounded-2xl text-xs flex flex-col ${
                           c.isSystem
                             ? 'text-[10px] text-[var(--muted-sunofy)] text-center py-1 font-medium bg-black/10 rounded-lg my-1'
                             : isMyMessage
@@ -1752,6 +1815,17 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                             : 'bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] text-[var(--text-sunofy)] mr-auto max-w-[80%] rounded-bl-xs shadow-sm'
                         }`}
                       >
+                        {/* Reply-to quoted message */}
+                        {(c as any).replyTo && (
+                          <div className={`mb-1.5 px-2 py-1 rounded-lg border-l-2 text-[9px] leading-tight ${
+                            isMyMessage
+                              ? 'bg-black/15 border-black/40 text-black/70'
+                              : 'bg-white/5 border-[var(--accent-sunofy)]/60 text-[var(--muted-sunofy)]'
+                          }`}>
+                            <span className="font-bold block truncate">{(c as any).replyTo.sender}</span>
+                            <span className="truncate block max-w-[180px] sm:max-w-[220px]">{(c as any).replyTo.text}</span>
+                          </div>
+                        )}
                         {!c.isSystem && (
                           <div className="flex items-center justify-between gap-2 mb-1">
                             <span className={`text-[10px] font-bold flex items-center gap-1.5 ${isMyMessage ? 'text-black/80' : 'text-[var(--accent-sunofy)]'}`}>
@@ -1761,9 +1835,21 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                                 <Crown className="w-3 h-3 text-amber-400 rotate-12 inline" />
                               )}
                             </span>
-                            <span className={`text-[8px] font-mono ${isMyMessage ? 'text-black/60' : 'text-[var(--muted-sunofy)]'}`}>
-                              {c.time}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className={`text-[8px] font-mono ${isMyMessage ? 'text-black/60' : 'text-[var(--muted-sunofy)]'}`}>
+                                {c.time}
+                              </span>
+                              {/* Reply button — always visible on mobile, hover on desktop */}
+                              <button
+                                onClick={() => setReplyingTo({ id: c.id, sender: c.sender, text: c.text.slice(0, 80) })}
+                                className={`opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition p-0.5 rounded cursor-pointer ${
+                                  isMyMessage ? 'hover:bg-black/20 text-black/60 hover:text-black' : 'hover:bg-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--accent-sunofy)]'
+                                }`}
+                                title="Reply"
+                              >
+                                <CornerUpLeft className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         )}
                         {c.text.startsWith('http') && (c.text.includes('.gif') || c.text.includes('giphy.com') || c.text.includes('tenor.com') || c.text.includes('media.giphy.com')) ? (
@@ -1877,6 +1963,24 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Reply Preview Banner */}
+              {replyingTo && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent-sunofy)]/10 border border-[var(--accent-sunofy)]/30 rounded-xl mx-0.5 mb-1">
+                  <CornerUpLeft className="w-3.5 h-3.5 text-[var(--accent-sunofy)] shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] font-bold text-[var(--accent-sunofy)] block">{replyingTo.sender}</span>
+                    <span className="text-[9px] text-[var(--muted-sunofy)] truncate block max-w-full">{replyingTo.text}</span>
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="p-0.5 text-[var(--muted-sunofy)] hover:text-red-400 transition cursor-pointer shrink-0"
+                    title="Cancel Reply"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 
