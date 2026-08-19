@@ -20,18 +20,21 @@ class MusicAPI {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return [
         'http://localhost:3000/api',             // Local Node/Express proxy
+        'https://jiosaavn-api-beta.vercel.app',  // Working Beta mirror (CORS enabled)
         'https://saavn.sumit.co/api',             // Primary public Saavn API mirror
-        'https://saavn-api.vercel.app',          // Secondary Vercel API mirror
+        'https://saavn-api.vercel.app',          // Secondary Vercel API mirror (CORS issues)
         'https://jiosaavn-api.vercel.app/api'    // Fallback API mirror
       ];
     } else if (hostname.includes('github.io')) {
       return [
+        'https://jiosaavn-api-beta.vercel.app',  // Working Beta mirror (CORS enabled)
         'https://saavn.sumit.co/api',             // Primary public mirror for GitHub Pages
         'https://saavn-api.vercel.app',          // Secondary Vercel API mirror
         'https://jiosaavn-api.vercel.app/api'    // Fallback API mirror
       ];
     } else {
       return [
+        'https://jiosaavn-api-beta.vercel.app',
         'https://saavn.sumit.co/api',
         'https://saavn-api.vercel.app',
         'https://jiosaavn-api.vercel.app/api',

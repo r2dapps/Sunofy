@@ -649,7 +649,11 @@ export default function App() {
     if (track) {
       const offlineCopy = downloads.find((d) => d.id === track.id);
       const offlineBlob = offlineCopy?.offlineBlobUrl || (track as any).offlineBlobUrl;
-      const src = offlineBlob || track.downloadUrl || track.url || '';
+      let src = offlineBlob || track.downloadUrl || track.url || '';
+
+      if (src && src.includes('saavncdn.com') && !offlineBlob) {
+        src = `/api/proxy-audio?url=${encodeURIComponent(src)}`;
+      }
 
       // Bypass video tracks & YouTube links from native <audio> element ONLY if not downloaded offline
       const isVideoTrack = !offlineBlob && (
@@ -893,11 +897,24 @@ export default function App() {
       }
     };
 
+    const handleError = (e: Event) => {
+      const target = e.target as HTMLAudioElement;
+      if (target.error && target.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+        if (target.src.includes('saavncdn.com')) {
+          showToast('JioSaavn CDN Error (404). Please switch to Cobalt/YouTube engine in Profile.');
+        } else {
+          showToast('Failed to load audio stream.');
+        }
+        setIsPlaying(false);
+      }
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('seeked', handleSeeked);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -905,6 +922,7 @@ export default function App() {
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('seeked', handleSeeked);
+      audio.removeEventListener('error', handleError);
     };
   }, [repeatMode, queue, originalQueue, isShuffle]);
 
@@ -1034,6 +1052,10 @@ export default function App() {
       const offlineCopy = downloads.find((d) => d.id === track.id);
       const offlineBlob = offlineCopy?.offlineBlobUrl || (track as any).offlineBlobUrl;
       let src = offlineBlob || track.downloadUrl || '';
+
+      if (src && src.includes('saavncdn.com') && !offlineBlob) {
+        src = `/api/proxy-audio?url=${encodeURIComponent(src)}`;
+      }
 
       const isYoutubeTrack = !offlineBlob && (((track as any).isCobalt) || (track as any).url?.includes('youtube.com') || track.downloadUrl?.includes('youtube'));
       const needsCobaltExtraction = isYoutubeTrack && musicSource === 'cobalt';

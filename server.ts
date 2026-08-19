@@ -34,9 +34,9 @@ async function startServer() {
     const query = (req.query.query as string) || 'Telugu Melodies';
 
     const mirrors = [
+      `https://jiosaavn-api-beta.vercel.app/search/songs?query=${encodeURIComponent(query)}`,
       `https://saavn.sumit.co/api/search/songs?query=${encodeURIComponent(query)}`,
       `https://saavn-api.vercel.app/search/songs?query=${encodeURIComponent(query)}`,
-      `https://jiosaavn-api-beta.vercel.app/search/songs?query=${encodeURIComponent(query)}`,
       `https://saavn.dev/api/search/songs?query=${encodeURIComponent(query)}`,
     ];
 
@@ -66,6 +66,7 @@ async function startServer() {
   app.get('/api/search/playlists', async (req: Request, res: Response) => {
     const query = (req.query.query as string) || 'Telugu Hits';
     const mirrors = [
+      `https://jiosaavn-api-beta.vercel.app/search/playlists?query=${encodeURIComponent(query)}`,
       `https://saavn.sumit.co/api/search/playlists?query=${encodeURIComponent(query)}`,
       `https://saavn-api.vercel.app/search/playlists?query=${encodeURIComponent(query)}`,
       `https://saavn.dev/api/search/playlists?query=${encodeURIComponent(query)}`,
@@ -97,6 +98,7 @@ async function startServer() {
       return;
     }
     const mirrors = [
+      `https://jiosaavn-api-beta.vercel.app/playlists?id=${encodeURIComponent(id)}&limit=200`,
       `https://saavn.sumit.co/api/playlists?id=${encodeURIComponent(id)}&limit=200`,
       `https://saavn-api.vercel.app/playlists?id=${encodeURIComponent(id)}&limit=200`,
       `https://saavn.dev/api/playlists?id=${encodeURIComponent(id)}&limit=200`,
@@ -124,6 +126,7 @@ async function startServer() {
   app.get('/api/search/albums', async (req: Request, res: Response) => {
     const query = (req.query.query as string) || 'Telugu Albums';
     const mirrors = [
+      `https://jiosaavn-api-beta.vercel.app/search/albums?query=${encodeURIComponent(query)}`,
       `https://saavn.sumit.co/api/search/albums?query=${encodeURIComponent(query)}`,
       `https://saavn-api.vercel.app/search/albums?query=${encodeURIComponent(query)}`,
       `https://saavn.dev/api/search/albums?query=${encodeURIComponent(query)}`,
