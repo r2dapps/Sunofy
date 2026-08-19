@@ -74,9 +74,11 @@ class SyncPartyManager {
           if (!data || data.roomId !== this.state.roomCode) return;
           
           if (data.type === 'STATE_SYNC' && !this.state.isHost) {
-             this.state.currentTrack = data.state.currentTrack;
-             this.state.currentTime = data.state.currentTime;
-             this.state.isPlaying = data.state.isPlaying;
+             const track = data.state?.track || data.state?.currentTrack;
+             if (track) this.state.currentTrack = track;
+             if (data.state?.currentTime !== undefined) this.state.currentTime = data.state.currentTime;
+             if (data.state?.isPlaying !== undefined) this.state.isPlaying = data.state.isPlaying;
+             if (data.state?.duration !== undefined) this.state.duration = data.state.duration || (track ? track.duration : 0);
              this.notify();
           }
         };
@@ -457,10 +459,23 @@ class SyncPartyManager {
     this.broadcastState();
   }
 
+  private lastHistoryTrackId = '';
+
   private broadcastState() {
     if (!this.state.inRoom || !this.state.isHost) return;
+    
+    if (this.state.currentTrack && this.state.currentTrack.id !== this.lastHistoryTrackId) {
+      this.lastHistoryTrackId = this.state.currentTrack.id;
+      try {
+        const historyStr = localStorage.getItem('sunofy_sync_history') || '[]';
+        let history = JSON.parse(historyStr);
+        history = [this.state.currentTrack, ...history.filter((t: any) => t.id !== this.state.currentTrack!.id)].slice(0, 50);
+        localStorage.setItem('sunofy_sync_history', JSON.stringify(history));
+      } catch (e) {}
+    }
     const stateData = {
       track: this.state.currentTrack,
+      currentTrack: this.state.currentTrack,
       isPlaying: this.state.isPlaying,
       currentTime: this.state.currentTime,
       duration: this.state.duration || (this.state.currentTrack?.duration || 0),
@@ -500,16 +515,16 @@ class SyncPartyManager {
         requesterName: requesterName || `Member #${this.myPeerId.slice(-4)}`,
         timestamp: Date.now()
       });
-      this.sendMessage(`Requested "${track.title}" (Waiting for Host approval)`);
+      this.sendMessage(`${requesterName || 'A member'} requested "${track.title}"`, 'System');
       return;
     }
 
-    const queueItem = { ...track, artist: `${track.artist} (Req by ${requesterName})` };
+    const queueItem = { ...track, artist: `${track.artist} (Req by ${requesterName})`, queueId: `q_${Date.now()}_${Math.random().toString(36).substr(2, 5)}` };
     this.state.queue.push(queueItem);
 
     // If no track is currently playing, start playing this track immediately!
     if (!this.state.currentTrack) {
-      this.state.currentTrack = queueItem;
+      this.state.currentTrack = { ...queueItem, playSessionId: Date.now() };
       this.state.currentTime = 0;
       this.state.duration = queueItem.duration || 200;
       this.state.isPlaying = true;
@@ -535,10 +550,16 @@ class SyncPartyManager {
   removeTrackFromQueue(index: number) {
     if (!this.state.isHost || index < 0 || index >= this.state.queue.length) return;
     
+    const trackToRemove = this.state.queue[index];
+    const isPlayingThisTrack = trackToRemove.id === this.state.currentTrack?.id && ((trackToRemove as any).queueId === (this.state.currentTrack as any)?.queueId);
+
     this.state.queue.splice(index, 1);
     
-    if (index === 0) {
-      if (this.state.queue.length > 0) {
+    if (isPlayingThisTrack) {
+      if (index < this.state.queue.length) {
+        this.state.currentTrack = this.state.queue[index];
+        this.state.currentTime = 0;
+      } else if (this.state.queue.length > 0) {
         this.state.currentTrack = this.state.queue[0];
         this.state.currentTime = 0;
       } else {
@@ -557,7 +578,7 @@ class SyncPartyManager {
     if (!this.state.isHost || index < 0 || index >= this.state.queue.length) return;
     
     const selected = this.state.queue[index];
-    this.state.currentTrack = selected;
+    this.state.currentTrack = { ...selected, playSessionId: Date.now() };
     this.state.currentTime = 0;
     this.state.isPlaying = true;
     
@@ -591,15 +612,19 @@ class SyncPartyManager {
     }
 
     const currentIndex = this.state.currentTrack
-      ? this.state.queue.findIndex((t) => t.id === this.state.currentTrack?.id || t.title === this.state.currentTrack?.title)
+      ? this.state.queue.findIndex((t) => 
+          (t as any).queueId 
+            ? (t as any).queueId === (this.state.currentTrack as any)?.queueId 
+            : (t.id === this.state.currentTrack?.id || t.title === this.state.currentTrack?.title)
+        )
       : -1;
 
     if (currentIndex >= 0 && currentIndex < this.state.queue.length - 1) {
-      this.state.currentTrack = this.state.queue[currentIndex + 1];
+      this.state.currentTrack = { ...this.state.queue[currentIndex + 1], playSessionId: Date.now() };
       this.state.currentTime = 0;
       this.state.isPlaying = true;
-    } else if (currentIndex === -1 && this.state.queue.length > 0) {
-      this.state.currentTrack = this.state.queue[0];
+    } else if (this.state.queue.length > 0) {
+      this.state.currentTrack = { ...this.state.queue[0], playSessionId: Date.now() };
       this.state.currentTime = 0;
       this.state.isPlaying = true;
     } else {
@@ -616,10 +641,18 @@ class SyncPartyManager {
       this.state.currentTime = 0;
     } else {
       const currentIndex = this.state.currentTrack
-        ? this.state.queue.findIndex((t) => t.id === this.state.currentTrack?.id || t.title === this.state.currentTrack?.title)
+        ? this.state.queue.findIndex((t) => 
+            (t as any).queueId 
+              ? (t as any).queueId === (this.state.currentTrack as any)?.queueId 
+              : (t.id === this.state.currentTrack?.id || t.title === this.state.currentTrack?.title)
+          )
         : -1;
       if (currentIndex > 0) {
-        this.state.currentTrack = this.state.queue[currentIndex - 1];
+        this.state.currentTrack = { ...this.state.queue[currentIndex - 1], playSessionId: Date.now() };
+        this.state.currentTime = 0;
+        this.state.isPlaying = true;
+      } else if (this.state.queue.length > 0) {
+        this.state.currentTrack = { ...this.state.queue[this.state.queue.length - 1], playSessionId: Date.now() };
         this.state.currentTime = 0;
         this.state.isPlaying = true;
       } else {
@@ -630,7 +663,7 @@ class SyncPartyManager {
     this.notify();
   }
 
-  sendMessage(text: string, customSender?: string) {
+  sendMessage(text: string, customSender?: string, replyTo?: { id: string, sender: string, text: string }) {
     if (!this.state.inRoom) return;
     
     const profileStr = typeof localStorage !== 'undefined' ? localStorage.getItem('sunofy_user_profile') : null;
@@ -645,7 +678,7 @@ class SyncPartyManager {
       } catch(e) {}
     }
     
-    const msg = {
+    const msg: any = {
       id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       senderId: this.myPeerId,
       sender: senderName,
@@ -655,9 +688,13 @@ class SyncPartyManager {
       isSystem: customSender === 'System',
     };
     
+    if (replyTo) {
+      msg.replyTo = replyTo;
+    }
+    
     push(ref(db, `sunofy_vibe_rooms/${this.state.roomCode}/chat`), msg);
     
-    if (['🔥', '❤️', '👏', '😂', '🎉', '🚀'].includes(text.trim()) && this.localChannel) {
+    if (['🔥', '❤️', '👏', '😂', '🎉', '🚀', '💋', '💃'].includes(text.trim()) && this.localChannel) {
       this.localChannel.postMessage({ type: 'EMOJI_REACTION', roomId: this.state.roomCode, emoji: text.trim() });
     }
   }

@@ -19,6 +19,7 @@ import { PlaylistsTab } from './components/tabs/PlaylistsTab';
 import { FavoritesTab } from './components/tabs/FavoritesTab';
 import { OfflineTab } from './components/tabs/OfflineTab';
 import { SyncPartyTab } from './components/tabs/SyncPartyTab';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProfileTab } from './components/tabs/ProfileTab';
 import { VideoTab } from './components/tabs/VideoTab';
 
@@ -173,11 +174,24 @@ export default function App() {
       try {
         const data = JSON.parse(event.data);
         if (data.event === 'infoDelivery' && data.info) {
-          if (data.info.currentTime) {
+          if (data.info.currentTime !== undefined) {
             setCurrentTime(data.info.currentTime);
           }
           if (data.info.duration && data.info.duration > 0 && duration === 0) {
             setDuration(data.info.duration);
+          }
+          if (data.info.playerState === 0) {
+            // YouTube Track Ended
+            const now = Date.now();
+            if (now - lastEndedTriggerRef.current >= 1000) {
+              lastEndedTriggerRef.current = now;
+              const state = syncParty.getState();
+              if (state.inRoom && state.isHost) {
+                syncParty.nextTrackInQueue();
+              } else if (!state.inRoom) {
+                handleNextTrack();
+              }
+            }
           }
         }
       } catch (e) {}
@@ -189,7 +203,19 @@ export default function App() {
       if (ytIframeRef.current && isPlaying && globalYtId) {
         // Fallback manual tick in case infoDelivery fails (CORS or JS API changes)
         setCurrentTime((prev) => {
-          if (duration && prev >= duration) return duration;
+          if (duration && duration > 0 && prev >= duration - 0.5) {
+            const now = Date.now();
+            if (now - lastEndedTriggerRef.current >= 1000) {
+              lastEndedTriggerRef.current = now;
+              const state = syncParty.getState();
+              if (state.inRoom && state.isHost) {
+                syncParty.nextTrackInQueue();
+              } else if (!state.inRoom) {
+                handleNextTrack();
+              }
+            }
+            return duration;
+          }
           return prev + 0.5;
         });
         ytIframeRef.current.contentWindow?.postMessage(
@@ -203,7 +229,7 @@ export default function App() {
       window.removeEventListener('message', handleMessage);
       clearInterval(interval);
     };
-  }, [isPlaying, globalYtId, duration, currentTrack]);
+  }, [isPlaying, globalYtId, duration, currentTrack, queue, originalQueue, isShuffle, repeatMode]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -360,6 +386,7 @@ export default function App() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sleepTimerTimeoutRef = useRef<any>(null);
   const lastHostBroadcastRef = useRef<number>(0);
+  const lastEndedTriggerRef = useRef<number>(0);
 
   // Sync musicSource with API class currentSource
   useEffect(() => {
@@ -536,43 +563,13 @@ export default function App() {
     };
   }, []);
 
-  // Sync Party socket subscription
+  // Sync Party socket subscription (pure state sync, no direct audio mutations)
   useEffect(() => {
     const unsubscribe = syncParty.subscribe((newState) => {
       setSyncState(newState);
-      if (newState.inRoom && !newState.isHost) {
-         if (newState.currentTrack && (!currentTrack || currentTrack.id !== newState.currentTrack.id)) {
-            setCurrentTrack(newState.currentTrack);
-            const track = newState.currentTrack;
-            const trackUrl = (track as any).url || track.downloadUrl || '';
-            const isVideoTrack = track.mediaType === 'video' || (track as any).isVideo || trackUrl.includes('youtube.com') || trackUrl.includes('youtu.be');
-            
-            if (audioRef.current) {
-               if (isVideoTrack) {
-                  audioRef.current.pause();
-               } else {
-                  audioRef.current.src = track.downloadUrl || trackUrl || '';
-                  if (newState.isPlaying) {
-                     audioRef.current.currentTime = newState.currentTime;
-                     audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
-                  }
-               }
-            }
-         }
-         if (audioRef.current) {
-            if (newState.isPlaying && audioRef.current.paused) {
-               audioRef.current.currentTime = newState.currentTime;
-               audioRef.current.play().catch(()=>console.log('Autoplay blocked'));
-               setIsPlaying(true);
-            } else if (!newState.isPlaying && !audioRef.current.paused) {
-               audioRef.current.pause();
-               setIsPlaying(false);
-            }
-         }
-      }
     });
     return () => unsubscribe();
-  }, [currentTrack]);
+  }, []);
 
   // Conflict Control 1: Pause audio when switching to Videos tab
   useEffect(() => {
@@ -597,10 +594,35 @@ export default function App() {
     if (partyCode && !syncState.inRoom) {
       setTimeout(() => {
         syncParty.joinRoom(partyCode);
-        setCurrentTab('SyncParty');
+        setCurrentTab('Sync Party');
+        window.history.replaceState({}, document.title, window.location.pathname);
       }, 300);
     }
   }, []);
+
+  // Screen Wake Lock API for SyncParty
+  useEffect(() => {
+    let wakeLock: any = null;
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator && currentTab === 'Sync Party') {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch (err) {}
+    };
+
+    if (currentTab === 'Sync Party') {
+      requestWakeLock();
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') requestWakeLock();
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        if (wakeLock) wakeLock.release().catch(() => {});
+      };
+    }
+  }, [currentTab]);
 
   // When in SyncParty room, lock currentTrack in App to syncState's track
   useEffect(() => {
@@ -610,7 +632,12 @@ export default function App() {
         setCurrentTrack(activeSyncTrack);
       }
     }
-  }, [syncState.inRoom, syncState.currentTrack?.id]);
+  }, [
+    syncState.inRoom,
+    syncState.currentTrack?.id,
+    (syncState.currentTrack as any)?.queueId,
+    (syncState.currentTrack as any)?.playSessionId,
+  ]);
 
   // SyncParty WebRTC-Style Smooth Audio Engine
   useEffect(() => {
@@ -650,16 +677,32 @@ export default function App() {
             audio.currentTime = syncState.currentTime;
           } catch (e) {}
         }
+      } else if (syncState.currentTime === 0 && audio.currentTime > 0) {
+        // Track replayed / queue loop back to start
+        try {
+          audio.currentTime = 0;
+        } catch (e) {}
       }
 
       if (syncState.isPlaying) {
         if (audio.paused) {
-          audio.play().then(() => {
-            initEqualizerWebAudio();
-            if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-              audioCtxRef.current.resume();
-            }
-          }).catch((err) => console.warn('SyncParty audio play failed:', err));
+          // Use a small delay after src change to avoid AbortError on rapid src+play
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                initEqualizerWebAudio();
+                if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+                  audioCtxRef.current.resume();
+                }
+              })
+              .catch((err: Error) => {
+                // Autoplay blocked by browser — this is expected on first load or rapid track change
+                if (err.name !== 'AbortError') {
+                  console.warn('SyncParty audio play failed:', err);
+                }
+              });
+          }
         }
         setIsPlaying(true);
       } else {
@@ -672,7 +715,13 @@ export default function App() {
       audio.playbackRate = 1.0;
       setIsPlaying(false);
     }
-  }, [syncState.inRoom, syncState.currentTrack?.id, syncState.isPlaying]);
+  }, [
+    syncState.inRoom,
+    syncState.currentTrack?.id,
+    (syncState.currentTrack as any)?.queueId,
+    (syncState.currentTrack as any)?.playSessionId,
+    syncState.isPlaying,
+  ]);
 
   // Listener Drift Correction (only adjusts if out of sync by > 1.5s without triggering play re-calls)
   useEffect(() => {
@@ -794,11 +843,19 @@ export default function App() {
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       if (audio.duration) setDuration(audio.duration);
+      // NOTE: Do NOT call handleEnded here — the 'ended' event handles it.
+      // Double-firing causes AbortError (new load interrupts play()).
     };
 
     const handleEnded = () => {
+      const now = Date.now();
+      if (now - lastEndedTriggerRef.current < 1000) return;
+      lastEndedTriggerRef.current = now;
+
       const state = syncParty.getState();
       if (state.inRoom && state.isHost) {
+        if (audioRef.current) audioRef.current.currentTime = 0;
+        if (ytIframeRef.current) ytIframeRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
         syncParty.nextTrackInQueue();
         return;
       }
@@ -1037,6 +1094,20 @@ export default function App() {
   };
 
   const handleSeek = (timeSecs: number) => {
+    const activeDur = duration || currentTrack?.duration || 0;
+    if (activeDur > 0 && timeSecs >= activeDur - 0.3) {
+      const state = syncParty.getState();
+      if (state.inRoom && state.isHost) {
+        if (audioRef.current) audioRef.current.currentTime = 0;
+        if (ytIframeRef.current) ytIframeRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
+        syncParty.nextTrackInQueue();
+        return;
+      } else if (!state.inRoom) {
+        handleNextTrack();
+        return;
+      }
+    }
+
     if (globalYtId && ytIframeRef.current) {
       ytIframeRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [timeSecs, true] }), '*');
       setCurrentTime(timeSecs);
@@ -1051,6 +1122,16 @@ export default function App() {
   };
 
   const handleNextTrack = () => {
+    if (syncState.inRoom) {
+      if (syncState.isHost) {
+        if (audioRef.current) audioRef.current.currentTime = 0;
+        syncParty.nextTrackInQueue();
+      } else {
+        showToast('Only the host can skip tracks.');
+      }
+      return;
+    }
+
     if (queue.length > 0) {
       if (isShuffle) {
         const nextIndex = Math.floor(Math.random() * queue.length);
@@ -1104,6 +1185,20 @@ export default function App() {
   };
 
   const handlePrevTrack = () => {
+    if (syncState.inRoom) {
+      if (syncState.isHost) {
+        if (audioRef.current && audioRef.current.currentTime > 5) {
+          audioRef.current.currentTime = 0;
+          syncParty.seek(0);
+          return;
+        }
+        syncParty.prevTrack();
+      } else {
+        showToast('Only the host can skip tracks.');
+      }
+      return;
+    }
+
     if (audioRef.current && audioRef.current.currentTime > 5) {
       audioRef.current.currentTime = 0;
       setCurrentTime(0);
@@ -1609,6 +1704,7 @@ export default function App() {
   };
 
   return (
+    <ErrorBoundary>
     <div className="flex flex-col md:flex-row h-screen w-full relative overflow-hidden shadow-2xl bg-[var(--bg-sunofy)] font-sans text-[var(--text-sunofy)]">
       <ThemeInjector themeId={userProfile.appTheme} />
       <PwaInstallBanner onShowToast={showToast} />
@@ -2056,5 +2152,6 @@ export default function App() {
       </>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

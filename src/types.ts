@@ -9,6 +9,8 @@ export interface Track {
   lyrics?: string;
   hasOfflineAudio?: boolean;
   mediaType?: 'audio' | 'video';
+  queueId?: string;
+  playSessionId?: number;
 }
 
 export interface Playlist {

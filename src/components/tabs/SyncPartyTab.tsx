@@ -353,6 +353,8 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const [activeSpeaker, setActiveSpeaker] = useState<{ name: string; timestamp: number } | null>(null);
   const [micLevel, setMicLevel] = useState(0);
   const [localTime, setLocalTime] = useState(0);
+  const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
+  const isVideoTrack = curTrack ? (curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com')) : false;
   const voiceAudioCtxRef = React.useRef<AudioContext | null>(null);
   const recorderIntervalRef = React.useRef<any>(null);
   const micStreamRef = React.useRef<MediaStream | null>(null);
@@ -622,7 +624,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   // Sync with host's network time & reset on track change
   React.useEffect(() => {
     setLocalTime(syncState.currentTime || 0);
-  }, [syncState.currentTrackIndex, syncState.playingTrack?.id, syncState.currentTrack?.id]);
+  }, [syncState.currentTrack?.id, (syncState.currentTrack as any)?.queueId, (syncState.currentTrack as any)?.playSessionId]);
 
   React.useEffect(() => {
     setLocalTime(prev => {
@@ -672,9 +674,10 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
       setLocalTime(prev => {
         // Only increment if playing
-        if (syncState.isPlaying && syncState.duration > 0) {
+        const activeDur = syncState.duration || curTrack?.duration || 0;
+        if (syncState.isPlaying && activeDur > 0) {
           const next = prev + delta;
-          return next <= syncState.duration ? next : syncState.duration;
+          return next <= activeDur ? next : activeDur;
         }
         return prev;
       });
@@ -683,7 +686,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
 
     animationFrameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [syncState.isPlaying, syncState.duration]);
+  }, [syncState.isPlaying, syncState.duration, curTrack?.duration]);
 
   const handleCopyCode = () => {
     navigator.clipboard?.writeText(syncState.roomCode);
@@ -818,9 +821,6 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   }
 
   // Active Isolated Sync Party Room View
-  const curTrack = syncState.currentTrack || (syncState.queue.length > 0 ? syncState.queue[0] : null);
-  const isVideoTrack = curTrack ? (curTrack.mediaType === 'video' || (curTrack as any).isVideo || curTrack.url?.includes('youtube.com') || curTrack.url?.includes('youtu.be') || curTrack.downloadUrl?.includes('youtube.com')) : false;
-
   return (
     <div className="animate-fade pb-0 text-[var(--text-sunofy)] select-none relative flex flex-col h-full min-h-0 w-full overflow-hidden">
       {/* Live Voice Active Speaker Floating Indicator */}
@@ -1336,22 +1336,26 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
                     {syncState.queue.map((song, idx) => {
                       const isCurrentlyPlaying = curTrack
-                        ? (song.id === curTrack.id || (song.title === curTrack.title && song.artist === curTrack.artist))
+                        ? ((song as any).queueId && (curTrack as any).queueId
+                            ? (song as any).queueId === (curTrack as any).queueId
+                            : (song.id === curTrack.id || (song.title === curTrack.title && song.artist === curTrack.artist)))
                         : false;
 
                       return (
                         <div
-                          key={song.id + '_' + idx}
+                          key={(song as any).queueId || (song.id + '_' + idx)}
                           onClick={() => {
                             if (syncState.isHost) {
                               syncParty.playQueueTrack(idx);
                               onShowToast(`Now playing "${song.title}"`);
                             }
                           }}
-                          className={`flex items-center justify-between p-2 rounded-xl border transition cursor-pointer ${
+                          className={`flex items-center justify-between p-2 rounded-xl border transition ${
+                            syncState.isHost ? 'cursor-pointer hover:border-[var(--hover-sunofy)]' : 'cursor-default'
+                          } ${
                             isCurrentlyPlaying
                               ? 'bg-[var(--accent-sunofy)]/10 border-[var(--accent-sunofy)]/40 shadow-sm'
-                              : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)] hover:border-[var(--hover-sunofy)]'
+                              : 'bg-[var(--bg-sunofy)] border-[var(--border-sunofy)]'
                           }`}
                         >
                           <div className="flex items-center space-x-2.5 min-w-0 flex-1">
