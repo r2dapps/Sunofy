@@ -660,6 +660,17 @@ export const VideoTab: React.FC<VideoTabProps> = ({
 
   const addToQueue = (e: React.MouseEvent, item: SampleVideo | SavedVideoItem) => {
     e.stopPropagation();
+    if (isEmbeddedInSyncParty) {
+      const vType = ('type' in item && item.type) ? item.type : 'youtube';
+      onVideoSelect?.({
+        url: item.videoUrl,
+        title: item.title,
+        type: vType,
+        thumbnail: item.thumbnail,
+        duration: item.duration,
+      });
+      return;
+    }
     setVideoQueue((prev) => [...prev, item]);
     onShowToast(`Added to queue: ${item.title}`);
   };

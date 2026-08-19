@@ -523,6 +523,56 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
     }
   }, [musicVolume]);
 
+  // Control YouTube stage iframe on Play / Pause without reloading iframe
+  React.useEffect(() => {
+    if (!videoContainerRef.current) return;
+    const iframe = videoContainerRef.current.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command',
+        func: syncState.isPlaying ? 'playVideo' : 'pauseVideo',
+        args: []
+      }), '*');
+    }
+  }, [syncState.isPlaying]);
+
+  // Listener / Host Seek Synchronization via postMessage (does NOT reload iframe)
+  React.useEffect(() => {
+    if (!videoContainerRef.current) return;
+    const iframe = videoContainerRef.current.querySelector('iframe');
+    if (iframe && iframe.contentWindow && syncState.currentTime >= 0) {
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command',
+        func: 'seekTo',
+        args: [syncState.currentTime, true]
+      }), '*');
+    }
+  }, [syncState.currentTime]);
+
+  // Listen to YouTube Iframe messages for live duration, current time, and track end
+  React.useEffect(() => {
+    const handleYTMessage = (event: MessageEvent) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data && data.event === 'infoDelivery' && data.info) {
+          if (data.info.duration && data.info.duration > 0) {
+            const realDur = Math.round(data.info.duration);
+            if (syncState.isHost && (!syncState.duration || Math.abs(syncState.duration - realDur) > 3)) {
+              syncParty.syncAudioState(syncState.currentTime, syncState.isPlaying, false, realDur);
+            }
+          }
+          if (data.info.playerState === 0) {
+            if (syncState.isHost) {
+              syncParty.nextTrackInQueue();
+            }
+          }
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('message', handleYTMessage);
+    return () => window.removeEventListener('message', handleYTMessage);
+  }, [syncState.isHost, syncState.isPlaying, syncState.currentTime, syncState.duration]);
+
   // Sync micVolume to remote voice streams
   React.useEffect(() => {
     syncParty.setRemoteVoiceVolume(micVolume / 100);
@@ -820,10 +870,23 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                     {ytId ? (
                       <iframe
                         key={ytId}
-                        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=${syncState.isPlaying ? 1 : 0}&start=${startSec}&controls=0&disablekb=1&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`}
+                        src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&controls=0&disablekb=1&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`}
                         className="w-full h-full border-0 pointer-events-none select-none"
                         allow="autoplay; encrypted-media; picture-in-picture"
                         allowFullScreen
+                        onLoad={(e) => {
+                          const ifr = e.currentTarget;
+                          const start = Math.floor(syncState.currentTime || 0);
+                          setTimeout(() => {
+                            ifr.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [musicVolume] }), '*');
+                            if (start > 0) {
+                              ifr.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [start, true] }), '*');
+                            }
+                            if (!syncState.isPlaying) {
+                              ifr.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+                            }
+                          }, 500);
+                        }}
                       />
                     ) : (
                       <video
