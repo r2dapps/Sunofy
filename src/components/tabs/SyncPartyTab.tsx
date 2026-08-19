@@ -212,6 +212,14 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
   const micStreamRef = React.useRef<MediaStream | null>(null);
   const animFrameRef = React.useRef<number | null>(null);
   const videoContainerRef = React.useRef<HTMLDivElement | null>(null);
+  const chatInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleStartReply = (c: { id: string; sender: string; text: string }) => {
+    setReplyingTo({ id: c.id, sender: c.sender, text: c.text.slice(0, 80) });
+    setTimeout(() => {
+      chatInputRef.current?.focus();
+    }, 50);
+  };
 
   const handleToggleFullscreen = () => {
     if (!videoContainerRef.current) return;
@@ -571,6 +579,25 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
       setSearchResults([]);
       return;
     }
+
+    // Check if pasted value is a direct YouTube URL
+    const ytId = extractYoutubeId(val);
+    if (ytId) {
+      setSearchResults([{
+        id: `yt_${ytId}`,
+        title: `YouTube Video (${ytId})`,
+        artist: 'YouTube Watch Party',
+        album: 'Direct Video Stream',
+        duration: 300,
+        downloadUrl: val.trim(),
+        image: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`,
+        mediaType: 'video',
+        isVideo: true,
+        isCobalt: true,
+      }]);
+      return;
+    }
+
     try {
       let res: Track[] = [];
       if (musicSource === 'youtube') {
@@ -1620,6 +1647,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                 <VideoTab
                   onShowToast={onShowToast}
                   isEmbeddedInSyncParty={true}
+                  isHost={syncState.isHost}
                   onVideoSelect={(vid) => {
                     const durSecs = parseDurationSecs(vid.duration);
                     const newTrack: Track = {
@@ -1633,7 +1661,11 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                       mediaType: 'video'
                     };
                     syncParty.addTrackToQueue(newTrack, syncState.isHost ? 'Host' : 'Member');
-                    onShowToast(syncState.isHost ? `Broadcasting "${vid.title}" live to Party!` : `Requested "${vid.title}" for Host approval!`);
+                    onShowToast(
+                      syncState.isHost
+                        ? (syncState.currentTrack ? `Added "${vid.title}" to Party Queue!` : `Broadcasting "${vid.title}" live to Party!`)
+                        : `Requested "${vid.title}" for Host approval!`
+                    );
                   }}
                 />
               </div>
@@ -1687,7 +1719,7 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                               </span>
                               {/* Reply button — always visible on mobile, hover on desktop */}
                               <button
-                                onClick={() => setReplyingTo({ id: c.id, sender: c.sender, text: c.text.slice(0, 80) })}
+                                onClick={() => handleStartReply(c)}
                                 className={`opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition p-0.5 rounded cursor-pointer ${
                                   isMyMessage ? 'hover:bg-black/20 text-black/60 hover:text-black' : 'hover:bg-[var(--border-sunofy)] text-[var(--muted-sunofy)] hover:text-[var(--accent-sunofy)]'
                                 }`}
@@ -1845,11 +1877,12 @@ export const SyncPartyTab: React.FC<SyncPartyTabProps> = ({
                   <span>GIF</span>
                 </button>
                 <input
+                  ref={chatInputRef}
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
-                  placeholder="Chat with party members..."
+                  placeholder={replyingTo ? `Replying to @${replyingTo.sender}...` : "Chat with party members..."}
                   className="flex-1 bg-[var(--bg-sunofy)] border border-[var(--border-sunofy)] rounded-xl px-3 py-2 text-xs text-[var(--text-sunofy)] focus:outline-none focus:border-[var(--accent-sunofy)]"
                 />
                 <button

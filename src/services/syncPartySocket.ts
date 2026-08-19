@@ -413,15 +413,21 @@ class SyncPartyManager {
       this.signalUnsubscribes = [];
     }
 
+    const roomCode = this.state.roomCode;
+    const isHost = this.state.isHost;
+
     if (this.myMemberRef) {
-      remove(this.myMemberRef);
+      remove(this.myMemberRef).catch(() => {});
     }
-    if (this.roomRef && this.state.isHost) {
-      update(this.roomRef, { closed: true, roomActive: false });
-      const currentRoomRef = this.roomRef;
+
+    if (isHost && roomCode) {
+      const roomTargetRef = ref(db, `sunofy_vibe_rooms/${roomCode}`);
+      // Notify listening members that the room has closed
+      update(roomTargetRef, { closed: true, roomActive: false }).catch(() => {});
+      // Permanently remove the entire room tree from Firebase
       setTimeout(() => {
-        remove(currentRoomRef).catch(() => {});
-      }, 4000);
+        remove(roomTargetRef).catch(() => {});
+      }, 1000);
     }
     
     localStorage.removeItem('sunofy_sync_room_code');

@@ -64,10 +64,11 @@ interface SampleVideo {
 interface VideoTabProps {
   onShowToast: (msg: string) => void;
   onVideoPlay?: () => void;
-  onVideoSelect?: (video: { url: string; title: string; type: string }) => void;
+  onVideoSelect?: (video: { url: string; title: string; type: string; thumbnail?: string; duration?: string }) => void;
   isAudioPlaying?: boolean;
   onMinimize?: () => void;
   isEmbeddedInSyncParty?: boolean;
+  isHost?: boolean;
 }
 
 export const VideoTab: React.FC<VideoTabProps> = ({
@@ -77,6 +78,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
   isAudioPlaying,
   onMinimize,
   isEmbeddedInSyncParty = false,
+  isHost = true,
 }) => {
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string>(
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
@@ -281,6 +283,18 @@ export const VideoTab: React.FC<VideoTabProps> = ({
 
   // Play Selected Video
   const handleSelectVideo = (video: SampleVideo | SavedVideoItem) => {
+    if (isEmbeddedInSyncParty) {
+      const vType = ('type' in video && video.type) ? video.type : 'youtube';
+      onVideoSelect?.({
+        url: video.videoUrl,
+        title: video.title,
+        type: vType,
+        thumbnail: video.thumbnail,
+        duration: video.duration,
+      });
+      return;
+    }
+
     onVideoPlay?.();
     setVideoTitle(video.title);
     setLocalFileSize(null);
@@ -354,6 +368,20 @@ export const VideoTab: React.FC<VideoTabProps> = ({
     const url = customInputUrl.trim();
     if (!url) {
       onShowToast('Please enter a video URL');
+      return;
+    }
+
+    if (isEmbeddedInSyncParty) {
+      const ytId = extractYoutubeId(url);
+      const title = ytId ? `YouTube Video (${ytId})` : 'Custom Video Stream';
+      const vType = ytId ? 'youtube' : 'mp4';
+      onVideoSelect?.({
+        url,
+        title,
+        type: vType,
+        thumbnail: ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined
+      });
+      setCustomInputUrl('');
       return;
     }
 
@@ -907,7 +935,7 @@ export const VideoTab: React.FC<VideoTabProps> = ({
                   type="submit"
                   className="px-3 py-2 rounded-xl bg-[var(--accent-sunofy)] text-[var(--bg-sunofy)] text-xs font-black hover:scale-105 active:scale-95 transition cursor-pointer shrink-0"
                 >
-                  Play
+                  {isEmbeddedInSyncParty ? (isHost ? '+ Add to Queue' : '+ Request') : 'Play'}
                 </button>
               </form>
 
