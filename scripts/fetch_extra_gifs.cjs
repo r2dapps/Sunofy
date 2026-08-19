@@ -28,7 +28,7 @@ const run = async () => {
   
   const result = {};
   for (const [tag, q] of Object.entries(queries)) {
-    result[tag] = await fetchTenor(q, 6);
+    result[tag] = await fetchTenor(q, 15);
   }
   
   const fs = require('fs');

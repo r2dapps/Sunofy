@@ -1,4 +1,5 @@
-{
+// Generated from scripts/extra_gif_data.json — provides extended GIF lists for SyncParty
+const RAW: Record<string, string[]> = {
   "Forehead Kiss": [
     "https://media.tenor.com/BbUdLpzhviIAAAAM/forehead-kiss-arjuhi.gif",
     "https://media.tenor.com/Um9znIPoP0cAAAAM/good-morning-my-love-good-morning-baby.gif",
@@ -135,4 +136,13 @@
     "https://media.tenor.com/by71aaUwdkYAAAAM/anime-holding-hands.gif",
     "https://media.tenor.com/h8fx_K7W0ZwAAAAM/allahfirst-godfirst.gif"
   ]
-}
+};
+
+export const GIF_CATEGORIES: Record<string, { name: string; url: string }[]> = Object.fromEntries(
+  Object.entries(RAW).map(([tag, urls]) => [
+    tag,
+    urls.map((u, i) => ({ name: `${tag} ${i + 1}`, url: u }))
+  ])
+);
+
+export default GIF_CATEGORIES;
